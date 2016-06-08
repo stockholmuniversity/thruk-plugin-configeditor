@@ -20,6 +20,7 @@
         <script type="text/javascript" charset="UTF-8" src="[% url_prefix %]plugins/api_conf/ext-[% extjs_version %]/build/ext-all.js"></script>
       <!-- <![ENDIF]-->
     [% END %]
+[% PROCESS _common_css.tt use_frames=1 %]
 </head>
 <body>
 [% body %]

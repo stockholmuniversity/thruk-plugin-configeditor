@@ -48,7 +48,7 @@ sub selector {
 	return $landing_page;
 }
 
-sub host {
+sub hosts {
 	my ($c) = @_; 
 	my $host_page = '';
 
@@ -111,6 +111,34 @@ sub host {
 	return $host_page;
 }
 
+sub host_groups {
+	return "Host Groups Placeholder";
+}
+
+sub services {
+	return "Services Placeholder";
+}
+
+sub service_groups {
+	return "Service Groups Placeholder";
+}
+
+sub contacts {
+	return "Contacts Placeholder";
+}
+
+sub contact_groups {
+	return "Contact Groups Placeholder";
+}
+
+sub timeperiods {
+	return "Timeperiods Placeholder";
+}
+
+sub commands {
+	return "Commands Placeholder";
+}
+
 sub body {
 	my $context = new IO::Socket::SSL::SSL_Context(
 	  SSL_version => 'tlsv1',
@@ -123,7 +151,21 @@ sub body {
         my $params = $c->req->parameters;
 	my $page_type = $params->{'page_type'};	
 	if ($page_type eq "Hosts") {
-		$body = host $c;
+		$body = hosts $c;
+	} elsif ($page_type eq "Host Groups") {
+		$body = host_groups $c;
+	} elsif ($page_type eq "Services") {
+		$body = services $c;
+	} elsif ($page_type eq "Service Groups") {
+		$body = service_groups $c;
+	} elsif ($page_type eq "Contacts") {
+		$body = contacts $c;
+	} elsif ($page_type eq "Contact Groups") {
+		$body = contact_groups $c;
+	} elsif ($page_type eq "Timeperiods") {
+		$body = timeperiods $c;
+	} elsif ($page_type eq "Commands") {
+		$body = commands $c;
 	} else {
 		$body = selector;
 	}
