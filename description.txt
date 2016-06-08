@@ -1,0 +1,3 @@
+The 'API Conf' plugin enables configuration via Icinga2 HTTP API.
+
+Url: api_conf.cgi
