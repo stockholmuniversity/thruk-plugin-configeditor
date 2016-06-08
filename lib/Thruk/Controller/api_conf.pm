@@ -78,7 +78,7 @@ sub host {
 	# This case is first dialog
 	if (not defined($confirm) and $host  =~ m/\..*\./  ) {
 		 $host_page .= $q->h1('Delete Host');         # level 1 header
-		 $host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>If not, just close this page.<br/>');
+		 $host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
 		 $host_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
 		 $host_page .= $q->hidden('host',$host);
@@ -93,7 +93,7 @@ sub host {
 	elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
 		my $req = HTTP::Request->new(DELETE => $api_delete_url);
 		my $response = $ua->request($req);
-		$host_page .= $q->p("Close this window, result from API was:");
+		$host_page .= $q->p("Result from API was:");
 		$host_page .= $q->p($response->decoded_content);
 		#$host_page .= "<script \"text/javascript\">window.location = \"$c->HTTP_COOKIE->HTTP_REFERER\"</script>";
 	}
