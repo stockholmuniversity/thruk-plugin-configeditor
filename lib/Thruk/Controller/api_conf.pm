@@ -139,7 +139,7 @@ sub hosts {
 				-value=>'Submit');
 		$host_page .=  $q->end_form;
 	}
-	$host_page .=  Dumper $c->cookie();
+	#$host_page .= Dumper $c->stash->{hosts};
 	return $host_page;
 }
 
@@ -213,6 +213,21 @@ sub index {
 	$c->stash->{'show_save_reload'}    = 0;
 	$c->stash->{template} = 'api_conf.tt';
 	$c->stash->{testmode} = 1;
+	my $style='uprobs';
+	my $hostfilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1}, {'acknowledged' => 0}, {'scheduled_downtime_depth' => 0} ];
+	my $servicefilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1}, {'acknowledged' => 0}, {'scheduled_downtime_depth' => 0} ];
+	if(defined $c->req->parameters->{'style'}) {
+	$style=$c->req->parameters->{'style'};
+	}
+
+	if ($style eq 'aprobs') {
+		$hostfilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1} ];
+		$servicefilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1} ];
+	}
+	my $services = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services'), $servicefilter ]);
+	my $hosts = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts'), $hostfilter ]);
+	$c->stash->{services}  = $services;
+	$c->stash->{hosts}     = $hosts;
 	if( !$c->check_user_roles("authorized_for_configuration_information")
         || !$c->check_user_roles("authorized_for_system_commands")) {
 		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
