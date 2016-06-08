@@ -26,7 +26,6 @@ use HTTP::Request::Common;
 use LWP::UserAgent;
 use LWP::Protocol::https;
 use Config::JSON;
-
 use Net::SSLGlue::LWP;
 use IO::Socket::SSL;
 use Data::Dumper;
@@ -34,15 +33,24 @@ use Data::Dumper;
 =head2 body
 =cut
 
-sub body {
-	my ($c) = @_; 
-	my $body = '';
+sub selector {
+	my $q = CGI->new;
+	my $landing_page = '';
+	$landing_page .= $q->h1('Select Type of Config Data You Wish To Edit or View');         # level 1 header
+	$landing_page .= $q->p('Object Type:');
+	$landing_page .= $q->start_form(-method=>"POST",
+		    -action=>"api_conf.cgi");
+	$landing_page .= $q->scrolling_list('page_type', ['Hosts','Host Groups','Services','Service Groups','Contacts','Contact Groups','Timeperiods','Commands'], 8, "false");
+	$landing_page .= $q->submit(-name=>'submit',
+			-value=>'Submit');
+	$landing_page .=  $q->end_form;
 
-	my $context = new IO::Socket::SSL::SSL_Context(
-	  SSL_version => 'tlsv1',
-	  SSL_verify_mode => Net::SSLeay::VERIFY_NONE(),
-	  );
-	IO::Socket::SSL::set_default_context($context);
+	return $landing_page;
+}
+
+sub host {
+	my ($c) = @_; 
+	my $host_page = '';
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -69,14 +77,15 @@ sub body {
 
 	# This case is first dialog
 	if (not defined($confirm) and $host  =~ m/\..*\./  ) {
-		 $body .= $q->h1('Delete Host');         # level 1 header
-		 $body .= $q->p('Are you sure you want to delete '. $host .'?<br/>If not, just close this page.<br/>');
-		 $body .= $q->start_form(-method=>"POST",
+		 $host_page .= $q->h1('Delete Host');         # level 1 header
+		 $host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>If not, just close this page.<br/>');
+		 $host_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
-		 $body .= $q->hidden('host',$host);
-		 $body .= $q->submit(-name=>'confirm',
+		 $host_page .= $q->hidden('host',$host);
+		 $host_page .= $q->hidden('page_type',"Hosts");
+		 $host_page .= $q->submit(-name=>'confirm',
 				-value=>'Confirm');
-		$body .=  $q->end_form;
+		$host_page .=  $q->end_form;
 
 	}
 
@@ -84,27 +93,41 @@ sub body {
 	elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
 		my $req = HTTP::Request->new(DELETE => $api_delete_url);
 		my $response = $ua->request($req);
-		$body .= $q->p("Close this window, result from API was:");
-		$body .= $q->p($response->decoded_content);
-		#$body .= "<script \"text/javascript\">window.location = \"$c->HTTP_COOKIE->HTTP_REFERER\"</script>";
+		$host_page .= $q->p("Close this window, result from API was:");
+		$host_page .= $q->p($response->decoded_content);
+		#$host_page .= "<script \"text/javascript\">window.location = \"$c->HTTP_COOKIE->HTTP_REFERER\"</script>";
 	}
 
-	# This is a misspeld hostname, i.e someone is url hacking
-	#elsif ( ! $host  =~ m/\..*\./ ) {
-	#	 $body .= $q->h1('Host name incorrect');
-	#	 $body .= $q->p("Close this window and try again");
-	#}
 	else {
-		 $body .= $q->h1('Delete Host');         # level 1 header
-		 $body .= $q->p('Enter host to delete');
-		 $body .= $q->start_form(-method=>"GET",
+		 $host_page .= $q->h1('Delete Host');         # level 1 header
+		 $host_page .= $q->p('Enter host to delete');
+		 $host_page .= $q->start_form(-method=>"GET",
 			    -action=>"api_conf.cgi");
-		 $body .= $q->textfield(-name=>'host',-size=>50,-maxlength=>100);
-		 $body .= $q->submit(-name=>'submit',
+		 $host_page .= $q->textfield(-name=>'host',-size=>50,-maxlength=>100);
+		 $host_page .= $q->submit(-name=>'submit',
 				-value=>'Submit');
-		$body .=  $q->end_form;
+		$host_page .=  $q->end_form;
 	}
-	$body .=  Dumper $c->cookie();
+	$host_page .=  Dumper $c->cookie();
+	return $host_page;
+}
+
+sub body {
+	my $context = new IO::Socket::SSL::SSL_Context(
+	  SSL_version => 'tlsv1',
+	  SSL_verify_mode => Net::SSLeay::VERIFY_NONE(),
+	  );
+	IO::Socket::SSL::set_default_context($context);
+
+	my ($c) = @_; 
+	my $body = '';
+        my $params = $c->req->parameters;
+	my $page_type = $params->{'page_type'};	
+	if ($page_type eq "Hosts") {
+		$body = host $c;
+	} else {
+		$body = selector;
+	}
 	return $body;
 }
 
@@ -112,10 +135,14 @@ sub index {
 	my ( $c ) = @_;
 	$c->stash->{readonly}        = 0;
 	$c->stash->{title}           = 'API Conf';
-	$c->stash->{'extjs_version'} = "6.0.1";
 	$c->stash->{template} = 'api_conf.tt';
 	$c->stash->{testmode} = 1;
-	$c->stash->{body} = body $c;
+	if( !$c->check_user_roles("authorized_for_configuration_information")
+        || !$c->check_user_roles("authorized_for_system_commands")) {
+		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
+	} else {
+		$c->stash->{body} = body $c;
+	}
 }
 =head1 LICENSE
 
