@@ -35,7 +35,7 @@ use Data::Dumper;
 
 sub selector {
 	my $q = CGI->new;
-	my $landing_page = '<br><br><br><br><br><br><br><br>';
+	my $landing_page = '<br>';
 	$landing_page .= '<div class="reportSelectTitle" align="center">Select Type of Config Data You Wish To Edit</div>';
 	$landing_page .= '<br>';
 	$landing_page .= '<br>';
@@ -49,13 +49,27 @@ sub selector {
 	$landing_page .= '</tr>';
 	$landing_page .= '<tr>';
 	$landing_page .= '<td class="reportSelectItem" align="left">';
-	$landing_page .= $q->scrolling_list('page_type', ['Hosts','Host Groups','Services','Service Groups','Contacts','Contact Groups','Timeperiods','Commands'], 8, "false");
+	$landing_page .= '<select name="page_type">';
+	$landing_page .= '<option value="hosts">Hosts</option>
+<!--<option value="hostdependencies">Host Dependencies</option>-->
+<!--<option value="hostescalations">Host Escalations</option>-->
+<option value="hostgroups">Host Groups</option>
+<option value="services">Services</option>
+<option value="servicegroups">Service Groups</option>
+<!--<option value="servicedependencies">Service Dependencies</option>-->
+<!--<option value="serviceescalations">Service Escalations</option>-->
+<option value="contacts">Contacts</option>
+<option value="contactgroups">Contact Groups</option>
+<option value="timeperiods">Timeperiods</option>
+<option value="commands">Commands</option>';
+	$landing_page .= '</select>';
+#	$landing_page .= $q->scrolling_list('page_type', ['Hosts','Host Groups','Services','Service Groups','Contacts','Contact Groups','Timeperiods','Commands']);
 	$landing_page .= '</td>';
 	$landing_page .= '</tr>';
 	$landing_page .= '<tr>';
 	$landing_page .= '<td class="reportSelectItem" >';
-	$landing_page .= $q->submit(-name=>'submit',
-			-value=>'Submit');
+	$landing_page .= $q->submit(-name=>'continue',
+			-value=>'Continue');
 	$landing_page .=  $q->end_form;
 	$landing_page .= '</td>';
 	$landing_page .= '</tr>';
@@ -168,21 +182,21 @@ sub body {
 	my $body = '';
         my $params = $c->req->parameters;
 	my $page_type = $params->{'page_type'};	
-	if ($page_type eq "Hosts") {
+	if ($page_type eq "hosts") {
 		$body = hosts $c;
-	} elsif ($page_type eq "Host Groups") {
+	} elsif ($page_type eq "hostgroups") {
 		$body = host_groups $c;
-	} elsif ($page_type eq "Services") {
+	} elsif ($page_type eq "services") {
 		$body = services $c;
-	} elsif ($page_type eq "Service Groups") {
+	} elsif ($page_type eq "servicegroups") {
 		$body = service_groups $c;
-	} elsif ($page_type eq "Contacts") {
+	} elsif ($page_type eq "contacts") {
 		$body = contacts $c;
-	} elsif ($page_type eq "Contact Groups") {
+	} elsif ($page_type eq "contactgroups") {
 		$body = contact_groups $c;
-	} elsif ($page_type eq "Timeperiods") {
+	} elsif ($page_type eq "timeperiods") {
 		$body = timeperiods $c;
-	} elsif ($page_type eq "Commands") {
+	} elsif ($page_type eq "commands") {
 		$body = commands $c;
 	} else {
 		$body = selector;
@@ -194,6 +208,9 @@ sub index {
 	my ( $c ) = @_;
 	$c->stash->{readonly}        = 0;
 	$c->stash->{title}           = 'API Conf';
+	$c->stash->{subtitle}              = 'API Conf';
+	$c->stash->{infoBoxTitle}          = 'API Conf';
+	$c->stash->{'show_save_reload'}    = 0;
 	$c->stash->{template} = 'api_conf.tt';
 	$c->stash->{testmode} = 1;
 	if( !$c->check_user_roles("authorized_for_configuration_information")
