@@ -35,15 +35,33 @@ use Data::Dumper;
 
 sub selector {
 	my $q = CGI->new;
-	my $landing_page = '';
-	$landing_page .= $q->h1('Select Type of Config Data You Wish To Edit or View');         # level 1 header
-	$landing_page .= $q->p('Object Type:');
+	my $landing_page = '<br><br><br><br><br><br><br><br>';
+	$landing_page .= '<div class="reportSelectTitle" align="center">Select Type of Config Data You Wish To Edit</div>';
+	$landing_page .= '<br>';
+	$landing_page .= '<br>';
 	$landing_page .= $q->start_form(-method=>"POST",
 		    -action=>"api_conf.cgi");
+	$landing_page .= '<div align="center">';
+	$landing_page .= '<table border="0">';
+	$landing_page .= '<tbody>';
+	$landing_page .= '<tr>';
+	$landing_page .= '<td class="reportSelectSubTitle" align="left">Object Type:</td>';
+	$landing_page .= '</tr>';
+	$landing_page .= '<tr>';
+	$landing_page .= '<td class="reportSelectItem" align="left">';
 	$landing_page .= $q->scrolling_list('page_type', ['Hosts','Host Groups','Services','Service Groups','Contacts','Contact Groups','Timeperiods','Commands'], 8, "false");
+	$landing_page .= '</td>';
+	$landing_page .= '</tr>';
+	$landing_page .= '<tr>';
+	$landing_page .= '<td class="reportSelectItem" >';
 	$landing_page .= $q->submit(-name=>'submit',
 			-value=>'Submit');
 	$landing_page .=  $q->end_form;
+	$landing_page .= '</td>';
+	$landing_page .= '</tr>';
+	$landing_page .= '</tbody>';
+	$landing_page .= '</table>';
+	$landing_page .= '</div>';
 
 	return $landing_page;
 }
