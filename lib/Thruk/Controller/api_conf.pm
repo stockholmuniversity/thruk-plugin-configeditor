@@ -98,9 +98,9 @@ sub hosts {
 	# Setting up for api call
 	my $api_user = $config->get('user');
 	my $api_password = $config->get('password');
-	my $api_realm = "Icinga 2";
-	my $api_host = "icinga-lab.it.su.se";
-	my $api_port = "5665";
+	my $api_realm = $config->get('realm');
+	my $api_host = $config->get('host');
+	my $api_port = $config->get('port');
 	my $api_delete_url = "https://$api_host:$api_port/v1/objects/hosts/$host?cascade=1";
 	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
 	$ua->default_header('Accept' => 'application/json');
@@ -114,7 +114,7 @@ sub hosts {
 		 $host_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
 		 $host_page .= $q->hidden('host',$host);
-		 $host_page .= $q->hidden('page_type',"Hosts");
+		 $host_page .= $q->hidden('page_type',"hosts");
 		 $host_page .= $q->submit(-name=>'confirm',
 				-value=>'Confirm');
 		$host_page .=  $q->end_form;
