@@ -35,6 +35,21 @@ use Data::Dumper;
 
 sub selector {
 	my $q = CGI->new;
+	my %pagetypes = (
+		'hosts' => 'Hosts', 
+		'hostdependencies' => 'Host Dependencies',
+		'hostescalations' => 'Host Escalations', 
+		'hostgroups' => 'Host Groups',
+		'services' => 'Services',
+		'servicegroups' => 'Service Groups',
+		'servicedependencies' => 'Service Dependencies',
+		'serviceescalations' => 'Service Escalations',
+		'contacts' => 'Contacts',
+		'contactgroups' => 'Contact Groups',
+		'timeperiods' => 'Timeperiods',
+		'commands' =>'Commands',
+	);
+
 	my $landing_page = '<br>';
 	$landing_page .= '<div class="reportSelectTitle" align="center">Select Type of Config Data You Wish To Edit</div>';
 	$landing_page .= '<br>';
@@ -50,20 +65,10 @@ sub selector {
 	$landing_page .= '<tr>';
 	$landing_page .= '<td class="reportSelectItem" align="left">';
 	$landing_page .= '<select name="page_type">';
-	$landing_page .= '<option value="hosts">Hosts</option>
-<!--<option value="hostdependencies">Host Dependencies</option>-->
-<!--<option value="hostescalations">Host Escalations</option>-->
-<option value="hostgroups">Host Groups</option>
-<option value="services">Services</option>
-<option value="servicegroups">Service Groups</option>
-<!--<option value="servicedependencies">Service Dependencies</option>-->
-<!--<option value="serviceescalations">Service Escalations</option>-->
-<option value="contacts">Contacts</option>
-<option value="contactgroups">Contact Groups</option>
-<option value="timeperiods">Timeperiods</option>
-<option value="commands">Commands</option>';
-	$landing_page .= '</select>';
-#	$landing_page .= $q->scrolling_list('page_type', ['Hosts','Host Groups','Services','Service Groups','Contacts','Contact Groups','Timeperiods','Commands']);
+	foreach my $type ( sort keys %pagetypes ) {
+		$landing_page .= "<option value=\"$type\">$pagetypes{$type}</option>";
+	}
+	$landing_page .= '</select">';
 	$landing_page .= '</td>';
 	$landing_page .= '</tr>';
 	$landing_page .= '<tr>';
@@ -106,6 +111,12 @@ sub hosts {
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 
+	# Get hosts
+	my @temp_arr;
+	for my $hashref (values $c->stash->{hosts}) {
+        	push @temp_arr,  $hashref->{name};
+	}
+	my @host_arr = sort @temp_arr;
 
 	# This case is first dialog
 	if (not defined($confirm) and $host  =~ m/\..*\./  ) {
@@ -130,16 +141,21 @@ sub hosts {
 	}
 
 	else {
-		 $host_page .= $q->h1('Delete Host');         # level 1 header
-		 $host_page .= $q->p('Enter host to delete');
-		 $host_page .= $q->start_form(-method=>"GET",
+		$host_page .= $q->h1('Delete Host');         # level 1 header
+		$host_page .= $q->p('Enter host to delete');
+		$host_page .= $q->start_form(-method=>"GET",
 			    -action=>"api_conf.cgi");
-		 $host_page .= $q->textfield(-name=>'host',-size=>50,-maxlength=>100);
-		 $host_page .= $q->submit(-name=>'submit',
+		#$host_page .= $q->textfield(-name=>'host',-size=>50,-maxlength=>100);
+		$host_page .= '<select name="host">';
+		for my $ho ( @host_arr ) {
+			$host_page .= "<option value=\"$ho\">$ho</option>";
+		}
+		$host_page .= '</select">';
+		$host_page .= $q->hidden('page_type',"hosts");
+		$host_page .= $q->submit(-name=>'submit',
 				-value=>'Submit');
 		$host_page .=  $q->end_form;
 	}
-	#$host_page .= Dumper $c->stash->{hosts};
 	return $host_page;
 }
 
@@ -213,21 +229,8 @@ sub index {
 	$c->stash->{'show_save_reload'}    = 0;
 	$c->stash->{template} = 'api_conf.tt';
 	$c->stash->{testmode} = 1;
-	my $style='uprobs';
-	my $hostfilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1}, {'acknowledged' => 0}, {'scheduled_downtime_depth' => 0} ];
-	my $servicefilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1}, {'acknowledged' => 0}, {'scheduled_downtime_depth' => 0} ];
-	if(defined $c->req->parameters->{'style'}) {
-	$style=$c->req->parameters->{'style'};
-	}
-
-	if ($style eq 'aprobs') {
-		$hostfilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1} ];
-		$servicefilter = [ { 'state'=> { '>' => 0 } }, {'has_been_checked' => 1} ];
-	}
-	my $services = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services'), $servicefilter ]);
-	my $hosts = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts'), $hostfilter ]);
-	$c->stash->{services}  = $services;
-	$c->stash->{hosts}     = $hosts;
+	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); # , $servicefilter ]);
+	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); #, $hostfilter ]);
 	if( !$c->check_user_roles("authorized_for_configuration_information")
         || !$c->check_user_roles("authorized_for_system_commands")) {
 		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
