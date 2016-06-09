@@ -172,7 +172,30 @@ sub host_dependencies {
 }
 
 sub services {
-	return "Services Placeholder";
+	use JSON::XS qw(encode_json decode_json);
+	use File::Slurp qw(read_file write_file);
+	use Data::Dumper;
+
+	my ($c) = @_; 
+
+        # Get services
+	my %check = ();
+	foreach my $hash ($c->stash->{services} ) {
+		foreach my $service (values $hash) {
+			$check{ $service->{host_name} }{$service->{display_name} } =  $service->{check_command} ;
+		}
+	}
+	my $service_page = '';
+	foreach my $service_host (keys %check ) {
+		$service_page .= "<p>$service_host</p>";
+		$service_page .= "<ul>";
+		foreach my $checks ( keys $check{$service_host}) {
+			$service_page .= "<li>$checks: $check{$service_host}{$checks}</li>";
+		}
+		$service_page .= "</ul>";
+			
+	}
+	return $service_page;
 }
 
 sub service_groups {
@@ -241,8 +264,9 @@ sub index {
 	$c->stash->{'no_auto_reload'}      = 1;
 	$c->stash->{template} = 'api_conf.tt';
 	$c->stash->{testmode} = 1;
-	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); # , $servicefilter ]);
-	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); #, $hostfilter ]);
+	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); 
+	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); 
+	$c->stash->{commands} = $c->{'db'}->get_commands(); 
 	if( !$c->check_user_roles("authorized_for_configuration_information")
         || !$c->check_user_roles("authorized_for_system_commands")) {
 		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
