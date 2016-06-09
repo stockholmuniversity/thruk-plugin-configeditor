@@ -172,10 +172,6 @@ sub host_dependencies {
 }
 
 sub services {
-	use JSON::XS qw(encode_json decode_json);
-	use File::Slurp qw(read_file write_file);
-	use Data::Dumper;
-
 	my ($c) = @_; 
 
         # Get services
@@ -215,7 +211,16 @@ sub timeperiods {
 }
 
 sub commands {
-	return "Commands Placeholder";
+	my ($c) = @_; 
+	my $command_page = '';
+
+	foreach my $hash (values $c->stash->{commands}) {
+			my $name = $hash->{name};
+			$name =~ s/check_//g;
+			$command_page .= $name;
+	}
+
+	return  $command_page;
 }
 
 sub body {
