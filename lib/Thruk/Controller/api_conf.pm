@@ -50,7 +50,7 @@ sub selector {
 		'commands' =>'Commands',
 	);
 
-	my $landing_page = '<br>';
+	my $landing_page = '<br><br>';
 	$landing_page .= '<div class="reportSelectTitle" align="center">Select Type of Config Data You Wish To Edit</div>';
 	$landing_page .= '<br>';
 	$landing_page .= '<br>';
@@ -163,6 +163,14 @@ sub host_groups {
 	return "Host Groups Placeholder";
 }
 
+sub host_escalations {
+	return "Host Groups Placeholder";
+}
+
+sub host_dependencies {
+	return "Host Groups Placeholder";
+}
+
 sub services {
 	return "Services Placeholder";
 }
@@ -202,6 +210,10 @@ sub body {
 		$body = hosts $c;
 	} elsif ($page_type eq "hostgroups") {
 		$body = host_groups $c;
+	} elsif ($page_type eq "hostescalations") {
+		$body = host_groups $c;
+	} elsif ($page_type eq "hostdependencies") {
+		$body = host_groups $c;
 	} elsif ($page_type eq "services") {
 		$body = services $c;
 	} elsif ($page_type eq "servicegroups") {
@@ -226,7 +238,7 @@ sub index {
 	$c->stash->{title}           = 'API Conf';
 	$c->stash->{subtitle}              = 'API Conf';
 	$c->stash->{infoBoxTitle}          = 'API Conf';
-	$c->stash->{'show_save_reload'}    = 0;
+	$c->stash->{'no_auto_reload'}      = 1;
 	$c->stash->{template} = 'api_conf.tt';
 	$c->stash->{testmode} = 1;
 	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); # , $servicefilter ]);
