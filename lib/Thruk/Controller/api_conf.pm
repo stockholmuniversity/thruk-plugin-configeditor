@@ -89,16 +89,16 @@ sub hosts {
 	my ($c) = @_; 
 	my $host_page = '';
 
-	# Read config file
-	my $config_file = "/local/icinga2/conf/api-credentials.json";
-	my $config = Config::JSON->new($config_file);
-
 	# Set up cgi
 	my $q = CGI->new;
 	my $params = $c->req->parameters;
 	#Get host and see if this is the delete request or not
 	my $host = $params->{'host'};
 	my $confirm = $params->{'confirm'};
+
+	# Read config file
+	my $config_file = "/local/icinga2/conf/api-credentials.json";
+	my $config = Config::JSON->new($config_file);
 
 	# Setting up for api call
 	my $api_user = $config->get('user');
@@ -120,13 +120,13 @@ sub hosts {
 
 	# This case is first dialog
 	if (not defined($confirm) and $host  =~ m/\..*\./  ) {
-		 $host_page .= $q->h1('Delete Host');         # level 1 header
-		 $host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
-		 $host_page .= $q->start_form(-method=>"POST",
+		$host_page .= $q->h1('Delete Host');         # level 1 header
+		$host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
+		$host_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
-		 $host_page .= $q->hidden('host',$host);
-		 $host_page .= $q->hidden('page_type',"hosts");
-		 $host_page .= $q->submit(-name=>'confirm',
+		$host_page .= $q->hidden('host',$host);
+		$host_page .= $q->hidden('page_type',"hosts");
+		$host_page .= $q->submit(-name=>'confirm',
 				-value=>'Confirm');
 		$host_page .=  $q->end_form;
 
@@ -173,6 +173,29 @@ sub host_dependencies {
 
 sub services {
 	my ($c) = @_; 
+	my $q = CGI->new;
+	my $params = $c->req->parameters;
+
+	#Get host and see if this is the delete request or not
+	my $host = $params->{'host'};
+	my $confirm = $params->{'confirm'};
+	my $submit = $params->{'submit'};
+	my $service = $params->{'service'};
+
+	# Read config file
+	my $config_file = "/local/icinga2/conf/api-credentials.json";
+	my $config = Config::JSON->new($config_file);
+
+	# Setting up for api call
+	my $api_user = $config->get('user');
+	my $api_password = $config->get('password');
+	my $api_realm = $config->get('realm');
+	my $api_host = $config->get('host');
+	my $api_port = $config->get('port');
+	my $api_delete_url = "https://$api_host:$api_port/v1/objects/services/$host!$service";
+	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
+	$ua->default_header('Accept' => 'application/json');
+	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 
         # Get services
 	my %check = ();
@@ -182,15 +205,63 @@ sub services {
 		}
 	}
 	my $service_page = '';
-	foreach my $service_host (keys %check ) {
-		$service_page .= "<p>$service_host</p>";
-		$service_page .= "<ul>";
-		foreach my $checks ( keys $check{$service_host}) {
-			$service_page .= "<li>$checks: $check{$service_host}{$checks}</li>";
+
+	$service_page .= $q->h1('Services');         # level 1 header
+	if ( $host  =~ m/\..*\./ and not defined($confirm) and not $service =~ m/.+/ ) {
+               $service_page .= $q->p("Enter service to modify for host: $host ");
+               $service_page .= $q->start_form(-method=>"GET",
+                           -action=>"api_conf.cgi");
+               $service_page .= '<select name="service">';
+               foreach my $checks ( sort keys $check{$host}) {
+			$service_page .= "<li>$checks: $check{$host}{$checks}</li>";
+			$service_page .= "<option value=\"$checks\">$check{$host}{$checks}</option>";
+               }
+               $service_page .= '</select">';
+               $service_page .= $q->hidden('page_type',"services");
+               $service_page .= $q->hidden('host',$host);
+               $service_page .= $q->submit(-name=>'submit',
+                               -value=>'Submit');
+               $service_page .=  $q->end_form;
+	} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $service =~ m/.+/ ) {
+               $service_page .= $q->p('Are you sure you want to delete ' . $service . ' for host: ' . $host .'?<br/>');
+               $service_page .= $q->start_form(-method=>"GET",
+                            -action=>"api_conf.cgi");
+               $service_page .= $q->hidden('host',$host);
+               $service_page .= $q->hidden('page_type',"services");
+               $service_page .= $q->hidden('service',$service);
+               $service_page .= $q->submit(-name=>'confirm',
+                                -value=>'Confirm');
+               $service_page .=  $q->end_form;
+	} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $service =~ m/.+/ ) {
+               my $req = HTTP::Request->new(DELETE => $api_delete_url);
+               my $response = $ua->request($req);
+               $service_page .= $q->p("Result from API was:");
+               $service_page .= $q->p($response->decoded_content);
+	} else {
+		$service_page .= $q->p('Enter host to modify');
+		$service_page .= $q->start_form(-method=>"GET",
+			    -action=>"api_conf.cgi");
+		$service_page .= '<select name="host">';
+		foreach my $service_host (sort keys %check ) {
+			$service_page .= "<option value=\"$service_host\">$service_host</option>";
+				
 		}
-		$service_page .= "</ul>";
-			
+		$service_page .= '</select">';
+		$service_page .= $q->hidden('page_type',"services");
+		$service_page .= $q->submit(-name=>'submit',
+				-value=>'Submit');
+		$service_page .=  $q->end_form;
 	}
+
+#	foreach my $service_host (sort keys %check ) {
+#		$service_page .= "<p>$service_host</p>";
+#		$service_page .= "<ul>";
+#		foreach my $checks ( sort keys $check{$service_host}) {
+#			$service_page .= "<li>$checks: $check{$service_host}{$checks}</li>";
+#		}
+#		$service_page .= "</ul>";
+#			
+#	}
 	return $service_page;
 }
 
