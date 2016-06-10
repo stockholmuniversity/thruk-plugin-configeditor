@@ -41,6 +41,7 @@ use Config::JSON;
 use Net::SSLGlue::LWP;
 use IO::Socket::SSL;
 use Data::Dumper;
+use JSON::XS qw(encode_json decode_json);
 
 sub selector {
 	my $q = CGI->new;
@@ -104,6 +105,7 @@ sub hosts {
 	#Get host and see if this is the delete request or not
 	my $host = $params->{'host'};
 	my $confirm = $params->{'confirm'};
+	my $cascading = $params->{'cascading'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -135,6 +137,7 @@ sub hosts {
 			    -action=>"api_conf.cgi");
 		$host_page .= $q->hidden('host',$host);
 		$host_page .= $q->hidden('page_type',"hosts");
+                $host_page .= $q->checkbox('cascading',0,'true','Use cascading delete - WARNING');
 		$host_page .= $q->submit(-name=>'confirm',
 				-value=>'Confirm');
 		$host_page .=  $q->end_form;
@@ -143,10 +146,15 @@ sub hosts {
 
 	# This case is delete request
 	elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
+		if ($cascading eq "true") {
+			$api_delete_url .= '?cascade=1';
+		}
 		my $req = HTTP::Request->new(DELETE => $api_delete_url);
 		my $response = $ua->request($req);
+		my @arr = decode_json $response->decoded_content;
 		$host_page .= $q->p("Result from API was:");
-		$host_page .= $q->p($response->decoded_content);
+		$host_page .= $q->p($arr[0]{results}[0]{status});
+		$host_page .= $q->p($arr[0]{results}[0]{errors});
 	}
 
 	else {
@@ -241,10 +249,12 @@ sub services {
                                 -value=>'Confirm');
                $service_page .=  $q->end_form;
 	} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $service =~ m/.+/ ) {
-               my $req = HTTP::Request->new(DELETE => $api_delete_url);
-               my $response = $ua->request($req);
-               $service_page .= $q->p("Result from API was:");
-               $service_page .= $q->p($response->decoded_content);
+                my $req = HTTP::Request->new(DELETE => $api_delete_url);
+                my $response = $ua->request($req);
+		my @arr = decode_json $response->decoded_content;
+		$service_page .= $q->p("Result from API was:");
+		$service_page .= $q->p($arr[0]{results}[0]{status});
+		$service_page .= $q->p($arr[0]{results}[0]{errors});
 	} else {
 		$service_page .= $q->p('Enter host to modify');
 		$service_page .= $q->start_form(-method=>"POST",
@@ -322,8 +332,10 @@ sub commands {
 		}
 		my $req = HTTP::Request->new(DELETE => $api_delete_url);
                 my $response = $ua->request($req);
-                $command_page .= $q->p("Result from API was:");
-                $command_page .= $q->p($response->decoded_content);
+		my @arr = decode_json $response->decoded_content;
+		$command_page .= $q->p("Result from API was:");
+		$command_page .= $q->p($arr[0]{results}[0]{status});
+		$command_page .= $q->p($arr[0]{results}[0]{errors});
 	} else {
 		$command_page .= $q->p('Enter command to modify');
 		$command_page .= $q->start_form(-method=>"POST",
