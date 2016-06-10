@@ -117,7 +117,7 @@ sub hosts {
 	my $api_realm = $config->get('realm');
 	my $api_host = $config->get('host');
 	my $api_port = $config->get('port');
-	my $api_delete_url = "https://$api_host:$api_port/v1/objects/hosts/$host";
+	my $api_url = "https://$api_host:$api_port/v1/objects/hosts/$host";
 	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
@@ -147,9 +147,9 @@ sub hosts {
 	# This case is delete request
 	elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
 		if ($cascading eq "true") {
-			$api_delete_url .= '?cascade=1';
+			$api_url .= '?cascade=1';
 		}
-		my $req = HTTP::Request->new(DELETE => $api_delete_url);
+		my $req = HTTP::Request->new(DELETE => $api_url);
 		my $response = $ua->request($req);
 		my @arr = decode_json $response->decoded_content;
 		$host_page .= $q->p("Result from API was:");
@@ -208,7 +208,7 @@ sub services {
 	my $api_realm = $config->get('realm');
 	my $api_host = $config->get('host');
 	my $api_port = $config->get('port');
-	my $api_delete_url = "https://$api_host:$api_port/v1/objects/services/$host!$service";
+	my $api_url = "https://$api_host:$api_port/v1/objects/services/$host!$service";
 	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
@@ -249,7 +249,7 @@ sub services {
                                 -value=>'Confirm');
                $service_page .=  $q->end_form;
 	} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $service =~ m/.+/ ) {
-                my $req = HTTP::Request->new(DELETE => $api_delete_url);
+                my $req = HTTP::Request->new(DELETE => $api_url);
                 my $response = $ua->request($req);
 		my @arr = decode_json $response->decoded_content;
 		$service_page .= $q->p("Result from API was:");
@@ -298,7 +298,10 @@ sub commands {
 	#Get command and see if this is the delete request or not
 	my $confirm = $params->{'confirm'};
 	my $command = $params->{'command'};
+	my $commandline = $params->{'commandline'};
 	my $cascading = $params->{'cascading'};
+	my $mode = $params->{'mode'};
+	my $submit = $params->{'submit'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -310,48 +313,98 @@ sub commands {
 	my $api_realm = $config->get('realm');
 	my $api_host = $config->get('host');
 	my $api_port = $config->get('port');
-	my $api_delete_url = "https://$api_host:$api_port/v1/objects/checkcommands/$command";
+	my $api_url = "https://$api_host:$api_port/v1/objects/checkcommands/$command";
 	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 	my $command_page = '';
+	
+	if ( $mode eq "delete") {
+		if ( not defined($confirm) and  $command =~ m/.+/ ) {
+			$command_page .= $q->p('Are you sure you want to delete ' . $command . '?<br/>');
+			$command_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+			$command_page .= $q->hidden('page_type',"commands");
+			$command_page .= $q->hidden('command',$command);
+			$command_page .= $q->hidden('mode',"delete");
+			$command_page .= $q->checkbox('cascading',0,'true','Use cascading delete - WARNING');
+			$command_page .= $q->submit(-name=>'confirm',
+					-value=>'Confirm');
+			$command_page .=  $q->end_form;
+		} elsif ( $confirm eq "Confirm" and  $command =~ m/.+/ ) {
+			if ($cascading eq "true") {
+				$api_url .= '?cascade=1';
+			}
+			my $req = HTTP::Request->new(DELETE => $api_url);
+			my $response = $ua->request($req);
+			my @arr = decode_json $response->decoded_content;
+			$command_page .= $q->p("Result from API was:");
+			$command_page .= $q->p($arr[0]{results}[0]{status});
+			$command_page .= $q->p($arr[0]{results}[0]{errors});
+		} else {
+			$command_page .= $q->p('Enter command to delete');
+			$command_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+			$command_page .= '<select name="command">';
+			foreach my $hash (values $c->stash->{commands}) {
+				my $name = $hash->{name};
+				$name =~ s/check_//g;
+				$command_page .= "<option value=\"$name\">$hash->{name}</option>";
+			}
+			$command_page .= '</select">';
+			$command_page .= $q->hidden('page_type',"commands");
+			$command_page .= $q->hidden('mode',"delete");
+			$command_page .= $q->submit(-name=>'submit',
+					-value=>'Submit');
+			$command_page .=  $q->end_form;
 
-	if ( not defined($confirm) and  $command =~ m/.+/ ) {
-               	$command_page .= $q->p('Are you sure you want to delete ' . $command . '?<br/>');
-               	$command_page .= $q->start_form(-method=>"GET",
-                            -action=>"api_conf.cgi");
-               	$command_page .= $q->hidden('page_type',"commands");
-               	$command_page .= $q->hidden('command',$command);
-		$command_page .= $q->checkbox('cascading',0,'true','Use cascading delete - WARNING');
-               	$command_page .= $q->submit(-name=>'confirm',
-                                -value=>'Confirm');
-               	$command_page .=  $q->end_form;
-	} elsif ( $confirm eq "Confirm" and  $command =~ m/.+/ ) {
-		if ($cascading eq "true") {
-			$api_delete_url .= '?cascade=1';
 		}
-		my $req = HTTP::Request->new(DELETE => $api_delete_url);
-                my $response = $ua->request($req);
-		my @arr = decode_json $response->decoded_content;
-		$command_page .= $q->p("Result from API was:");
-		$command_page .= $q->p($arr[0]{results}[0]{status});
-		$command_page .= $q->p($arr[0]{results}[0]{errors});
+	} elsif ($mode eq "create") {
+		if ($confirm eq "Confirm" and $commandline =~ m/.+/  and  $command =~ m/.+/ ) {
+			my $payload = '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "' . $commandline . '" ]} }';	
+			my $req = HTTP::Request->new(PUT => $api_url);
+			$req->add_content( $payload );
+			my $response = $ua->request($req);
+			my @arr = decode_json $response->decoded_content;
+			$command_page .= $q->p("Result from API was:");
+			$command_page .= $q->p($arr[0]{results}[0]{status});
+			$command_page .= $q->p($arr[0]{results}[0]{errors});
+		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
+			$command_page .= $q->p('Are you sure you want to create ' . $command . ' with commandline: ' . $commandline . '?<br/>');
+			$command_page .= $q->start_form(-method=>"GET",
+				    -action=>"api_conf.cgi");
+			$command_page .= $q->hidden('page_type',"commands");
+			$command_page .= $q->hidden('command',$command);
+			$command_page .= $q->hidden('commandline',$commandline);
+			$command_page .= $q->hidden('mode',"create");
+			$command_page .= $q->submit(-name=>'confirm',
+					-value=>'Confirm');
+			$command_page .=  $q->end_form;
+		} else {
+                        $command_page .= $q->start_form(-method=>"GET",
+                            -action=>"api_conf.cgi");
+                        $command_page .= $q->p("Enter command name (\"check_\" will be prepended automaticaly):");
+                        $command_page .= $q->textfield('command','',50,80);
+                        $command_page .= $q->p("Enter commandline to be executed:");
+                        $command_page .= $q->textfield('commandline','',50,80);
+                        $command_page .= $q->hidden('page_type',"commands");
+                        $command_page .= $q->hidden('mode',"create");
+                        $command_page .= $q->submit(-name=>'submit',
+                                -value=>'Submit');
+                	$command_page .=  $q->end_form;
+		}
 	} else {
-		$command_page .= $q->p('Enter command to modify');
+		$command_page .= $q->p('Which do you want to do?');
 		$command_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
-		$command_page .= '<select name="command">';
-		foreach my $hash (values $c->stash->{commands}) {
-			my $name = $hash->{name};
-			$name =~ s/check_//g;
-			$command_page .= "<option value=\"$name\">$hash->{name}</option>";
-		}
+		$command_page .= '<select name="mode">';
+		$command_page .= "<option value=\"create\">Create</option>";
+		$command_page .= "<option value=\"delete\">Destroy</option>";
 		$command_page .= '</select">';
 		$command_page .= $q->hidden('page_type',"commands");
 		$command_page .= $q->submit(-name=>'submit',
 				-value=>'Submit');
 		$command_page .=  $q->end_form;
-
 	}
 	return  $command_page;
 }
