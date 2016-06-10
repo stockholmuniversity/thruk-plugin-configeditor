@@ -5,18 +5,30 @@ use warnings;
 
 =head1 NAME
 
-Thruk::Controller::api_conf - Thruk Controller
+Thruk::Controller::api_conf - Thruk Controller via Icinga2 API
 
 =head1 DESCRIPTION
 
-Thruk Controller.
+Thruk Controller making use of Icinga2 API.
 
 =head1 METHODS
+
+=head2 index
+
+This is the entry point 
+
+=head2 selector
+
+This displays the main scroll list och different type of objects
+
+=head2 body
+
+Some common initializations and setting main body variable for the template
 
 =cut
 
 BEGIN {
-    #use Thruk::Timer qw/timing_breakpoint/;
+    # Not in use yet;
 }
 
 
@@ -29,24 +41,21 @@ use Config::JSON;
 use Net::SSLGlue::LWP;
 use IO::Socket::SSL;
 use Data::Dumper;
-=head2 index
-=head2 body
-=cut
 
 sub selector {
 	my $q = CGI->new;
 	my %pagetypes = (
 		'hosts' => 'Hosts', 
-		'hostdependencies' => 'Host Dependencies',
-		'hostescalations' => 'Host Escalations', 
-		'hostgroups' => 'Host Groups',
+	#	'hostdependencies' => 'Host Dependencies',
+	#	'hostescalations' => 'Host Escalations', 
+	#	'hostgroups' => 'Host Groups',
 		'services' => 'Services',
-		'servicegroups' => 'Service Groups',
-		'servicedependencies' => 'Service Dependencies',
-		'serviceescalations' => 'Service Escalations',
-		'contacts' => 'Contacts',
-		'contactgroups' => 'Contact Groups',
-		'timeperiods' => 'Timeperiods',
+	#	'servicegroups' => 'Service Groups',
+	#	'servicedependencies' => 'Service Dependencies',
+	#	'serviceescalations' => 'Service Escalations',
+	#	'contacts' => 'Contacts',
+	#	'contactgroups' => 'Contact Groups',
+	#	'timeperiods' => 'Timeperiods',
 		'commands' =>'Commands',
 	);
 
@@ -106,7 +115,7 @@ sub hosts {
 	my $api_realm = $config->get('realm');
 	my $api_host = $config->get('host');
 	my $api_port = $config->get('port');
-	my $api_delete_url = "https://$api_host:$api_port/v1/objects/hosts/$host?cascade=1";
+	my $api_delete_url = "https://$api_host:$api_port/v1/objects/hosts/$host";
 	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
@@ -141,7 +150,7 @@ sub hosts {
 	}
 
 	else {
-		$host_page .= $q->h1('Delete Host');         # level 1 header
+		$host_page .= $q->h1('Delete Host');
 		$host_page .= $q->p('Enter host to delete');
 		$host_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
@@ -273,14 +282,65 @@ sub timeperiods {
 
 sub commands {
 	my ($c) = @_; 
+	my $q = CGI->new;
+	my $params = $c->req->parameters;
+
+	#Get command and see if this is the delete request or not
+	my $confirm = $params->{'confirm'};
+	my $command = $params->{'command'};
+	my $cascading = $params->{'cascading'};
+
+	# Read config file
+	my $config_file = "/local/icinga2/conf/api-credentials.json";
+	my $config = Config::JSON->new($config_file);
+
+	# Setting up for api call
+	my $api_user = $config->get('user');
+	my $api_password = $config->get('password');
+	my $api_realm = $config->get('realm');
+	my $api_host = $config->get('host');
+	my $api_port = $config->get('port');
+	my $api_delete_url = "https://$api_host:$api_port/v1/objects/checkcommands/$command";
+	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
+	$ua->default_header('Accept' => 'application/json');
+	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 	my $command_page = '';
 
-	foreach my $hash (values $c->stash->{commands}) {
+	if ( not defined($confirm) and  $command =~ m/.+/ ) {
+               	$command_page .= $q->p('Are you sure you want to delete ' . $command . '?<br/>');
+               	$command_page .= $q->start_form(-method=>"GET",
+                            -action=>"api_conf.cgi");
+               	$command_page .= $q->hidden('page_type',"commands");
+               	$command_page .= $q->hidden('command',$command);
+		$command_page .= $q->checkbox('cascading',0,'true','Use cascading delete - WARNING');
+               	$command_page .= $q->submit(-name=>'confirm',
+                                -value=>'Confirm');
+               	$command_page .=  $q->end_form;
+	} elsif ( $confirm eq "Confirm" and  $command =~ m/.+/ ) {
+		if ($cascading eq "true") {
+			$api_delete_url .= '?cascade=1';
+		}
+		my $req = HTTP::Request->new(DELETE => $api_delete_url);
+                my $response = $ua->request($req);
+                $command_page .= $q->p("Result from API was:");
+                $command_page .= $q->p($response->decoded_content);
+	} else {
+		$command_page .= $q->p('Enter command to modify');
+		$command_page .= $q->start_form(-method=>"POST",
+			    -action=>"api_conf.cgi");
+		$command_page .= '<select name="command">';
+		foreach my $hash (values $c->stash->{commands}) {
 			my $name = $hash->{name};
 			$name =~ s/check_//g;
-			$command_page .= $name . "\n";
-	}
+			$command_page .= "<option value=\"$name\">$hash->{name}</option>";
+		}
+		$command_page .= '</select">';
+		$command_page .= $q->hidden('page_type',"commands");
+		$command_page .= $q->submit(-name=>'submit',
+				-value=>'Submit');
+		$command_page .=  $q->end_form;
 
+	}
 	return  $command_page;
 }
 
