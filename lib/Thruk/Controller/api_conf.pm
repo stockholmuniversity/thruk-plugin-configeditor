@@ -143,9 +143,8 @@ sub hosts {
 	else {
 		$host_page .= $q->h1('Delete Host');         # level 1 header
 		$host_page .= $q->p('Enter host to delete');
-		$host_page .= $q->start_form(-method=>"GET",
+		$host_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
-		#$host_page .= $q->textfield(-name=>'host',-size=>50,-maxlength=>100);
 		$host_page .= '<select name="host">';
 		for my $ho ( @host_arr ) {
 			$host_page .= "<option value=\"$ho\">$ho</option>";
@@ -209,7 +208,7 @@ sub services {
 	$service_page .= $q->h1('Services');         # level 1 header
 	if ( $host  =~ m/\..*\./ and not defined($confirm) and not $service =~ m/.+/ ) {
                $service_page .= $q->p("Enter service to modify for host: $host ");
-               $service_page .= $q->start_form(-method=>"GET",
+               $service_page .= $q->start_form(-method=>"POST",
                            -action=>"api_conf.cgi");
                $service_page .= '<select name="service">';
                foreach my $checks ( sort keys $check{$host}) {
@@ -224,7 +223,7 @@ sub services {
                $service_page .=  $q->end_form;
 	} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $service =~ m/.+/ ) {
                $service_page .= $q->p('Are you sure you want to delete ' . $service . ' for host: ' . $host .'?<br/>');
-               $service_page .= $q->start_form(-method=>"GET",
+               $service_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
                $service_page .= $q->hidden('host',$host);
                $service_page .= $q->hidden('page_type',"services");
@@ -239,7 +238,7 @@ sub services {
                $service_page .= $q->p($response->decoded_content);
 	} else {
 		$service_page .= $q->p('Enter host to modify');
-		$service_page .= $q->start_form(-method=>"GET",
+		$service_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
 		$service_page .= '<select name="host">';
 		foreach my $service_host (sort keys %check ) {
@@ -253,15 +252,6 @@ sub services {
 		$service_page .=  $q->end_form;
 	}
 
-#	foreach my $service_host (sort keys %check ) {
-#		$service_page .= "<p>$service_host</p>";
-#		$service_page .= "<ul>";
-#		foreach my $checks ( sort keys $check{$service_host}) {
-#			$service_page .= "<li>$checks: $check{$service_host}{$checks}</li>";
-#		}
-#		$service_page .= "</ul>";
-#			
-#	}
 	return $service_page;
 }
 
@@ -288,7 +278,7 @@ sub commands {
 	foreach my $hash (values $c->stash->{commands}) {
 			my $name = $hash->{name};
 			$name =~ s/check_//g;
-			$command_page .= $name;
+			$command_page .= $name . "\n";
 	}
 
 	return  $command_page;

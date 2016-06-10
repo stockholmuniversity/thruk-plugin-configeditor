@@ -2,3 +2,38 @@
 
 This plugin allows you to configure Icinga2 via the in built HTTP API.
 
+Add this to thruk_local to get access to deletions from the action menu:
+
+<action_menu_items>
+    hostmenu = {\
+       "icon": "/thruk/themes/{{theme}}/images/dropdown.png",\
+       "title": "Host Menu",\
+       "menu": [\
+           {\
+               "icon": "/thruk/themes/{{theme}}/images/delete.png",\
+               "label": "Delete Host",\
+               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=hosts&host=$HOSTNAME$"\
+           },\
+       ]\
+    }
+    servicemenu = {\
+       "icon": "/thruk/themes/{{theme}}/images/dropdown.png",\
+       "title": "Service Menu",\
+       "menu": [\
+           {\
+               "icon": "/thruk/themes/{{theme}}/images/delete.png",\
+               "label": "Delete Service",\
+               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&host=$HOSTNAME$&service=$SERVICEDESC$"\
+           },\
+       ]\
+    }
+</action_menu_items>
+
+<action_menu_actions>
+</action_menu_actions>
+
+<action_menu_apply>
+    hostmenu    = .*;$             # matches all hosts only
+    servicemenu = .*;.+$           # matches all services on all hosts
+</action_menu_apply>
+
