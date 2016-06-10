@@ -371,7 +371,7 @@ sub commands {
 			$command_page .= $q->p($arr[0]{results}[0]{errors});
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			$command_page .= $q->p('Are you sure you want to create ' . $command . ' with commandline: ' . $commandline . '?<br/>');
-			$command_page .= $q->start_form(-method=>"GET",
+			$command_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 			$command_page .= $q->hidden('page_type',"commands");
 			$command_page .= $q->hidden('command',$command);
