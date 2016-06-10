@@ -302,6 +302,7 @@ sub commands {
 	my $cascading = $params->{'cascading'};
 	my $mode = $params->{'mode'};
 	my $submit = $params->{'submit'};
+	my $arguments = $params->{'arguments'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -361,7 +362,14 @@ sub commands {
 		}
 	} elsif ($mode eq "create") {
 		if ($confirm eq "Confirm" and $commandline =~ m/.+/  and  $command =~ m/.+/ ) {
-			my $payload = '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "' . $commandline . '" ]} }';	
+			my $payload = '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "' . $commandline . '" ]';
+			if ($arguments =~ m/.+/ ) {
+				
+				$payload .= ', "arguments": { "-m": "' . $arguments . '"}';
+			#	$payload .= '"-I": "' . $arguments .'"';
+			#	$payload .= ' }';
+			}
+			$payload .=   '} }';
 			my $req = HTTP::Request->new(PUT => $api_url);
 			$req->add_content( $payload );
 			my $response = $ua->request($req);
@@ -370,7 +378,9 @@ sub commands {
 			$command_page .= $q->p($arr[0]{results}[0]{status});
 			$command_page .= $q->p($arr[0]{results}[0]{errors});
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
-			$command_page .= $q->p('Are you sure you want to create ' . $command . ' with commandline: ' . $commandline . '?<br/>');
+			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
+			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
+			$command_page .= $q->p($mess);
 			$command_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 			$command_page .= $q->hidden('page_type',"commands");
@@ -387,6 +397,8 @@ sub commands {
                         $command_page .= $q->textfield('command','',50,80);
                         $command_page .= $q->p("Enter commandline to be executed:");
                         $command_page .= $q->textfield('commandline','',50,80);
+                        $command_page .= $q->p("Enter arguments (optional):");
+                        $command_page .= $q->textfield('arguments','',50,80);
                         $command_page .= $q->hidden('page_type',"commands");
                         $command_page .= $q->hidden('mode',"create");
                         $command_page .= $q->submit(-name=>'submit',
