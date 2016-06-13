@@ -42,6 +42,7 @@ use Net::SSLGlue::LWP;
 use IO::Socket::SSL;
 use Data::Dumper;
 use JSON::XS qw(encode_json decode_json);
+use Data::Validate::IP qw(is_ipv4 is_ipv6);
 
 sub selector {
 	my $q = CGI->new;
@@ -104,6 +105,7 @@ sub hosts {
 	my $params = $c->req->parameters;
 	#Get host and see if this is the delete request or not
 	my $host = $params->{'host'};
+	my $ip = $params->{'ip'};
 	my $confirm = $params->{'confirm'};
 	my $cascading = $params->{'cascading'};
 	my $mode = $params->{'mode'};
@@ -177,7 +179,32 @@ sub hosts {
 			$host_page .=  $q->end_form;
 		}
 	} elsif ($mode eq "create") {
-		$host_page .= $q->p('Creation happens here');
+		if ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and not $confirm eq "Confirm" ) {
+		        $host_page .= $q->p('Are you sure you want to create ' . $host . ' with ip address: ' . $ip .'?<br/>');
+		        $host_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+		        $host_page .= $q->hidden('host',$host);
+		        $host_page .= $q->hidden('page_type',"hosts");
+			$host_page .= $q->hidden('mode',"create");
+		        $host_page .= $q->hidden('ip',$ip);
+		        $host_page .= $q->submit(-name=>'confirm',
+					-value=>'Confirm');
+		        $host_page .=  $q->end_form;
+		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm")  {
+			$host_page .= "<p>Creation happens here</p>";
+		} else {
+                        $host_page .= $q->start_form(-method=>"GET",
+                            -action=>"api_conf.cgi");
+                        $host_page .= $q->p("Enter hostname:");
+                        $host_page .= $q->textfield('host','',50,80);
+                        $host_page .= $q->p("Enter ip address:");
+                        $host_page .= $q->textfield('ip','',50,80);
+                        $host_page .= $q->hidden('page_type',"hosts");
+                        $host_page .= $q->hidden('mode',"create");
+                        $host_page .= $q->submit(-name=>'submit',
+                                -value=>'Submit');
+                	$host_page .=  $q->end_form;
+		}
 	} else {
 		$host_page .= $q->p('What do you want to do?');
 		$host_page .= $q->start_form(-method=>"POST",
@@ -296,7 +323,6 @@ sub services {
 			$service_page .=  $q->end_form;
 		}
 	} elsif ($mode eq "create") {
-		$service_page .= $q->p('Creation happens here');
 	} else {
 		$service_page .= $q->p('What do you want to do?');
 		$service_page .= $q->start_form(-method=>"POST",
