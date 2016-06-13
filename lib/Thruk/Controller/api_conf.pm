@@ -106,6 +106,7 @@ sub hosts {
 	my $host = $params->{'host'};
 	my $confirm = $params->{'confirm'};
 	my $cascading = $params->{'cascading'};
+	my $mode = $params->{'mode'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -129,43 +130,61 @@ sub hosts {
 	}
 	my @host_arr = sort @temp_arr;
 
-	# This case is first dialog
-	if (not defined($confirm) and $host  =~ m/\..*\./  ) {
-		$host_page .= $q->h1('Delete Host');         # level 1 header
-		$host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
-		$host_page .= $q->start_form(-method=>"POST",
-			    -action=>"api_conf.cgi");
-		$host_page .= $q->hidden('host',$host);
-		$host_page .= $q->hidden('page_type',"hosts");
-                $host_page .= $q->checkbox('cascading',0,'true','Use cascading delete - WARNING');
-		$host_page .= $q->submit(-name=>'confirm',
-				-value=>'Confirm');
-		$host_page .=  $q->end_form;
+	if ($mode eq "delete") {
+		# This case is first dialog
+		if (not defined($confirm) and $host  =~ m/\..*\./  ) {
+			$host_page .= $q->h1('Delete Host');         # level 1 header
+			$host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
+			$host_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+			$host_page .= $q->hidden('host',$host);
+			$host_page .= $q->hidden('page_type',"hosts");
+			$host_page .= $q->hidden('mode',"delete");
+			$host_page .= $q->checkbox('cascading',0,'true','Use cascading delete - WARNING');
+			$host_page .= $q->submit(-name=>'confirm',
+					-value=>'Confirm');
+			$host_page .=  $q->end_form;
 
-	}
-
-	# This case is delete request
-	elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
-		if ($cascading eq "true") {
-			$api_url .= '?cascade=1';
 		}
+
+		# This case is delete request
+		elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
+			if ($cascading eq "true") {
+				$api_url .= '?cascade=1';
+			}
 		my $req = HTTP::Request->new(DELETE => $api_url);
 		my $response = $ua->request($req);
 		my @arr = decode_json $response->decoded_content;
 		$host_page .= $q->p("Result from API was:");
 		$host_page .= $q->p($arr[0]{results}[0]{status});
 		$host_page .= $q->p($arr[0]{results}[0]{errors});
-	}
+		}
 
-	else {
-		$host_page .= $q->h1('Delete Host');
-		$host_page .= $q->p('Enter host to delete');
+		else {
+			$host_page .= $q->h1('Delete Host');
+			$host_page .= $q->p('Enter host to delete');
+			$host_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+			$host_page .= '<select name="host">';
+			for my $ho ( @host_arr ) {
+				$host_page .= "<option value=\"$ho\">$ho</option>";
+			}
+			$host_page .= '</select">';
+			$host_page .= $q->hidden('page_type',"hosts");
+			$host_page .= $q->hidden('mode',"delete");
+			$host_page .= $q->submit(-name=>'submit',
+					-value=>'Submit');
+			$host_page .=  $q->end_form;
+		}
+	} elsif ($mode eq "create") {
+		$host_page .= $q->p('Creation happens here');
+	} else {
+		$host_page .= $q->p('What do you want to do?');
 		$host_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
-		$host_page .= '<select name="host">';
-		for my $ho ( @host_arr ) {
-			$host_page .= "<option value=\"$ho\">$ho</option>";
-		}
+		$host_page .= '<select name="mode">';
+		$host_page .= "<option value=\"create\">Create</option>";
+		$host_page .= "<option value=\"delete\">Destroy</option>";
 		$host_page .= '</select">';
 		$host_page .= $q->hidden('page_type',"hosts");
 		$host_page .= $q->submit(-name=>'submit',
@@ -276,8 +295,10 @@ sub services {
 					-value=>'Submit');
 			$service_page .=  $q->end_form;
 		}
+	} elsif ($mode eq "create") {
+		$service_page .= $q->p('Creation happens here');
 	} else {
-		$service_page .= $q->p('Which do you want to do?');
+		$service_page .= $q->p('What do you want to do?');
 		$service_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
 		$service_page .= '<select name="mode">';
@@ -430,7 +451,7 @@ sub commands {
                 	$command_page .=  $q->end_form;
 		}
 	} else {
-		$command_page .= $q->p('Which do you want to do?');
+		$command_page .= $q->p('What do you want to do?');
 		$command_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
 		$command_page .= '<select name="mode">';
