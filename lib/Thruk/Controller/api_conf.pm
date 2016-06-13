@@ -269,7 +269,6 @@ sub services {
 	}
 	my $service_page = '';
 
-
 	if ( $mode eq "delete") {
 		$service_page .= $q->h1('Services');         # level 1 header
 		if ( $host  =~ m/\..*\./ and not defined($confirm) and not $service =~ m/.+/ ) {
@@ -323,6 +322,7 @@ sub services {
 			$service_page .=  $q->end_form;
 		}
 	} elsif ($mode eq "create") {
+		$service_page .= $q->p('Creation happens here');
 	} else {
 		$service_page .= $q->p('What do you want to do?');
 		$service_page .= $q->start_form(-method=>"POST",
