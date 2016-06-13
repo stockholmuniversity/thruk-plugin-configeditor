@@ -197,6 +197,7 @@ sub services {
 	my $confirm = $params->{'confirm'};
 	my $submit = $params->{'submit'};
 	my $service = $params->{'service'};
+	my $mode = $params->{'mode'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -222,55 +223,72 @@ sub services {
 	}
 	my $service_page = '';
 
-	$service_page .= $q->h1('Services');         # level 1 header
-	if ( $host  =~ m/\..*\./ and not defined($confirm) and not $service =~ m/.+/ ) {
-               $service_page .= $q->p("Enter service to modify for host: $host ");
-               $service_page .= $q->start_form(-method=>"POST",
-                           -action=>"api_conf.cgi");
-               $service_page .= '<select name="service">';
-               foreach my $checks ( sort keys $check{$host}) {
-			$service_page .= "<li>$checks: $check{$host}{$checks}</li>";
-			$service_page .= "<option value=\"$checks\">$check{$host}{$checks}</option>";
-               }
-               $service_page .= '</select">';
-               $service_page .= $q->hidden('page_type',"services");
-               $service_page .= $q->hidden('host',$host);
-               $service_page .= $q->submit(-name=>'submit',
-                               -value=>'Submit');
-               $service_page .=  $q->end_form;
-	} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $service =~ m/.+/ ) {
-               $service_page .= $q->p('Are you sure you want to delete ' . $service . ' for host: ' . $host .'?<br/>');
-               $service_page .= $q->start_form(-method=>"POST",
-                            -action=>"api_conf.cgi");
-               $service_page .= $q->hidden('host',$host);
-               $service_page .= $q->hidden('page_type',"services");
-               $service_page .= $q->hidden('service',$service);
-               $service_page .= $q->submit(-name=>'confirm',
-                                -value=>'Confirm');
-               $service_page .=  $q->end_form;
-	} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $service =~ m/.+/ ) {
-                my $req = HTTP::Request->new(DELETE => $api_url);
-                my $response = $ua->request($req);
-		my @arr = decode_json $response->decoded_content;
-		$service_page .= $q->p("Result from API was:");
-		$service_page .= $q->p($arr[0]{results}[0]{status});
-		$service_page .= $q->p($arr[0]{results}[0]{errors});
+
+	if ( $mode eq "delete") {
+		$service_page .= $q->h1('Services');         # level 1 header
+		if ( $host  =~ m/\..*\./ and not defined($confirm) and not $service =~ m/.+/ ) {
+		        $service_page .= $q->p("Enter service to modify for host: $host ");
+		        $service_page .= $q->start_form(-method=>"POST",
+				   -action=>"api_conf.cgi");
+		        $service_page .= '<select name="service">';
+		        foreach my $checks ( sort keys $check{$host}) {
+				$service_page .= "<li>$checks: $check{$host}{$checks}</li>";
+				$service_page .= "<option value=\"$checks\">$check{$host}{$checks}</option>";
+		        }
+		        $service_page .= '</select">';
+		        $service_page .= $q->hidden('page_type',"services");
+			$service_page .= $q->hidden('mode',"delete");
+		        $service_page .= $q->hidden('host',$host);
+		        $service_page .= $q->submit(-name=>'submit',
+				       -value=>'Submit');
+		        $service_page .=  $q->end_form;
+		} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $service =~ m/.+/ ) {
+		        $service_page .= $q->p('Are you sure you want to delete ' . $service . ' for host: ' . $host .'?<br/>');
+		        $service_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+		        $service_page .= $q->hidden('host',$host);
+		        $service_page .= $q->hidden('page_type',"services");
+			$service_page .= $q->hidden('mode',"delete");
+		        $service_page .= $q->hidden('service',$service);
+		        $service_page .= $q->submit(-name=>'confirm',
+					-value=>'Confirm');
+		        $service_page .=  $q->end_form;
+		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $service =~ m/.+/ ) {
+			my $req = HTTP::Request->new(DELETE => $api_url);
+			my $response = $ua->request($req);
+			my @arr = decode_json $response->decoded_content;
+			$service_page .= $q->p("Result from API was:");
+			$service_page .= $q->p($arr[0]{results}[0]{status});
+			$service_page .= $q->p($arr[0]{results}[0]{errors});
+		} else {
+			$service_page .= $q->p('Enter host to modify');
+			$service_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+			$service_page .= '<select name="host">';
+			foreach my $service_host (sort keys %check ) {
+				$service_page .= "<option value=\"$service_host\">$service_host</option>";
+					
+			}
+			$service_page .= '</select">';
+			$service_page .= $q->hidden('page_type',"services");
+			$service_page .= $q->hidden('mode',"delete");
+			$service_page .= $q->submit(-name=>'submit',
+					-value=>'Submit');
+			$service_page .=  $q->end_form;
+		}
 	} else {
-		$service_page .= $q->p('Enter host to modify');
+		$service_page .= $q->p('Which do you want to do?');
 		$service_page .= $q->start_form(-method=>"POST",
 			    -action=>"api_conf.cgi");
-		$service_page .= '<select name="host">';
-		foreach my $service_host (sort keys %check ) {
-			$service_page .= "<option value=\"$service_host\">$service_host</option>";
-				
-		}
+		$service_page .= '<select name="mode">';
+		$service_page .= "<option value=\"create\">Create</option>";
+		$service_page .= "<option value=\"delete\">Destroy</option>";
 		$service_page .= '</select">';
 		$service_page .= $q->hidden('page_type',"services");
 		$service_page .= $q->submit(-name=>'submit',
 				-value=>'Submit');
 		$service_page .=  $q->end_form;
 	}
-
 	return $service_page;
 }
 
@@ -364,12 +382,16 @@ sub commands {
 		if ($confirm eq "Confirm" and $commandline =~ m/.+/  and  $command =~ m/.+/ ) {
 			my $payload = '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "' . $commandline . '" ]';
 			if ($arguments =~ m/.+/ ) {
-				
-				$payload .= ', "arguments": { "-m": "' . $arguments . '"}';
-			#	$payload .= '"-I": "' . $arguments .'"';
-			#	$payload .= ' }';
+				$payload .= ', "arguments": { ';
+				for my $commas ( split(',', $arguments) ) {
+					my @colon = split(':', $commas);
+					$payload .= "\"-$colon[0]\": \"$colon[1]\", ";
+				}
+				$payload =~ s/, $//;
+				$payload .= ' }';
+
 			}
-			$payload .=   '} }';
+			$payload .= ' } }';
 			my $req = HTTP::Request->new(PUT => $api_url);
 			$req->add_content( $payload );
 			my $response = $ua->request($req);
@@ -377,6 +399,7 @@ sub commands {
 			$command_page .= $q->p("Result from API was:");
 			$command_page .= $q->p($arr[0]{results}[0]{status});
 			$command_page .= $q->p($arr[0]{results}[0]{errors});
+			$command_page .= "<p>Payload was $payload</p>";
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
@@ -385,6 +408,7 @@ sub commands {
 				    -action=>"api_conf.cgi");
 			$command_page .= $q->hidden('page_type',"commands");
 			$command_page .= $q->hidden('command',$command);
+			$command_page .= $q->hidden('arguments',$arguments);
 			$command_page .= $q->hidden('commandline',$commandline);
 			$command_page .= $q->hidden('mode',"create");
 			$command_page .= $q->submit(-name=>'confirm',
@@ -397,7 +421,7 @@ sub commands {
                         $command_page .= $q->textfield('command','',50,80);
                         $command_page .= $q->p("Enter commandline to be executed:");
                         $command_page .= $q->textfield('commandline','',50,80);
-                        $command_page .= $q->p("Enter arguments (optional):");
+                        $command_page .= $q->p("Enter arguments (an optional comma separated list of option pairs, if you want -w 90 and -c 95 to be options put w:90,c:95 here):");
                         $command_page .= $q->textfield('arguments','',50,80);
                         $command_page .= $q->hidden('page_type',"commands");
                         $command_page .= $q->hidden('mode',"create");
