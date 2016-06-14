@@ -197,7 +197,7 @@ sub hosts {
                         $host_page .= $q->start_form(-method=>"GET",
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
-                        $host_page .= $q->textfield('host','.it.su.se',50,80);
+                        $host_page .= $q->textfield('host','',50,80);
                         $host_page .= $q->p("Enter ip address:");
                         $host_page .= $q->textfield('ip','',50,80);
                         $host_page .= $q->p("Enter host check command:");
@@ -214,7 +214,7 @@ sub hosts {
                         }
                         $host_page .= '</select>';
                         $host_page .= $q->p("Enter OS:");
-                        $host_page .= $q->textfield('os','Linux',50,80);
+                        $host_page .= $q->textfield('os','',50,80);
                         $host_page .= $q->p("Enter aditional attributes (optional):");
                         $host_page .= $q->textfield('attributes','',50,80);
                         $host_page .= $q->hidden('page_type',"hosts");
@@ -263,6 +263,8 @@ sub services {
 	my $check = $params->{'check'};
 	my $mode = $params->{'mode'};
 	my $servicename = $params->{'servicename'};
+	my $displayname = $params->{'displayname'};
+	my $attributes = $params->{'attributes'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -334,7 +336,6 @@ sub services {
 			$service_page .= '<select name="host">';
 			foreach my $service_host (sort keys %services ) {
 				$service_page .= "<option value=\"$service_host\">$service_host</option>";
-					
 			}
 			$service_page .= '</select">';
 			$service_page .= $q->hidden('page_type',"services");
@@ -344,21 +345,34 @@ sub services {
 			$service_page .=  $q->end_form;
 		}
 	} elsif ($mode eq "create") {
-		if( $host =~ m/\..*\./ and $check =~ m/.+/ and $servicename =~ m/.+/ and $confirm ne "Confirm" ) {
-		        $service_page .= $q->p('Are you sure you want to add the service ' . $servicename . ' to host: ' . $host .'?<br/>');
+		if( $host =~ m/\..*\./ and $check =~ m/.+/ and $displayname =~ m/.+/ and $servicename =~ m/.+/ and $confirm ne "Confirm" ) {
+		        $service_page .= '<p>Are you sure you want to add the service ' . $servicename . ' to host: ' . $host;
+                        if ($attributes =~ m/.+/ ) {
+				$service_page .= ' with attributes: ' . $attributes;
+			}
+			$service_page .='?</p><br/>';
 		        $service_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 		        $service_page .= $q->hidden('host',$host);
 		        $service_page .= $q->hidden('page_type',"services");
 			$service_page .= $q->hidden('mode',"create");
 		        $service_page .= $q->hidden('servicename',$servicename);
+		        $service_page .= $q->hidden('displayname',$displayname);
+		        $service_page .= $q->hidden('attributes',$attributes);
 		        $service_page .= $q->hidden('check',$check);
 		        $service_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $service_page .=  $q->end_form;
 
-		} elsif( $host =~ m/\..*\./ and $check =~ m/.+/ and $servicename =~ m/.+/ and $confirm eq "Confirm" ) {
-			my $payload = '{  "attrs": { "check_command": "' . $check . '", "check_interval": 1,"retry_interval": 1 } }';
+		} elsif( $host =~ m/\..*\./ and $check =~ m/.+/ and $displayname =~ m/.+/ and $servicename =~ m/.+/ and $confirm eq "Confirm" ) {
+			my $payload = '{  "attrs": { "check_command": "' . $check . '", "display_name": "' . $displayname . '", "check_interval": 1,"retry_interval": 1';
+                        if ($attributes =~ m/.+/ ) {
+                                for my $commas ( split(',', $attributes) ) {
+                                        my @colon = split(':', $commas);
+                                        $payload .= ", \"$colon[0]\": \"$colon[1]\"";
+                                }
+                        }
+			$payload .=  ' } }';
                         my $req = HTTP::Request->new(PUT => $api_url);
                         $req->add_content( $payload );
                         my $response = $ua->request($req);
@@ -366,8 +380,8 @@ sub services {
                         $service_page .= $q->p("Result from API was:");
                         $service_page .= $q->p($arr[0]{results}[0]{status});
                         $service_page .= $q->p($arr[0]{results}[0]{errors});	
+                        $service_page .= $q->p("Payload was: $payload");	
 		} else {
-
 		
 			# Get hosts
 			my @temp_arr;
@@ -399,8 +413,12 @@ sub services {
 				$service_page .= "<option value=\"$name\">$hash->{name}</option>";
 			}
 			$service_page .= '</select>';
-                        $service_page .= $q->p("Enter service servicename:");
+                        $service_page .= $q->p("Enter service displayname:");
+                        $service_page .= $q->textfield('displayname','',50,80);
+                        $service_page .= $q->p("Enter servicename:");
                         $service_page .= $q->textfield('servicename','',50,80);
+                        $service_page .= $q->p("Enter additional attributes (optional):");
+                        $service_page .= $q->textfield('attributes','',50,80);
 			$service_page .= $q->hidden('page_type',"services");
 			$service_page .= $q->hidden('mode',"create");
 			$service_page .= $q->submit(-name=>'submit',
