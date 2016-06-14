@@ -109,6 +109,7 @@ sub hosts {
 	my $confirm = $params->{'confirm'};
 	my $cascading = $params->{'cascading'};
 	my $mode = $params->{'mode'};
+	my $command = $params->{'command'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -179,8 +180,8 @@ sub hosts {
 			$host_page .=  $q->end_form;
 		}
 	} elsif ($mode eq "create") {
-		if ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and not $confirm eq "Confirm" ) {
-		        $host_page .= $q->p('Are you sure you want to create ' . $host . ' with ip address: ' . $ip .'?<br/>');
+		if ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and $confirm ne "Confirm" ) {
+		        $host_page .= $q->p('Are you sure you want to create ' . $host . ' with ip address: ' . $ip .' and checkcommand: '. $command . '?<br/>');
 		        $host_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 		        $host_page .= $q->hidden('host',$host);
@@ -196,9 +197,26 @@ sub hosts {
                         $host_page .= $q->start_form(-method=>"GET",
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
-                        $host_page .= $q->textfield('host','',50,80);
+                        $host_page .= $q->textfield('host','.it.su.se',50,80);
                         $host_page .= $q->p("Enter ip address:");
                         $host_page .= $q->textfield('ip','',50,80);
+                        $host_page .= $q->p("Enter host check command:");
+                        $host_page .= '<select name="command">';
+                        foreach my $hash (values $c->stash->{commands}) {
+				my $selected = '';
+		
+				if ($hash->{name} eq "check_hostalive" ) {
+					$selected = 'selected="selected" ';
+				}
+                                my $name = $hash->{name};
+                                $name =~ s/check_//g;
+                                $host_page .= "<option value=\"$name\" $selected>$hash->{name}</option>";
+                        }
+                        $host_page .= '</select>';
+                        $host_page .= $q->p("Enter OS:");
+                        $host_page .= $q->textfield('os','Linux',50,80);
+                        $host_page .= $q->p("Enter aditional attributes (optional):");
+                        $host_page .= $q->textfield('attributes','',50,80);
                         $host_page .= $q->hidden('page_type',"hosts");
                         $host_page .= $q->hidden('mode',"create");
                         $host_page .= $q->submit(-name=>'submit',
@@ -242,8 +260,9 @@ sub services {
 	my $host = $params->{'host'};
 	my $confirm = $params->{'confirm'};
 	my $submit = $params->{'submit'};
-	my $service = $params->{'service'};
+	my $check = $params->{'check'};
 	my $mode = $params->{'mode'};
+	my $servicename = $params->{'servicename'};
 
 	# Read config file
 	my $config_file = "/local/icinga2/conf/api-credentials.json";
@@ -255,30 +274,33 @@ sub services {
 	my $api_realm = $config->get('realm');
 	my $api_host = $config->get('host');
 	my $api_port = $config->get('port');
-	my $api_url = "https://$api_host:$api_port/v1/objects/services/$host!$service";
+	my $api_url = "https://$api_host:$api_port/v1/objects/services/$host!$servicename";
 	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 
+	my $service_page = '';
         # Get services
-	my %check = ();
+	my %services = ();
 	foreach my $hash ($c->stash->{services} ) {
+	#	$service_page .= Dumper $hash;
 		foreach my $service (values $hash) {
-			$check{ $service->{host_name} }{$service->{display_name} } =  $service->{check_command} ;
+			#$services{ $service->{host_name} }{$service->{display_name} } =  $service->{check_command} ;
+			$services{ $service->{host_name} }{$service->{description} } =  $service->{display_name} ;
 		}
 	}
-	my $service_page = '';
 
 	if ( $mode eq "delete") {
 		$service_page .= $q->h1('Services');         # level 1 header
-		if ( $host  =~ m/\..*\./ and not defined($confirm) and not $service =~ m/.+/ ) {
+		if ( $host  =~ m/\..*\./ and not defined($confirm) and not $servicename =~ m/.+/ ) {
 		        $service_page .= $q->p("Enter service to modify for host: $host ");
-		        $service_page .= $q->start_form(-method=>"POST",
+		        $service_page .= $q->start_form(-method=>"GET",
 				   -action=>"api_conf.cgi");
-		        $service_page .= '<select name="service">';
-		        foreach my $checks ( sort keys $check{$host}) {
-				$service_page .= "<li>$checks: $check{$host}{$checks}</li>";
-				$service_page .= "<option value=\"$checks\">$check{$host}{$checks}</option>";
+		        $service_page .= '<select name="servicename">';
+		        foreach my $service ( sort keys $services{$host}) {
+				#$service_page .= "<li>$checks: $check{$host}{$checks}</li>";
+				#$service_page .= "<option value=\"$checks\">$check{$host}{$checks}</option>";
+				$service_page .= "<option value=\"$service\">$services{$host}{$service}</option>";
 		        }
 		        $service_page .= '</select">';
 		        $service_page .= $q->hidden('page_type',"services");
@@ -287,18 +309,18 @@ sub services {
 		        $service_page .= $q->submit(-name=>'submit',
 				       -value=>'Submit');
 		        $service_page .=  $q->end_form;
-		} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $service =~ m/.+/ ) {
-		        $service_page .= $q->p('Are you sure you want to delete ' . $service . ' for host: ' . $host .'?<br/>');
-		        $service_page .= $q->start_form(-method=>"POST",
+		} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $servicename =~ m/.+/ ) {
+		        $service_page .= $q->p('Are you sure you want to delete ' .  $servicename . ' for host: ' . $host .'?<br/>');
+		        $service_page .= $q->start_form(-method=>"GET",
 				    -action=>"api_conf.cgi");
 		        $service_page .= $q->hidden('host',$host);
 		        $service_page .= $q->hidden('page_type',"services");
 			$service_page .= $q->hidden('mode',"delete");
-		        $service_page .= $q->hidden('service',$service);
+		        $service_page .= $q->hidden('servicename',$servicename);
 		        $service_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $service_page .=  $q->end_form;
-		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $service =~ m/.+/ ) {
+		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
 			my $req = HTTP::Request->new(DELETE => $api_url);
 			my $response = $ua->request($req);
 			my @arr = decode_json $response->decoded_content;
@@ -310,7 +332,7 @@ sub services {
 			$service_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 			$service_page .= '<select name="host">';
-			foreach my $service_host (sort keys %check ) {
+			foreach my $service_host (sort keys %services ) {
 				$service_page .= "<option value=\"$service_host\">$service_host</option>";
 					
 			}
@@ -322,20 +344,21 @@ sub services {
 			$service_page .=  $q->end_form;
 		}
 	} elsif ($mode eq "create") {
-		if( $host =~ m/\..*\./ and $service =~ m/.+/ and $confirm ne "Confirm" ) {
-		        $service_page .= $q->p('Are you sure you want to add the service ' . $service . ' to host: ' . $host .'?<br/>');
+		if( $host =~ m/\..*\./ and $check =~ m/.+/ and $servicename =~ m/.+/ and $confirm ne "Confirm" ) {
+		        $service_page .= $q->p('Are you sure you want to add the service ' . $servicename . ' to host: ' . $host .'?<br/>');
 		        $service_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 		        $service_page .= $q->hidden('host',$host);
 		        $service_page .= $q->hidden('page_type',"services");
 			$service_page .= $q->hidden('mode',"create");
-		        $service_page .= $q->hidden('service',$service);
+		        $service_page .= $q->hidden('servicename',$servicename);
+		        $service_page .= $q->hidden('check',$check);
 		        $service_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $service_page .=  $q->end_form;
 
-		} elsif( $host =~ m/\..*\./ and $service =~ m/.+/ and $confirm eq "Confirm" ) {
-			my $payload = '{  "attrs": { "check_command": "' . $service . '", "check_interval": 1,"retry_interval": 1 } }';
+		} elsif( $host =~ m/\..*\./ and $check =~ m/.+/ and $servicename =~ m/.+/ and $confirm eq "Confirm" ) {
+			my $payload = '{  "attrs": { "check_command": "' . $check . '", "check_interval": 1,"retry_interval": 1 } }';
                         my $req = HTTP::Request->new(PUT => $api_url);
                         $req->add_content( $payload );
                         my $response = $ua->request($req);
@@ -369,13 +392,15 @@ sub services {
 			$service_page .= '</select>';
 
 			$service_page .= $q->p('Enter command to add:');
-			$service_page .= '<select name="service">';
+			$service_page .= '<select name="check">';
 			foreach my $hash (values $c->stash->{commands}) {
 				my $name = $hash->{name};
 				$name =~ s/check_//g;
 				$service_page .= "<option value=\"$name\">$hash->{name}</option>";
 			}
 			$service_page .= '</select>';
+                        $service_page .= $q->p("Enter service servicename:");
+                        $service_page .= $q->textfield('servicename','',50,80);
 			$service_page .= $q->hidden('page_type',"services");
 			$service_page .= $q->hidden('mode',"create");
 			$service_page .= $q->submit(-name=>'submit',

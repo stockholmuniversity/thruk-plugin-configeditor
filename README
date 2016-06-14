@@ -28,7 +28,7 @@ Add this to thruk_local to get access to plugin actions from the action menu:
            {\
                "icon": "/thruk/themes/{{theme}}/images/delete.png",\
                "label": "Delete Service",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=delete&host=$HOSTNAME$&service=$SERVICEDESC$"\
+               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=delete&host=$HOSTNAME$&servicename=$SERVICEDESC$"\
            },\
        ]\
     }
