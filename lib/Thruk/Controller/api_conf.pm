@@ -322,7 +322,67 @@ sub services {
 			$service_page .=  $q->end_form;
 		}
 	} elsif ($mode eq "create") {
-		$service_page .= $q->p('Creation happens here');
+		if( $host =~ m/\..*\./ and $service =~ m/.+/ and $confirm ne "Confirm" ) {
+		        $service_page .= $q->p('Are you sure you want to add the service ' . $service . ' to host: ' . $host .'?<br/>');
+		        $service_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+		        $service_page .= $q->hidden('host',$host);
+		        $service_page .= $q->hidden('page_type',"services");
+			$service_page .= $q->hidden('mode',"create");
+		        $service_page .= $q->hidden('service',$service);
+		        $service_page .= $q->submit(-name=>'confirm',
+					-value=>'Confirm');
+		        $service_page .=  $q->end_form;
+
+		} elsif( $host =~ m/\..*\./ and $service =~ m/.+/ and $confirm eq "Confirm" ) {
+			my $payload = '{  "attrs": { "check_command": "' . $service . '", "check_interval": 1,"retry_interval": 1 } }';
+                        my $req = HTTP::Request->new(PUT => $api_url);
+                        $req->add_content( $payload );
+                        my $response = $ua->request($req);
+                        my @arr = decode_json $response->decoded_content;
+                        $service_page .= $q->p("Result from API was:");
+                        $service_page .= $q->p($arr[0]{results}[0]{status});
+                        $service_page .= $q->p($arr[0]{results}[0]{errors});	
+		} else {
+
+		
+			# Get hosts
+			my @temp_arr;
+			for my $hashref (values $c->stash->{hosts}) {
+				push @temp_arr,  $hashref->{name};
+			}
+			my @host_arr = sort @temp_arr;
+
+			$service_page .= $q->p('Enter host to modify:');
+			$service_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+			$service_page .= '<select name="host">';
+			for my $ho ( @host_arr ) {
+				my $selected = '';
+		
+				if ($host =~ m/$ho/ ) {
+					$selected = 'selected="selected" ';
+				}
+
+				$service_page .= "<option value=\"$ho\" $selected>$ho</option>";
+			}
+			$service_page .= '</select>';
+
+			$service_page .= $q->p('Enter command to add:');
+			$service_page .= '<select name="service">';
+			foreach my $hash (values $c->stash->{commands}) {
+				my $name = $hash->{name};
+				$name =~ s/check_//g;
+				$service_page .= "<option value=\"$name\">$hash->{name}</option>";
+			}
+			$service_page .= '</select>';
+			$service_page .= $q->hidden('page_type',"services");
+			$service_page .= $q->hidden('mode',"create");
+			$service_page .= $q->submit(-name=>'submit',
+					-value=>'Submit');
+			$service_page .=  $q->end_form;
+		}
+
 	} else {
 		$service_page .= $q->p('What do you want to do?');
 		$service_page .= $q->start_form(-method=>"POST",
