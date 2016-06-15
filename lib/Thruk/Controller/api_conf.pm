@@ -155,21 +155,6 @@ sub hosts {
 	my $mode = $params->{'mode'};
 	my $command = $params->{'command'};
 
-	# Read config file
-#	my $config_file = "/local/icinga2/conf/api-credentials.json";
-#	my $config = Config::JSON->new($config_file);
-
-	# Setting up for api call
-#	my $api_user = $config->get('user');
-#	my $api_password = $config->get('password');
-#	my $api_realm = $config->get('realm');
-#	my $api_host = $config->get('host');
-#	my $api_port = $config->get('port');
-#	my $api_url = "https://$api_host:$api_port/v1/objects/hosts/$host";
-#	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
-#	$ua->default_header('Accept' => 'application/json');
-#	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
-
 	# Get hosts
 	my @temp_arr;
 	for my $hashref (values $c->stash->{hosts}) {
@@ -200,12 +185,7 @@ sub hosts {
 			my $cascade = '';
 			if ($cascading eq "true") {
 				 $cascade = '?cascade=1';
-				 #$api_url .= '?cascade=1';
 			}
-			# Do the actual api call and print results
-#			my $req = HTTP::Request->new(DELETE => $api_url);
-#			my $response = $ua->request($req);
-#			my @arr = decode_json $response->decoded_content;
 			my @arr = api_call("DELETE", "v1/objects/hosts/$host$cascade");
 			$host_page .= $q->p("Result from API was:");
 			$host_page .= $q->p($arr[0]{results}[0]{status});
@@ -249,10 +229,6 @@ sub hosts {
 		# This case is the creation
 		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
 			my $payload = '{ "zone": "'.$zone.'", "attrs": { "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
-                        #my $req = HTTP::Request->new(PUT => $api_url);
-                        #$req->add_content( $payload );
-                        #my $response = $ua->request($req);
-                        #my @arr = decode_json $response->decoded_content;
 			my @arr = api_call("PUT", "v1/objects/hosts/$host", $payload );
                         $host_page .= $q->p("Result from API was:");
                         $host_page .= $q->p($arr[0]{results}[0]{status});
@@ -260,10 +236,6 @@ sub hosts {
                         $host_page .= $q->p("Payload was: $payload");	
 		} else {
 
-			#my $api_url = "https://$api_host:$api_port/v1/objects/zones";
-			#my $req = HTTP::Request->new(GET => $api_url);
-			#my $response = $ua->request($req);
-			#my %zones = %{ decode_json $response->decoded_content };
 			my %zones = %{ api_call("GET", "v1/objects/zones") };
                         $host_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
@@ -342,28 +314,11 @@ sub services {
 	my $displayname = $params->{'displayname'};
 	my $attributes = $params->{'attributes'};
 
-	# Read config file
-	my $config_file = "/local/icinga2/conf/api-credentials.json";
-	my $config = Config::JSON->new($config_file);
-
-	# Setting up for api call
-	my $api_user = $config->get('user');
-	my $api_password = $config->get('password');
-	my $api_realm = $config->get('realm');
-	my $api_host = $config->get('host');
-	my $api_port = $config->get('port');
-	my $api_url = "https://$api_host:$api_port/v1/objects/services/$host!$servicename";
-	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
-	$ua->default_header('Accept' => 'application/json');
-	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
-
 	my $service_page = '';
         # Get services
 	my %services = ();
 	foreach my $hash ($c->stash->{services} ) {
-	#	$service_page .= Dumper $hash;
 		foreach my $service (values $hash) {
-			#$services{ $service->{host_name} }{$service->{display_name} } =  $service->{check_command} ;
 			$services{ $service->{host_name} }{$service->{description} } =  $service->{display_name} ;
 		}
 	}
@@ -376,8 +331,6 @@ sub services {
 				   -action=>"api_conf.cgi");
 		        $service_page .= '<select name="servicename">';
 		        foreach my $service ( sort keys $services{$host}) {
-				#$service_page .= "<li>$checks: $check{$host}{$checks}</li>";
-				#$service_page .= "<option value=\"$checks\">$check{$host}{$checks}</option>";
 				$service_page .= "<option value=\"$service\">$services{$host}{$service}</option>";
 		        }
 		        $service_page .= '</select">';
@@ -399,9 +352,7 @@ sub services {
 					-value=>'Confirm');
 		        $service_page .=  $q->end_form;
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
-			my $req = HTTP::Request->new(DELETE => $api_url);
-			my $response = $ua->request($req);
-			my @arr = decode_json $response->decoded_content;
+			my @arr = api_call("DELETE", "v1/objects/services/$host!$servicename");
 			$service_page .= $q->p("Result from API was:");
 			$service_page .= $q->p($arr[0]{results}[0]{status});
 			$service_page .= $q->p($arr[0]{results}[0]{errors});
@@ -449,10 +400,7 @@ sub services {
                                 }
                         }
 			$payload .=  ' } }';
-                        my $req = HTTP::Request->new(PUT => $api_url);
-                        $req->add_content( $payload );
-                        my $response = $ua->request($req);
-                        my @arr = decode_json $response->decoded_content;
+			my @arr = api_call("PUT", "v1/objects/services/$host!$servicename", $payload);
                         $service_page .= $q->p("Result from API was:");
                         $service_page .= $q->p($arr[0]{results}[0]{status});
                         $service_page .= $q->p($arr[0]{results}[0]{errors});	
@@ -548,20 +496,6 @@ sub commands {
 	my $submit = $params->{'submit'};
 	my $arguments = $params->{'arguments'};
 
-	# Read config file
-	my $config_file = "/local/icinga2/conf/api-credentials.json";
-	my $config = Config::JSON->new($config_file);
-
-	# Setting up for api call
-	my $api_user = $config->get('user');
-	my $api_password = $config->get('password');
-	my $api_realm = $config->get('realm');
-	my $api_host = $config->get('host');
-	my $api_port = $config->get('port');
-	my $api_url = "https://$api_host:$api_port/v1/objects/checkcommands/$command";
-	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
-	$ua->default_header('Accept' => 'application/json');
-	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 	my $command_page = '';
 	
 	if ( $mode eq "delete") {
@@ -577,12 +511,11 @@ sub commands {
 					-value=>'Confirm');
 			$command_page .=  $q->end_form;
 		} elsif ( $confirm eq "Confirm" and  $command =~ m/.+/ ) {
+			my $cascade = '';
 			if ($cascading eq "true") {
-				$api_url .= '?cascade=1';
+				$cascade .= '?cascade=1';
 			}
-			my $req = HTTP::Request->new(DELETE => $api_url);
-			my $response = $ua->request($req);
-			my @arr = decode_json $response->decoded_content;
+			my @arr = api_call("DELETE", "v1/objects/checkcommands/$command$cascade");
 			$command_page .= $q->p("Result from API was:");
 			$command_page .= $q->p($arr[0]{results}[0]{status});
 			$command_page .= $q->p($arr[0]{results}[0]{errors});
@@ -618,10 +551,7 @@ sub commands {
 
 			}
 			$payload .= ' } }';
-			my $req = HTTP::Request->new(PUT => $api_url);
-			$req->add_content( $payload );
-			my $response = $ua->request($req);
-			my @arr = decode_json $response->decoded_content;
+			my @arr = api_call("PUT", "v1/objects/checkcommands/$command", $payload);
 			$command_page .= $q->p("Result from API was:");
 			$command_page .= $q->p($arr[0]{results}[0]{status});
 			$command_page .= $q->p($arr[0]{results}[0]{errors});
