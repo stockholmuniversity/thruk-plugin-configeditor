@@ -106,6 +106,8 @@ sub hosts {
 	#Get host and see if this is the delete request or not
 	my $host = $params->{'host'};
 	my $ip = $params->{'ip'};
+	my $os = $params->{'os'};
+	my $zone = $params->{'zone'};
 	my $confirm = $params->{'confirm'};
 	my $cascading = $params->{'cascading'};
 	my $mode = $params->{'mode'};
@@ -188,18 +190,40 @@ sub hosts {
 		        $host_page .= $q->hidden('page_type',"hosts");
 			$host_page .= $q->hidden('mode',"create");
 		        $host_page .= $q->hidden('ip',$ip);
+		        $host_page .= $q->hidden('zone',$zone);
+		        $host_page .= $q->hidden('command',$command);
+		        $host_page .= $q->hidden('os',$os);
 		        $host_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $host_page .=  $q->end_form;
-		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm")  {
-			$host_page .= "<p>Creation happens here</p>";
+		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
+			my $payload = '{ "zone": "'.$zone.'", "attrs": { "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
+                        my $req = HTTP::Request->new(PUT => $api_url);
+                        $req->add_content( $payload );
+                        my $response = $ua->request($req);
+                        my @arr = decode_json $response->decoded_content;
+                        $host_page .= $q->p("Result from API was:");
+                        $host_page .= $q->p($arr[0]{results}[0]{status});
+                        $host_page .= $q->p($arr[0]{results}[0]{errors});	
+                        $host_page .= $q->p("Payload was: $payload");	
 		} else {
+
+			my $api_url = "https://$api_host:$api_port/v1/objects/zones";
+			my $req = HTTP::Request->new(GET => $api_url);
+			my $response = $ua->request($req);
+			my %zones = %{ decode_json $response->decoded_content };
                         $host_page .= $q->start_form(-method=>"GET",
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
                         $host_page .= $q->textfield('host','',50,80);
                         $host_page .= $q->p("Enter ip address:");
                         $host_page .= $q->textfield('ip','',50,80);
+                        $host_page .= $q->p("Enter zone:");
+                        $host_page .= '<select name="zone">';
+			for my $zone (values $zones{results}) {
+                                $host_page .= "<option value=\"$zone->{name}\">$zone->{name}</option>";
+			}
+                        $host_page .= '</select>';
                         $host_page .= $q->p("Enter host check command:");
                         $host_page .= '<select name="command">';
                         foreach my $hash (values $c->stash->{commands}) {
@@ -215,8 +239,6 @@ sub hosts {
                         $host_page .= '</select>';
                         $host_page .= $q->p("Enter OS:");
                         $host_page .= $q->textfield('os','',50,80);
-                        $host_page .= $q->p("Enter aditional attributes (optional):");
-                        $host_page .= $q->textfield('attributes','',50,80);
                         $host_page .= $q->hidden('page_type',"hosts");
                         $host_page .= $q->hidden('mode',"create");
                         $host_page .= $q->submit(-name=>'submit',
@@ -596,12 +618,6 @@ sub commands {
 }
 
 sub body {
-	my $context = new IO::Socket::SSL::SSL_Context(
-	  SSL_version => 'tlsv1',
-	  SSL_verify_mode => Net::SSLeay::VERIFY_NONE(),
-	  );
-	IO::Socket::SSL::set_default_context($context);
-
 	my ($c) = @_; 
 	my $body = '';
         my $params = $c->req->parameters;
@@ -633,7 +649,28 @@ sub body {
 }
 
 sub index {
+	my $context = new IO::Socket::SSL::SSL_Context(
+	  SSL_version => 'tlsv1',
+	  SSL_verify_mode => Net::SSLeay::VERIFY_NONE(),
+	  );
+	IO::Socket::SSL::set_default_context($context);
+
 	my ( $c ) = @_;
+
+        # Read config file
+        #my $config_file = "/local/icinga2/conf/api-credentials.json";
+        #my $config = Config::JSON->new($config_file);
+
+        # Setting up for api call
+        #my $api_user = $config->get('user');
+        #my $api_password = $config->get('password');
+        #my $api_realm = $config->get('realm');
+        #my $api_host = $config->get('host');
+        #my $api_port = $config->get('port');
+        #my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
+        #$ua->default_header('Accept' => 'application/json');
+        #$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
+
 	$c->stash->{readonly}        = 0;
 	$c->stash->{title}           = 'API Conf';
 	$c->stash->{subtitle}              = 'API Conf';
@@ -644,6 +681,11 @@ sub index {
 	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); 
 	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); 
 	$c->stash->{commands} = $c->{'db'}->get_commands(); 
+        #my $api_url = "https://$api_host:$api_port/v1/objects/zones";
+	#my $req = HTTP::Request->new(GET => $api_url);
+	#my $response = $ua->request($req);
+	#$c->stash->{zones} = %{ decode_json $response->decoded_content };
+	#$c->stash->{templates} = $c->{'db'}->get_templates(); 
 	if( !$c->check_user_roles("authorized_for_configuration_information")
         || !$c->check_user_roles("authorized_for_system_commands")) {
 		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
