@@ -43,6 +43,7 @@ This function reads api config and makes api calls
 * endpoint (e.g. v1/objects/hosts/<hostname>)
 * optional payload ({  "attrs": { "check_command": "<command name>", "check_interval": 1,"retry_interval": 1 } })
 =cut
+
 sub api_call {
 	my ($verb, $endpoint, $payload) = @_;
 	# Read config file
@@ -67,6 +68,58 @@ sub api_call {
 	return decode_json $response->decoded_content;
 }
 
+=head2 create_delete_dialog
+
+This function returns the create/delete dialog
+
+=head3 Parameters
+* page_type 
+=cut
+
+sub create_delete_dialog {
+	my ($page_type) = @_;
+        # A cgi object to help with some html creation
+        my $q = CGI->new;
+	my $page = $q->p('What do you want to do?');
+	$page .= $q->start_form(-method=>"POST",
+		    -action=>"api_conf.cgi");
+	$page .= '<select name="mode">';
+	$page .= "<option value=\"create\">Create</option>";
+	$page .= "<option value=\"delete\">Destroy</option>";
+	$page .= '</select">';
+	$page .= $q->hidden('page_type',"$page_type");
+	$page .= $q->submit(-name=>'submit',
+			-value=>'Submit');
+	$page .=  $q->end_form;
+	return $page;
+}
+
+=head2 display_api_response
+
+This function displays the api response
+
+=head3 Parameters
+* arr is the api response
+* optional: payload 
+=cut
+
+sub display_api_response {
+	
+	my @arr = @_[0];
+	my $payload = '';
+	if (@_[1]) {
+		$payload = @_[1];
+	}
+        # A cgi object to help with some html creation
+        my $q = CGI->new;
+	my $result =  $q->p("Result from API was:");
+	$result .= $q->p($arr[0]{results}[0]{status});
+	$result .= $q->p($arr[0]{results}[0]{errors});
+	if  ( $payload =~ m/.+/ ){
+		$result .= $q->p("Payload was: $payload");
+	}
+	return $result;
+}
 =head2 selector
 
 This displays the main scroll list och different type of objects
@@ -180,6 +233,7 @@ sub hosts {
 
 		}
 
+
 		# This case is delete request
 		elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
 			my $cascade = '';
@@ -187,9 +241,7 @@ sub hosts {
 				 $cascade = '?cascade=1';
 			}
 			my @arr = api_call("DELETE", "v1/objects/hosts/$host$cascade");
-			$host_page .= $q->p("Result from API was:");
-			$host_page .= $q->p($arr[0]{results}[0]{status});
-			$host_page .= $q->p($arr[0]{results}[0]{errors});
+			$host_page .= display_api_response(@arr) ;
 		}
 		# Main dialog box of the delete mode for hosts page
 		else {
@@ -208,7 +260,6 @@ sub hosts {
 					-value=>'Submit');
 			$host_page .=  $q->end_form;
 		}
-
 	# This is create mode
 	} elsif ($mode eq "create") {
 		# This case is confirm dialog
@@ -226,14 +277,12 @@ sub hosts {
 		        $host_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $host_page .=  $q->end_form;
-		# This case is the creation
+		# This case is the  actual creation
 		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
 			my $payload = '{ "zone": "'.$zone.'", "attrs": { "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
 			my @arr = api_call("PUT", "v1/objects/hosts/$host", $payload );
-                        $host_page .= $q->p("Result from API was:");
-                        $host_page .= $q->p($arr[0]{results}[0]{status});
-                        $host_page .= $q->p($arr[0]{results}[0]{errors});	
-                        $host_page .= $q->p("Payload was: $payload");	
+			$host_page .= display_api_response(@arr, $payload);
+		# This is the main host creation dialog
 		} else {
 
 			my %zones = %{ api_call("GET", "v1/objects/zones") };
@@ -272,17 +321,7 @@ sub hosts {
                 	$host_page .=  $q->end_form;
 		}
 	} else {
-		$host_page .= $q->p('What do you want to do?');
-		$host_page .= $q->start_form(-method=>"POST",
-			    -action=>"api_conf.cgi");
-		$host_page .= '<select name="mode">';
-		$host_page .= "<option value=\"create\">Create</option>";
-		$host_page .= "<option value=\"delete\">Destroy</option>";
-		$host_page .= '</select">';
-		$host_page .= $q->hidden('page_type',"hosts");
-		$host_page .= $q->submit(-name=>'submit',
-				-value=>'Submit');
-		$host_page .=  $q->end_form;
+		$host_page .=  create_delete_dialog("hosts");
 	}
 	return $host_page;
 }
@@ -353,9 +392,7 @@ sub services {
 		        $service_page .=  $q->end_form;
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
 			my @arr = api_call("DELETE", "v1/objects/services/$host!$servicename");
-			$service_page .= $q->p("Result from API was:");
-			$service_page .= $q->p($arr[0]{results}[0]{status});
-			$service_page .= $q->p($arr[0]{results}[0]{errors});
+			$service_page .= display_api_response(@arr);
 		} else {
 			$service_page .= $q->p('Enter host to modify');
 			$service_page .= $q->start_form(-method=>"POST",
@@ -401,10 +438,7 @@ sub services {
                         }
 			$payload .=  ' } }';
 			my @arr = api_call("PUT", "v1/objects/services/$host!$servicename", $payload);
-                        $service_page .= $q->p("Result from API was:");
-                        $service_page .= $q->p($arr[0]{results}[0]{status});
-                        $service_page .= $q->p($arr[0]{results}[0]{errors});	
-                        $service_page .= $q->p("Payload was: $payload");	
+			$service_page .= display_api_response(@arr, $payload);
 		} else {
 		
 			# Get hosts
@@ -451,17 +485,7 @@ sub services {
 		}
 
 	} else {
-		$service_page .= $q->p('What do you want to do?');
-		$service_page .= $q->start_form(-method=>"POST",
-			    -action=>"api_conf.cgi");
-		$service_page .= '<select name="mode">';
-		$service_page .= "<option value=\"create\">Create</option>";
-		$service_page .= "<option value=\"delete\">Destroy</option>";
-		$service_page .= '</select">';
-		$service_page .= $q->hidden('page_type',"services");
-		$service_page .= $q->submit(-name=>'submit',
-				-value=>'Submit');
-		$service_page .=  $q->end_form;
+		$service_page .=  create_delete_dialog("services"); 
 	}
 	return $service_page;
 }
@@ -516,9 +540,7 @@ sub commands {
 				$cascade .= '?cascade=1';
 			}
 			my @arr = api_call("DELETE", "v1/objects/checkcommands/$command$cascade");
-			$command_page .= $q->p("Result from API was:");
-			$command_page .= $q->p($arr[0]{results}[0]{status});
-			$command_page .= $q->p($arr[0]{results}[0]{errors});
+			$command_page .= display_api_response(@arr);
 		} else {
 			$command_page .= $q->p('Enter command to delete');
 			$command_page .= $q->start_form(-method=>"POST",
@@ -552,10 +574,7 @@ sub commands {
 			}
 			$payload .= ' } }';
 			my @arr = api_call("PUT", "v1/objects/checkcommands/$command", $payload);
-			$command_page .= $q->p("Result from API was:");
-			$command_page .= $q->p($arr[0]{results}[0]{status});
-			$command_page .= $q->p($arr[0]{results}[0]{errors});
-			$command_page .= "<p>Payload was $payload</p>";
+			$command_page .= display_api_response(@arr, $payload);
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
@@ -586,17 +605,7 @@ sub commands {
                 	$command_page .=  $q->end_form;
 		}
 	} else {
-		$command_page .= $q->p('What do you want to do?');
-		$command_page .= $q->start_form(-method=>"POST",
-			    -action=>"api_conf.cgi");
-		$command_page .= '<select name="mode">';
-		$command_page .= "<option value=\"create\">Create</option>";
-		$command_page .= "<option value=\"delete\">Destroy</option>";
-		$command_page .= '</select">';
-		$command_page .= $q->hidden('page_type',"commands");
-		$command_page .= $q->submit(-name=>'submit',
-				-value=>'Submit');
-		$command_page .=  $q->end_form;
+		$command_page .= create_delete_dialog("commands");
 	}
 	return  $command_page;
 }
