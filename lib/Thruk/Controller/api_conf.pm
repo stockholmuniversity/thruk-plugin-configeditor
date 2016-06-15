@@ -13,17 +13,7 @@ Thruk Controller making use of Icinga2 API.
 
 =head1 METHODS
 
-=head2 index
-
-This is the entry point 
-
-=head2 selector
-
-This displays the main scroll list och different type of objects
-
-=head2 body
-
-Some common initializations and setting main body variable for the template
+We build our page by using one method per page type, plus some common helper functions 
 
 =cut
 
@@ -44,8 +34,50 @@ use Data::Dumper;
 use JSON::XS qw(encode_json decode_json);
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 
+=head2 api_call
+
+This function reads api config and makes api calls
+
+=head3 Parameters
+* verb (GET, PUT, DELETE, POST)
+* endpoint (e.g. v1/objects/hosts/<hostname>)
+* optional payload ({  "attrs": { "check_command": "<command name>", "check_interval": 1,"retry_interval": 1 } })
+=cut
+sub api_call {
+	my ($verb, $endpoint, $payload) = @_;
+	# Read config file
+	my $config_file = "/local/icinga2/conf/api-credentials.json";
+	my $config = Config::JSON->new($config_file);
+
+	# Setting up for api call
+	my $api_user = $config->get('user');
+	my $api_password = $config->get('password');
+	my $api_realm = $config->get('realm');
+	my $api_host = $config->get('host');
+	my $api_port = $config->get('port');
+	my $api_url = "https://$api_host:$api_port/$endpoint";
+	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
+	$ua->default_header('Accept' => 'application/json');
+	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
+	my $req = HTTP::Request->new($verb => $api_url);
+	if ($payload =~ m/.+/ ) {
+		$req->add_content( $payload );
+	}
+	my $response = $ua->request($req);
+	return decode_json $response->decoded_content;
+}
+
+=head2 selector
+
+This displays the main scroll list och different type of objects
+
+=cut
+
 sub selector {
+	# A cgi object to help with some html creation 
 	my $q = CGI->new;
+
+	# These are the different kinds of objects we can manipulate
 	my %pagetypes = (
 		'hosts' => 'Hosts', 
 	#	'hostdependencies' => 'Host Dependencies',
@@ -61,6 +93,7 @@ sub selector {
 		'commands' =>'Commands',
 	);
 
+	# This is where you land if you are not in a specific page_type allready
 	my $landing_page = '<br><br>';
 	$landing_page .= '<div class="reportSelectTitle" align="center">Select Type of Config Data You Wish To Edit</div>';
 	$landing_page .= '<br>';
@@ -96,14 +129,23 @@ sub selector {
 	return $landing_page;
 }
 
+=head2 hosts
+
+This where we manipulate host obects
+
+=cut
 sub hosts {
+	# $c holds all our context info 
 	my ($c) = @_; 
+
+	# $host_page is the html for the hosts
 	my $host_page = '';
 
 	# Set up cgi
 	my $q = CGI->new;
 	my $params = $c->req->parameters;
-	#Get host and see if this is the delete request or not
+
+	#Extract parameters from the request
 	my $host = $params->{'host'};
 	my $ip = $params->{'ip'};
 	my $os = $params->{'os'};
@@ -114,19 +156,19 @@ sub hosts {
 	my $command = $params->{'command'};
 
 	# Read config file
-	my $config_file = "/local/icinga2/conf/api-credentials.json";
-	my $config = Config::JSON->new($config_file);
+#	my $config_file = "/local/icinga2/conf/api-credentials.json";
+#	my $config = Config::JSON->new($config_file);
 
 	# Setting up for api call
-	my $api_user = $config->get('user');
-	my $api_password = $config->get('password');
-	my $api_realm = $config->get('realm');
-	my $api_host = $config->get('host');
-	my $api_port = $config->get('port');
-	my $api_url = "https://$api_host:$api_port/v1/objects/hosts/$host";
-	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
-	$ua->default_header('Accept' => 'application/json');
-	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
+#	my $api_user = $config->get('user');
+#	my $api_password = $config->get('password');
+#	my $api_realm = $config->get('realm');
+#	my $api_host = $config->get('host');
+#	my $api_port = $config->get('port');
+#	my $api_url = "https://$api_host:$api_port/v1/objects/hosts/$host";
+#	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
+#	$ua->default_header('Accept' => 'application/json');
+#	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 
 	# Get hosts
 	my @temp_arr;
@@ -135,6 +177,7 @@ sub hosts {
 	}
 	my @host_arr = sort @temp_arr;
 
+	# Delete mode 
 	if ($mode eq "delete") {
 		# This case is first dialog
 		if (not defined($confirm) and $host  =~ m/\..*\./  ) {
@@ -154,17 +197,21 @@ sub hosts {
 
 		# This case is delete request
 		elsif ($confirm eq "Confirm" and $host  =~ m/\..*\./  ) {
+			my $cascade = '';
 			if ($cascading eq "true") {
-				$api_url .= '?cascade=1';
+				 $cascade = '?cascade=1';
+				 #$api_url .= '?cascade=1';
 			}
-		my $req = HTTP::Request->new(DELETE => $api_url);
-		my $response = $ua->request($req);
-		my @arr = decode_json $response->decoded_content;
-		$host_page .= $q->p("Result from API was:");
-		$host_page .= $q->p($arr[0]{results}[0]{status});
-		$host_page .= $q->p($arr[0]{results}[0]{errors});
+			# Do the actual api call and print results
+#			my $req = HTTP::Request->new(DELETE => $api_url);
+#			my $response = $ua->request($req);
+#			my @arr = decode_json $response->decoded_content;
+			my @arr = api_call("DELETE", "v1/objects/hosts/$host$cascade");
+			$host_page .= $q->p("Result from API was:");
+			$host_page .= $q->p($arr[0]{results}[0]{status});
+			$host_page .= $q->p($arr[0]{results}[0]{errors});
 		}
-
+		# Main dialog box of the delete mode for hosts page
 		else {
 			$host_page .= $q->h1('Delete Host');
 			$host_page .= $q->p('Enter host to delete');
@@ -181,7 +228,10 @@ sub hosts {
 					-value=>'Submit');
 			$host_page .=  $q->end_form;
 		}
+
+	# This is create mode
 	} elsif ($mode eq "create") {
+		# This case is confirm dialog
 		if ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and $confirm ne "Confirm" ) {
 		        $host_page .= $q->p('Are you sure you want to create ' . $host . ' with ip address: ' . $ip .' and checkcommand: '. $command . '?<br/>');
 		        $host_page .= $q->start_form(-method=>"POST",
@@ -196,23 +246,26 @@ sub hosts {
 		        $host_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $host_page .=  $q->end_form;
+		# This case is the creation
 		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
 			my $payload = '{ "zone": "'.$zone.'", "attrs": { "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
-                        my $req = HTTP::Request->new(PUT => $api_url);
-                        $req->add_content( $payload );
-                        my $response = $ua->request($req);
-                        my @arr = decode_json $response->decoded_content;
+                        #my $req = HTTP::Request->new(PUT => $api_url);
+                        #$req->add_content( $payload );
+                        #my $response = $ua->request($req);
+                        #my @arr = decode_json $response->decoded_content;
+			my @arr = api_call("PUT", "v1/objects/hosts/$host", $payload );
                         $host_page .= $q->p("Result from API was:");
                         $host_page .= $q->p($arr[0]{results}[0]{status});
                         $host_page .= $q->p($arr[0]{results}[0]{errors});	
                         $host_page .= $q->p("Payload was: $payload");	
 		} else {
 
-			my $api_url = "https://$api_host:$api_port/v1/objects/zones";
-			my $req = HTTP::Request->new(GET => $api_url);
-			my $response = $ua->request($req);
-			my %zones = %{ decode_json $response->decoded_content };
-                        $host_page .= $q->start_form(-method=>"GET",
+			#my $api_url = "https://$api_host:$api_port/v1/objects/zones";
+			#my $req = HTTP::Request->new(GET => $api_url);
+			#my $response = $ua->request($req);
+			#my %zones = %{ decode_json $response->decoded_content };
+			my %zones = %{ api_call("GET", "v1/objects/zones") };
+                        $host_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
                         $host_page .= $q->textfield('host','',50,80);
@@ -220,6 +273,7 @@ sub hosts {
                         $host_page .= $q->textfield('ip','',50,80);
                         $host_page .= $q->p("Enter zone:");
                         $host_page .= '<select name="zone">';
+		
 			for my $zone (values $zones{results}) {
                                 $host_page .= "<option value=\"$zone->{name}\">$zone->{name}</option>";
 			}
@@ -318,7 +372,7 @@ sub services {
 		$service_page .= $q->h1('Services');         # level 1 header
 		if ( $host  =~ m/\..*\./ and not defined($confirm) and not $servicename =~ m/.+/ ) {
 		        $service_page .= $q->p("Enter service to modify for host: $host ");
-		        $service_page .= $q->start_form(-method=>"GET",
+		        $service_page .= $q->start_form(-method=>"POST",
 				   -action=>"api_conf.cgi");
 		        $service_page .= '<select name="servicename">';
 		        foreach my $service ( sort keys $services{$host}) {
@@ -335,7 +389,7 @@ sub services {
 		        $service_page .=  $q->end_form;
 		} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $servicename =~ m/.+/ ) {
 		        $service_page .= $q->p('Are you sure you want to delete ' .  $servicename . ' for host: ' . $host .'?<br/>');
-		        $service_page .= $q->start_form(-method=>"GET",
+		        $service_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 		        $service_page .= $q->hidden('host',$host);
 		        $service_page .= $q->hidden('page_type',"services");
@@ -587,7 +641,7 @@ sub commands {
 					-value=>'Confirm');
 			$command_page .=  $q->end_form;
 		} else {
-                        $command_page .= $q->start_form(-method=>"GET",
+                        $command_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
                         $command_page .= $q->p("Enter command name (\"check_\" will be prepended automaticaly):");
                         $command_page .= $q->textfield('command','',50,80);
@@ -616,6 +670,12 @@ sub commands {
 	}
 	return  $command_page;
 }
+
+=head2 body
+
+Some common initializations and setting main body variable for the template
+
+=cut
 
 sub body {
 	my ($c) = @_; 
@@ -648,6 +708,12 @@ sub body {
 	return $body;
 }
 
+=head2 index
+
+This is the entry point 
+
+=cut
+
 sub index {
 	my $context = new IO::Socket::SSL::SSL_Context(
 	  SSL_version => 'tlsv1',
@@ -657,20 +723,7 @@ sub index {
 
 	my ( $c ) = @_;
 
-        # Read config file
-        #my $config_file = "/local/icinga2/conf/api-credentials.json";
-        #my $config = Config::JSON->new($config_file);
-
-        # Setting up for api call
-        #my $api_user = $config->get('user');
-        #my $api_password = $config->get('password');
-        #my $api_realm = $config->get('realm');
-        #my $api_host = $config->get('host');
-        #my $api_port = $config->get('port');
-        #my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
-        #$ua->default_header('Accept' => 'application/json');
-        #$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
-
+	# This is Configuration options used by Thruk
 	$c->stash->{readonly}        = 0;
 	$c->stash->{title}           = 'API Conf';
 	$c->stash->{subtitle}              = 'API Conf';
@@ -678,14 +731,11 @@ sub index {
 	$c->stash->{'no_auto_reload'}      = 1;
 	$c->stash->{template} = 'api_conf.tt';
 	$c->stash->{testmode} = 1;
+
+	# This is data we might need one more than one type of page
 	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); 
 	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); 
 	$c->stash->{commands} = $c->{'db'}->get_commands(); 
-        #my $api_url = "https://$api_host:$api_port/v1/objects/zones";
-	#my $req = HTTP::Request->new(GET => $api_url);
-	#my $response = $ua->request($req);
-	#$c->stash->{zones} = %{ decode_json $response->decoded_content };
-	#$c->stash->{templates} = $c->{'db'}->get_templates(); 
 	if( !$c->check_user_roles("authorized_for_configuration_information")
         || !$c->check_user_roles("authorized_for_system_commands")) {
 		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
@@ -693,6 +743,7 @@ sub index {
 		$c->stash->{body} = body $c;
 	}
 }
+
 =head1 LICENSE
 
 This library is free software, you can redistribute it and/or modify
