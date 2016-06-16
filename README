@@ -5,9 +5,25 @@ This plugin allows you to configure Icinga2 via the in built HTTP API.
 This plugin is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
-Dependencies for ubuntu 14.04 is: liblwp-protocol-https-perl libconfig-json-perl libnet-sslglue-perl libdata-validate-ip-perl
+Dependencies for ubuntu 14.04 is: 
+liblwp-protocol-https-perl libconfig-json-perl libnet-sslglue-perl libdata-validate-ip-perl
 
-Add this to thruk_local to get access to plugin actions from the action menu:
+In order to work the plugin needs a config file in json format which is typicaly called:
+/etc/thruk/icinga-api-credentials.json
+
+Filename of the config file is hardcoded but the path is guessed from
+$c->stash->{usercontent_folder} by using dirname on the variable.  
+Content of this file should contain credentials and host/port information, e.g: 
+
+{
+   "user" : "myuser",
+   "password" : "secret",
+   "realm" : "Icinga 2",
+   "host" : "icinga.example.com",
+   "port" : "5665",
+}
+
+If you want to get access to plugin actions from the action menu you can add this to thruk_local.conf:
 
 <action_menu_items>
     hostmenu = {\
