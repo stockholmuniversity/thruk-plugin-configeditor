@@ -11,7 +11,7 @@ $routes->{'/thruk/cgi-bin/api_conf.cgi'} = 'Thruk::Controller::api_conf::index';
 # add new menu item
 Thruk::Utils::Menu::insert_item('System', {
                                 'href'  => '/thruk/cgi-bin/api_conf.cgi',
-                                'name'  => 'API Conf',
+                                'name'  => 'Configuration Editor',
 });
 
 # enable micke features if this plugin is loaded

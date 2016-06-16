@@ -765,9 +765,9 @@ sub index {
 
 	# This is Configuration options used by Thruk
 	$c->stash->{'readonly'}        = 0;
-	$c->stash->{'title'}           = 'API Conf';
-	$c->stash->{'subtitle'}              = 'API Conf';
-	$c->stash->{'infoBoxTitle'}          = 'API Conf';
+	$c->stash->{'title'}           = 'Configuration Editor';
+	$c->stash->{'subtitle'}              = 'Configuration Editor';
+	$c->stash->{'infoBoxTitle'}          = 'Configuration Editor';
 	$c->stash->{'no_auto_reload'}      = 1;
 	$c->stash->{'template'} = 'api_conf.tt';
 	$c->stash->{'testmode'} = 1;
