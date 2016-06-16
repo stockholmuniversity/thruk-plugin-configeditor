@@ -14,5 +14,5 @@ Thruk::Utils::Menu::insert_item('System', {
                                 'name'  => 'Configuration Editor',
 });
 
-# enable micke features if this plugin is loaded
+# enable api_conf features if this plugin is loaded
 $app->config->{'use_feature_api_conf'} = 1;
