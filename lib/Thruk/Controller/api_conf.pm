@@ -44,6 +44,10 @@ This function reads api config and makes api calls
 
 =item *
 
+confdir (typically  $c->stash->{'home'} )
+
+=item *
+
 verb (GET, PUT, DELETE, POST)
 
 =item *
@@ -60,9 +64,9 @@ payload (optional, {  "attrs": { "check_command": "<command name>", "check_inter
 
 
 sub api_call {
-	my ($verb, $endpoint, $payload) = @_;
+	my ($confdir, $verb, $endpoint, $payload) = @_;
 	# Read config file
-	my $config_file = "/local/icinga2/conf/api-credentials.json";
+	my $config_file = "$confdir/icinga-api-credentials.json";
 	my $config = Config::JSON->new($config_file);
 
 	# Setting up for api call
@@ -274,7 +278,7 @@ sub hosts {
 			if ($cascading eq "true") {
 				 $cascade = '?cascade=1';
 			}
-			my @arr = api_call("DELETE", "v1/objects/hosts/$host$cascade");
+			my @arr = api_call( $c->stash->{'home'}, "DELETE", "v1/objects/hosts/$host$cascade");
 			$host_page .= display_api_response(@arr) ;
 		}
 		# Main dialog box of the delete mode for hosts page
@@ -314,12 +318,12 @@ sub hosts {
 		# This case is the  actual creation
 		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
 			my $payload = '{ "zone": "'.$zone.'", "attrs": { "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
-			my @arr = api_call("PUT", "v1/objects/hosts/$host", $payload );
+			my @arr = api_call( $c->stash->{'home'}, "PUT", "v1/objects/hosts/$host", $payload );
 			$host_page .= display_api_response(@arr, $payload);
 		# This is the main host creation dialog
 		} else {
 
-			my %zones = %{ api_call("GET", "v1/objects/zones") };
+			my %zones = %{ api_call( $c->stash->{'home'}, "GET", "v1/objects/zones") };
                         $host_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
@@ -451,7 +455,7 @@ sub services {
 		        $service_page .=  $q->end_form;
 		# This case is actual deletion via api_call
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
-			my @arr = api_call("DELETE", "v1/objects/services/$host!$servicename");
+			my @arr = api_call( $c->stash->{'home'}, "DELETE", "v1/objects/services/$host!$servicename");
 			$service_page .= display_api_response(@arr);
 		# Host selection dialog i.e. the main dialog for service deletion
 		} else {
@@ -501,7 +505,7 @@ sub services {
                                 }
                         }
 			$payload .=  ' } }';
-			my @arr = api_call("PUT", "v1/objects/services/$host!$servicename", $payload);
+			my @arr = api_call( $c->stash->{'home'}, "PUT", "v1/objects/services/$host!$servicename", $payload);
 			$service_page .= display_api_response(@arr, $payload);
 		# This is the main dialog for service creation
 		} else {
@@ -631,7 +635,7 @@ sub commands {
 			if ($cascading eq "true") {
 				$cascade .= '?cascade=1';
 			}
-			my @arr = api_call("DELETE", "v1/objects/checkcommands/$command$cascade");
+			my @arr = api_call( $c->stash->{'home'}, "DELETE", "v1/objects/checkcommands/$command$cascade");
 			$command_page .= display_api_response(@arr);
 		# This is the main dialog for command deletion
 		} else {
@@ -669,7 +673,7 @@ sub commands {
 
 			}
 			$payload .= ' } }';
-			my @arr = api_call("PUT", "v1/objects/checkcommands/$command", $payload);
+			my @arr = api_call( $c->stash->{'home'}, "PUT", "v1/objects/checkcommands/$command", $payload);
 			$command_page .= display_api_response(@arr, $payload);
 		# This is confirmation dialog for command creation
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
