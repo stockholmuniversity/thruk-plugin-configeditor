@@ -1,4 +1,4 @@
-## API Conf Thruk Plugin
+## Configuration Editor Thruk Plugin for Icinga2
 
 This plugin allows you to configure Icinga2 via the in built HTTP API.
 
