@@ -8,6 +8,10 @@ it under the same terms as Perl itself.
 Dependencies for ubuntu 14.04 is: 
 liblwp-protocol-https-perl libconfig-json-perl libnet-sslglue-perl libdata-validate-ip-perl
 
+Install instructions:
+cd plugins-available
+git clone https://github.com/stockholmuniversity/thruk-plugin-configeditor.git configuration_editor
+
 In order to work the plugin needs a config file in json format which is typicaly called:
 /etc/thruk/icinga-api-credentials.json
 
