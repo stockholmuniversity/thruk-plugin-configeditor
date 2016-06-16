@@ -33,6 +33,7 @@ use IO::Socket::SSL;
 use Data::Dumper;
 use JSON::XS qw(encode_json decode_json);
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
+use File::Basename qw( dirname );
 
 =head2 api_call
 
@@ -44,7 +45,7 @@ This function reads api config and makes api calls
 
 =item *
 
-confdir (typically  $c->stash->{'home'} )
+confdir (typically  $c->stash->{'confdir'} )
 
 =item *
 
@@ -278,7 +279,7 @@ sub hosts {
 			if ($cascading eq "true") {
 				 $cascade = '?cascade=1';
 			}
-			my @arr = api_call( $c->stash->{'home'}, "DELETE", "v1/objects/hosts/$host$cascade");
+			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/hosts/$host$cascade");
 			$host_page .= display_api_response(@arr) ;
 		}
 		# Main dialog box of the delete mode for hosts page
@@ -318,12 +319,12 @@ sub hosts {
 		# This case is the  actual creation
 		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
 			my $payload = '{ "zone": "'.$zone.'", "attrs": { "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
-			my @arr = api_call( $c->stash->{'home'}, "PUT", "v1/objects/hosts/$host", $payload );
+			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/hosts/$host", $payload );
 			$host_page .= display_api_response(@arr, $payload);
 		# This is the main host creation dialog
 		} else {
 
-			my %zones = %{ api_call( $c->stash->{'home'}, "GET", "v1/objects/zones") };
+			my %zones = %{ api_call( $c->stash->{'confdir'}, "GET", "v1/objects/zones") };
                         $host_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
@@ -455,7 +456,7 @@ sub services {
 		        $service_page .=  $q->end_form;
 		# This case is actual deletion via api_call
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
-			my @arr = api_call( $c->stash->{'home'}, "DELETE", "v1/objects/services/$host!$servicename");
+			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/services/$host!$servicename");
 			$service_page .= display_api_response(@arr);
 		# Host selection dialog i.e. the main dialog for service deletion
 		} else {
@@ -505,7 +506,7 @@ sub services {
                                 }
                         }
 			$payload .=  ' } }';
-			my @arr = api_call( $c->stash->{'home'}, "PUT", "v1/objects/services/$host!$servicename", $payload);
+			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/services/$host!$servicename", $payload);
 			$service_page .= display_api_response(@arr, $payload);
 		# This is the main dialog for service creation
 		} else {
@@ -635,7 +636,7 @@ sub commands {
 			if ($cascading eq "true") {
 				$cascade .= '?cascade=1';
 			}
-			my @arr = api_call( $c->stash->{'home'}, "DELETE", "v1/objects/checkcommands/$command$cascade");
+			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/checkcommands/$command$cascade");
 			$command_page .= display_api_response(@arr);
 		# This is the main dialog for command deletion
 		} else {
@@ -673,7 +674,7 @@ sub commands {
 
 			}
 			$payload .= ' } }';
-			my @arr = api_call( $c->stash->{'home'}, "PUT", "v1/objects/checkcommands/$command", $payload);
+			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/checkcommands/$command", $payload);
 			$command_page .= display_api_response(@arr, $payload);
 		# This is confirmation dialog for command creation
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
@@ -766,18 +767,24 @@ sub index {
 	my ( $c ) = @_;
 
 	# This is Configuration options used by Thruk
-	$c->stash->{readonly}        = 0;
-	$c->stash->{title}           = 'API Conf';
-	$c->stash->{subtitle}              = 'API Conf';
-	$c->stash->{infoBoxTitle}          = 'API Conf';
+	$c->stash->{'readonly'}        = 0;
+	$c->stash->{'title'}           = 'API Conf';
+	$c->stash->{'subtitle'}              = 'API Conf';
+	$c->stash->{'infoBoxTitle'}          = 'API Conf';
 	$c->stash->{'no_auto_reload'}      = 1;
-	$c->stash->{template} = 'api_conf.tt';
-	$c->stash->{testmode} = 1;
+	$c->stash->{'template'} = 'api_conf.tt';
+	$c->stash->{'testmode'} = 1;
 
 	# This is data we might need one more than one type of page
 	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); 
 	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); 
 	$c->stash->{commands} = $c->{'db'}->get_commands(); 
+	my $confdir = '/etc/thruk';
+	if ($c->stash->{usercontent_folder} =~ m/\//) {
+		$confdir = dirname($c->stash->{usercontent_folder});
+	}
+	$c->stash->{'confdir'} = $confdir; 
+
 	# Limit access to authorized personell only
 	if( !$c->check_user_roles("authorized_for_configuration_information")
         || !$c->check_user_roles("authorized_for_system_commands")) {
