@@ -2,6 +2,8 @@
 
 This plugin allows you to configure Icinga2 via the in built HTTP API.
 
+Dependencies for ubuntu 14.04 is: liblwp-protocol-https-perl libconfig-json-perl libnet-sslglue-perl libdata-validate-ip-perl liburi-encode-perl
+
 Add this to thruk_local to get access to plugin actions from the action menu:
 
 <action_menu_items>

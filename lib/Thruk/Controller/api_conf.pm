@@ -39,10 +39,25 @@ use Data::Validate::IP qw(is_ipv4 is_ipv6);
 This function reads api config and makes api calls
 
 =head3 Parameters
-* verb (GET, PUT, DELETE, POST)
-* endpoint (e.g. v1/objects/hosts/<hostname>)
-* optional payload ({  "attrs": { "check_command": "<command name>", "check_interval": 1,"retry_interval": 1 } })
+
+=over 
+
+=item *
+
+verb (GET, PUT, DELETE, POST)
+
+=item *
+
+endpoint (e.g. v1/objects/hosts/<hostname>)
+
+=item *
+
+payload (optional, {  "attrs": { "check_command": "<command name>", "check_interval": 1,"retry_interval": 1 } })
+
+=back
+
 =cut
+
 
 sub api_call {
 	my ($verb, $endpoint, $payload) = @_;
@@ -73,7 +88,15 @@ sub api_call {
 This function returns the create/delete dialog
 
 =head3 Parameters
-* page_type 
+
+=over
+
+=item * 
+
+page_type 
+
+=back
+
 =cut
 
 sub create_delete_dialog {
@@ -99,8 +122,19 @@ sub create_delete_dialog {
 This function displays the api response
 
 =head3 Parameters
-* arr is the api response
-* optional: payload 
+
+=over
+
+=item * 
+
+arr is the api response
+
+=item * 
+
+optional: payload 
+
+=back
+
 =cut
 
 sub display_api_response {
@@ -294,13 +328,15 @@ sub hosts {
                         $host_page .= $q->textfield('ip','',50,80);
                         $host_page .= $q->p("Enter zone:");
                         $host_page .= '<select name="zone">';
-		
+			# Loop through the zones
 			for my $zone (values $zones{results}) {
                                 $host_page .= "<option value=\"$zone->{name}\">$zone->{name}</option>";
 			}
                         $host_page .= '</select>';
                         $host_page .= $q->p("Enter host check command:");
                         $host_page .= '<select name="command">';
+			# We select check_hostalive as default command if it exists
+			# TODO: Move default checkcommand to conf file?
                         foreach my $hash (values $c->stash->{commands}) {
 				my $selected = '';
 		
@@ -326,18 +362,38 @@ sub hosts {
 	return $host_page;
 }
 
+=head2 host_groups
+
+TODO: Implement this
+
+=cut
 sub host_groups {
 	return "Host Groups Placeholder";
 }
 
+=head2 host_escalations
+
+TODO: Implement this
+
+=cut
 sub host_escalations {
 	return "Host Groups Placeholder";
 }
 
+=head2 host_dependencies
+
+TODO: Implement this
+
+=cut
 sub host_dependencies {
 	return "Host Groups Placeholder";
 }
 
+=head2 services
+
+This is where we produce the services page_type
+
+=cut
 sub services {
 	my ($c) = @_; 
 	my $q = CGI->new;
@@ -361,14 +417,16 @@ sub services {
 			$services{ $service->{host_name} }{$service->{description} } =  $service->{display_name} ;
 		}
 	}
-
+	# This is the delete mode
 	if ( $mode eq "delete") {
 		$service_page .= $q->h1('Services');         # level 1 header
-		if ( $host  =~ m/\..*\./ and not defined($confirm) and not $servicename =~ m/.+/ ) {
-		        $service_page .= $q->p("Enter service to modify for host: $host ");
+		# This is the service deletion dialog for a specific host
+		if ( $host  =~ m/\..*\./ and $confirm ne "Confirm" and not $servicename =~ m/.+/ ) {
+		        $service_page .= $q->p("Enter service to delete for host: $host ");
 		        $service_page .= $q->start_form(-method=>"POST",
 				   -action=>"api_conf.cgi");
 		        $service_page .= '<select name="servicename">';
+			# Loop all services asscoiated with the host
 		        foreach my $service ( sort keys $services{$host}) {
 				$service_page .= "<option value=\"$service\">$services{$host}{$service}</option>";
 		        }
@@ -379,7 +437,8 @@ sub services {
 		        $service_page .= $q->submit(-name=>'submit',
 				       -value=>'Submit');
 		        $service_page .=  $q->end_form;
-		} elsif ( $host  =~ m/\..*\./ and not defined($confirm) and $servicename =~ m/.+/ ) {
+		# This case is confirmation dialog for delete mode
+		} elsif ( $host  =~ m/\..*\./ and $confirm ne "Confirm" and $servicename =~ m/.+/ ) {
 		        $service_page .= $q->p('Are you sure you want to delete ' .  $servicename . ' for host: ' . $host .'?<br/>');
 		        $service_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
@@ -390,9 +449,11 @@ sub services {
 		        $service_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $service_page .=  $q->end_form;
+		# This case is actual deletion via api_call
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
 			my @arr = api_call("DELETE", "v1/objects/services/$host!$servicename");
 			$service_page .= display_api_response(@arr);
+		# Host selection dialog i.e. the main dialog for service deletion
 		} else {
 			$service_page .= $q->p('Enter host to modify');
 			$service_page .= $q->start_form(-method=>"POST",
@@ -408,7 +469,9 @@ sub services {
 					-value=>'Submit');
 			$service_page .=  $q->end_form;
 		}
+	# Creation mode
 	} elsif ($mode eq "create") {
+		# This is the confirm dialog
 		if( $host =~ m/\..*\./ and $check =~ m/.+/ and $displayname =~ m/.+/ and $servicename =~ m/.+/ and $confirm ne "Confirm" ) {
 		        $service_page .= '<p>Are you sure you want to add the service ' . $servicename . ' to host: ' . $host;
                         if ($attributes =~ m/.+/ ) {
@@ -427,9 +490,10 @@ sub services {
 		        $service_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 		        $service_page .=  $q->end_form;
-
+		# This is the actual creation via api_call
 		} elsif( $host =~ m/\..*\./ and $check =~ m/.+/ and $displayname =~ m/.+/ and $servicename =~ m/.+/ and $confirm eq "Confirm" ) {
 			my $payload = '{  "attrs": { "check_command": "' . $check . '", "display_name": "' . $displayname . '", "check_interval": 1,"retry_interval": 1';
+			# attributes are otional so we can only add them if they exist
                         if ($attributes =~ m/.+/ ) {
                                 for my $commas ( split(',', $attributes) ) {
                                         my @colon = split(':', $commas);
@@ -439,6 +503,7 @@ sub services {
 			$payload .=  ' } }';
 			my @arr = api_call("PUT", "v1/objects/services/$host!$servicename", $payload);
 			$service_page .= display_api_response(@arr, $payload);
+		# This is the main dialog for service creation
 		} else {
 		
 			# Get hosts
@@ -448,7 +513,7 @@ sub services {
 			}
 			my @host_arr = sort @temp_arr;
 
-			$service_page .= $q->p('Enter host to modify:');
+			$service_page .= $q->p('Select host to modify:');
 			$service_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
 			$service_page .= '<select name="host">';
@@ -463,7 +528,7 @@ sub services {
 			}
 			$service_page .= '</select>';
 
-			$service_page .= $q->p('Enter command to add:');
+			$service_page .= $q->p('Select check command:');
 			$service_page .= '<select name="check">';
 			foreach my $hash (values $c->stash->{commands}) {
 				my $name = $hash->{name};
@@ -483,35 +548,60 @@ sub services {
 					-value=>'Submit');
 			$service_page .=  $q->end_form;
 		}
-
+	# This is the first selection page i.e. create/delete dialog for services
 	} else {
 		$service_page .=  create_delete_dialog("services"); 
 	}
 	return $service_page;
 }
+=head2 service_groups
+
+TODO: Implement this
+
+=cut
 
 sub service_groups {
 	return "Service Groups Placeholder";
 }
 
+=head2 contacts
+
+TODO: Implement this
+
+=cut
 sub contacts {
 	return "Contacts Placeholder";
 }
 
+=head2 contact_groups
+
+TODO: Implement this
+
+=cut
 sub contact_groups {
 	return "Contact Groups Placeholder";
 }
 
+=head2 timeperiods
+
+TODO: Implement this
+
+=cut
 sub timeperiods {
 	return "Timeperiods Placeholder";
 }
 
+=head2 commands
+
+This is the page_type commands
+
+=cut
 sub commands {
 	my ($c) = @_; 
 	my $q = CGI->new;
 	my $params = $c->req->parameters;
 
-	#Get command and see if this is the delete request or not
+	# Capture parameters sent to page by user dialogs
 	my $confirm = $params->{'confirm'};
 	my $command = $params->{'command'};
 	my $commandline = $params->{'commandline'};
@@ -521,9 +611,10 @@ sub commands {
 	my $arguments = $params->{'arguments'};
 
 	my $command_page = '';
-	
+	# This is delete mode
 	if ( $mode eq "delete") {
-		if ( not defined($confirm) and  $command =~ m/.+/ ) {
+		# This case is the confirmation dialog
+		if ( $confirm ne "Confirm" and  $command =~ m/.+/ ) {
 			$command_page .= $q->p('Are you sure you want to delete ' . $command . '?<br/>');
 			$command_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
@@ -534,6 +625,7 @@ sub commands {
 			$command_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 			$command_page .=  $q->end_form;
+		# This is the actual deletion via api call
 		} elsif ( $confirm eq "Confirm" and  $command =~ m/.+/ ) {
 			my $cascade = '';
 			if ($cascading eq "true") {
@@ -541,6 +633,7 @@ sub commands {
 			}
 			my @arr = api_call("DELETE", "v1/objects/checkcommands/$command$cascade");
 			$command_page .= display_api_response(@arr);
+		# This is the main dialog for command deletion
 		} else {
 			$command_page .= $q->p('Enter command to delete');
 			$command_page .= $q->start_form(-method=>"POST",
@@ -559,9 +652,12 @@ sub commands {
 			$command_page .=  $q->end_form;
 
 		}
+	# Creation dialog
 	} elsif ($mode eq "create") {
+		# This is actual creation via api call
 		if ($confirm eq "Confirm" and $commandline =~ m/.+/  and  $command =~ m/.+/ ) {
 			my $payload = '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "' . $commandline . '" ]';
+			# Arguments are optional so we only add them if they exist
 			if ($arguments =~ m/.+/ ) {
 				$payload .= ', "arguments": { ';
 				for my $commas ( split(',', $arguments) ) {
@@ -575,6 +671,7 @@ sub commands {
 			$payload .= ' } }';
 			my @arr = api_call("PUT", "v1/objects/checkcommands/$command", $payload);
 			$command_page .= display_api_response(@arr, $payload);
+		# This is confirmation dialog for command creation
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
@@ -589,6 +686,7 @@ sub commands {
 			$command_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
 			$command_page .=  $q->end_form;
+		# This is main command creation dialog
 		} else {
                         $command_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
@@ -604,6 +702,7 @@ sub commands {
                                 -value=>'Submit');
                 	$command_page .=  $q->end_form;
 		}
+	# This is create/delete dialog 
 	} else {
 		$command_page .= create_delete_dialog("commands");
 	}
@@ -675,6 +774,7 @@ sub index {
 	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); 
 	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); 
 	$c->stash->{commands} = $c->{'db'}->get_commands(); 
+	# Limit access to authorized personell only
 	if( !$c->check_user_roles("authorized_for_configuration_information")
         || !$c->check_user_roles("authorized_for_system_commands")) {
 		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
