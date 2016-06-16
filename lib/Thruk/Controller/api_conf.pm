@@ -231,7 +231,7 @@ sub hosts {
 	my ($c) = @_; 
 
 	# $host_page is the html for the hosts
-	my $host_page = '';
+	my $host_page = '<div class="reportSelectTitle" align="center">Hosts</div>';
 
 	# Set up cgi
 	my $q = CGI->new;
@@ -258,7 +258,6 @@ sub hosts {
 	if ($mode eq "delete") {
 		# This case is first dialog
 		if (not defined($confirm) and $host  =~ m/\..*\./  ) {
-			$host_page .= $q->h1('Delete Host');         # level 1 header
 			$host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
 			$host_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
@@ -284,7 +283,6 @@ sub hosts {
 		}
 		# Main dialog box of the delete mode for hosts page
 		else {
-			$host_page .= $q->h1('Delete Host');
 			$host_page .= $q->p('Enter host to delete');
 			$host_page .= $q->start_form(-method=>"POST",
 				    -action=>"api_conf.cgi");
@@ -414,7 +412,7 @@ sub services {
 	my $displayname = $params->{'displayname'};
 	my $attributes = $params->{'attributes'};
 
-	my $service_page = '';
+	my $service_page = '<div class="reportSelectTitle" align="center">Services</div>';
         # Get services
 	my %services = ();
 	foreach my $hash ($c->stash->{services} ) {
@@ -424,7 +422,6 @@ sub services {
 	}
 	# This is the delete mode
 	if ( $mode eq "delete") {
-		$service_page .= $q->h1('Services');         # level 1 header
 		# This is the service deletion dialog for a specific host
 		if ( $host  =~ m/\..*\./ and $confirm ne "Confirm" and not $servicename =~ m/.+/ ) {
 		        $service_page .= $q->p("Enter service to delete for host: $host ");
@@ -615,7 +612,7 @@ sub commands {
 	my $submit = $params->{'submit'};
 	my $arguments = $params->{'arguments'};
 
-	my $command_page = '';
+	my $command_page = '<div class="reportSelectTitle" align="center">Commands</div>';
 	# This is delete mode
 	if ( $mode eq "delete") {
 		# This case is the confirmation dialog
