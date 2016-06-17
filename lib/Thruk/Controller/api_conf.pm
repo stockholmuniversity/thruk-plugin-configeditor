@@ -246,6 +246,7 @@ sub hosts {
 	my $cascading = $params->{'cascading'};
 	my $mode = $params->{'mode'};
 	my $command = $params->{'command'};
+	my $templates = $params->{'templates'};
 
 	# Get hosts
 	my @temp_arr;
@@ -316,7 +317,15 @@ sub hosts {
 		        $host_page .=  $q->end_form;
 		# This case is the  actual creation
 		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
-			my $payload = '{ "zone": "'.$zone.'", "attrs": { "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
+			my $payload = '{ ';
+			if ($templates =~ m/.+/ ) {
+				$payload .= '"templates":[';
+				for my $template ( split( ',', $templates) ) {
+					$payload .= '"' . $template . '", ';
+				}
+				$payload =~ s/, $/],/;
+			}
+			$payload .= '"attrs": { "zone": "'.$zone.'", "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
 			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/hosts/$host", $payload );
 			$host_page .= display_api_response(@arr, $payload);
 		# This is the main host creation dialog
@@ -329,6 +338,8 @@ sub hosts {
                         $host_page .= $q->textfield('host','',50,80);
                         $host_page .= $q->p("Enter ip address:");
                         $host_page .= $q->textfield('ip','',50,80);
+                        $host_page .= $q->p("Enter templates, optional comma separated list:");
+                        $host_page .= $q->textfield('zones','',50,80);
                         $host_page .= $q->p("Enter zone:");
                         $host_page .= '<select name="zone">';
 			# Loop through the zones
