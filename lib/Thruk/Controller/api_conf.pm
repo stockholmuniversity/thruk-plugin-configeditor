@@ -311,6 +311,7 @@ sub hosts {
 		        $host_page .= $q->hidden('ip',$ip);
 		        $host_page .= $q->hidden('zone',$zone);
 		        $host_page .= $q->hidden('command',$command);
+		        $host_page .= $q->hidden('templates',$templates);
 		        $host_page .= $q->hidden('os',$os);
 		        $host_page .= $q->submit(-name=>'confirm',
 					-value=>'Confirm');
@@ -318,8 +319,8 @@ sub hosts {
 		# This case is the  actual creation
 		} elsif ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and  $confirm eq "Confirm" and $os =~ m/.+/ and $zone )  {
 			my $payload = '{ ';
-			if ($templates =~ m/.+/ ) {
-				$payload .= '"templates":[';
+			if ( $templates =~ m/.+/ ) {
+				$payload .= '"templates": [';
 				for my $template ( split( ',', $templates) ) {
 					$payload .= '"' . $template . '", ';
 				}
@@ -339,7 +340,7 @@ sub hosts {
                         $host_page .= $q->p("Enter ip address:");
                         $host_page .= $q->textfield('ip','',50,80);
                         $host_page .= $q->p("Enter templates, optional comma separated list:");
-                        $host_page .= $q->textfield('zones','',50,80);
+                        $host_page .= $q->textfield('templates','',50,80);
                         $host_page .= $q->p("Enter zone:");
                         $host_page .= '<select name="zone">';
 			# Loop through the zones
