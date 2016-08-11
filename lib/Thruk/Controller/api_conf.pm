@@ -783,6 +783,9 @@ sub index {
 	$c->stash->{'no_auto_reload'}      = 1;
 	$c->stash->{'template'} = 'api_conf.tt';
 	$c->stash->{'testmode'} = 1;
+	my $hostname = `hostname --fqdn`;
+	chomp $hostname;
+	$c->stash->{'hostname'} = $hostname;
 
 	# This is data we might need one more than one type of page
 	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); 

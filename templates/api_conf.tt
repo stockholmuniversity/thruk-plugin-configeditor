@@ -4,6 +4,10 @@
     <script type="text/javascript">
     <!--
         var url_prefix = '[% url_prefix %]';
+	function infoBoxFunction() {
+		var infoBox = document.getElementsByClassName("infoBox");
+		infoBox[0].innerHTML = infoBox[0].innerHTML + 'Logged in on <span id="infoboxhostname">[% hostname %]</span><br>';
+	}
     -->
     </script>
     <title>[% title_prefix %][% title %]</title>
@@ -26,7 +30,7 @@
                       js=["plugins/conf/conf.js", "javascript/jstree-3.0.9/jstree.min.js"]
 %]
 </head>
-<body>
+<body onload="infoBoxFunction()">
 [% PROCESS _message.tt %]
 [% PROCESS _overdiv.tt %]
 [% PROCESS _infobox.tt %]
