@@ -88,6 +88,38 @@ sub api_call {
 	return decode_json $response->decoded_content;
 }
 
+=head2 create_back_button
+
+This function returns the back button
+
+=head3 Parameters
+
+=over
+
+=item * 
+
+page_type 
+
+=back
+
+=cut
+
+sub create_back_button {
+	my $mode = shift;
+	my ($page_type) = @_;
+        # A cgi object to help with some html creation
+        my $q = CGI->new;
+	my $page = $q->p('Go back?');
+	$page .= $q->start_form(-method=>"POST",
+		    -action=>"api_conf.cgi");
+	$page .= $q->hidden('page_type',"$page_type");
+	$page .= $q->hidden('mode',"$mode");
+	$page .= $q->submit(-name=>'return',
+			-value=>'Return');
+	$page .=  $q->end_form;
+	return $page;
+}
+
 =head2 create_delete_dialog
 
 This function returns the create/delete dialog
@@ -281,6 +313,7 @@ sub hosts {
 			}
 			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/hosts/$host$cascade");
 			$host_page .= display_api_response(@arr) ;
+			$host_page .= create_back_button($mode, 'hosts');
 		}
 		# Main dialog box of the delete mode for hosts page
 		else {
@@ -329,6 +362,7 @@ sub hosts {
 			$payload .= '"attrs": { "zone": "'.$zone.'", "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
 			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/hosts/$host", $payload );
 			$host_page .= display_api_response(@arr, $payload);
+			$host_page .= create_back_button($mode, 'hosts');
 		# This is the main host creation dialog
 		} else {
 
@@ -467,6 +501,7 @@ sub services {
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
 			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/services/$host!$servicename");
 			$service_page .= display_api_response(@arr);
+			$service_page .= create_back_button($mode, 'services'); 
 		# Host selection dialog i.e. the main dialog for service deletion
 		} else {
 			$service_page .= $q->p('Enter host to modify');
@@ -517,6 +552,7 @@ sub services {
 			$payload .=  ' } }';
 			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/services/$host!$servicename", $payload);
 			$service_page .= display_api_response(@arr, $payload);
+			$service_page .= create_back_button($mode, 'services');
 		# This is the main dialog for service creation
 		} else {
 		
@@ -647,6 +683,7 @@ sub commands {
 			}
 			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/checkcommands/$command$cascade");
 			$command_page .= display_api_response(@arr);
+			$command_page .= create_back_button($mode, 'commands'); 
 		# This is the main dialog for command deletion
 		} else {
 			$command_page .= $q->p('Enter command to delete');
@@ -685,6 +722,7 @@ sub commands {
 			$payload .= ' } }';
 			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/checkcommands/$command", $payload);
 			$command_page .= display_api_response(@arr, $payload);
+			$command_page .=create_back_button($mode, 'commands'); 
 		# This is confirmation dialog for command creation
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
