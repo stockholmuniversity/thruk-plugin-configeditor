@@ -98,6 +98,10 @@ This function returns the back button
 
 =item * 
 
+mode 
+
+=item * 
+
 page_type 
 
 =back
