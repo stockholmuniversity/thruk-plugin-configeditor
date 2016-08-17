@@ -25,6 +25,7 @@ Content of this file should contain credentials and host/port information, e.g:
    "realm" : "Icinga 2",
    "host" : "icinga.example.com",
    "port" : "5665",
+   "path" : "v1",
 }
 
 If you want to get access to plugin actions from the action menu you can add this to thruk_local.conf:

@@ -53,7 +53,7 @@ verb (GET, PUT, DELETE, POST)
 
 =item *
 
-endpoint (e.g. v1/objects/hosts/<hostname>)
+endpoint (e.g. objects/hosts/<hostname>)
 
 =item *
 
@@ -76,7 +76,8 @@ sub api_call {
 	my $api_realm = $config->get('realm');
 	my $api_host = $config->get('host');
 	my $api_port = $config->get('port');
-	my $api_url = "https://$api_host:$api_port/$endpoint";
+	my $api_path = $config->get('path');
+	my $api_url = "https://$api_host:$api_port/$api_path/$endpoint";
 	my $ua = LWP::UserAgent->new( ssl_opts => {verify_hostname => 0 } );
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
@@ -315,7 +316,7 @@ sub hosts {
 			if ($cascading eq "true") {
 				 $cascade = '?cascade=1';
 			}
-			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/hosts/$host$cascade");
+			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "objects/hosts/$host$cascade");
 			$host_page .= display_api_response(@arr) ;
 			$host_page .= create_back_button($mode, 'hosts');
 		}
@@ -364,13 +365,13 @@ sub hosts {
 				$payload =~ s/, $/],/;
 			}
 			$payload .= '"attrs": { "zone": "'.$zone.'", "address": "'.$ip.'", "check_command": "'.$command.'", "vars.os" : "'.$os.'" } }';
-			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/hosts/$host", $payload );
+			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "objects/hosts/$host", $payload );
 			$host_page .= display_api_response(@arr, $payload);
 			$host_page .= create_back_button($mode, 'hosts');
 		# This is the main host creation dialog
 		} else {
 
-			my %zones = %{ api_call( $c->stash->{'confdir'}, "GET", "v1/objects/zones") };
+			my %zones = %{ api_call( $c->stash->{'confdir'}, "GET", "objects/zones") };
                         $host_page .= $q->start_form(-method=>"POST",
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
@@ -503,7 +504,7 @@ sub services {
 		        $service_page .=  $q->end_form;
 		# This case is actual deletion via api_call
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
-			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/services/$host!$servicename");
+			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "objects/services/$host!$servicename");
 			$service_page .= display_api_response(@arr);
 			$service_page .= create_back_button($mode, 'services'); 
 		# Host selection dialog i.e. the main dialog for service deletion
@@ -554,7 +555,7 @@ sub services {
                                 }
                         }
 			$payload .=  ' } }';
-			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/services/$host!$servicename", $payload);
+			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "objects/services/$host!$servicename", $payload);
 			$service_page .= display_api_response(@arr, $payload);
 			$service_page .= create_back_button($mode, 'services');
 		# This is the main dialog for service creation
@@ -685,7 +686,7 @@ sub commands {
 			if ($cascading eq "true") {
 				$cascade .= '?cascade=1';
 			}
-			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "v1/objects/checkcommands/$command$cascade");
+			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "objects/checkcommands/$command$cascade");
 			$command_page .= display_api_response(@arr);
 			$command_page .= create_back_button($mode, 'commands'); 
 		# This is the main dialog for command deletion
@@ -724,7 +725,7 @@ sub commands {
 
 			}
 			$payload .= ' } }';
-			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "v1/objects/checkcommands/$command", $payload);
+			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "objects/checkcommands/$command", $payload);
 			$command_page .= display_api_response(@arr, $payload);
 			$command_page .=create_back_button($mode, 'commands'); 
 		# This is confirmation dialog for command creation
