@@ -818,6 +818,12 @@ sub index {
 
 	my ( $c ) = @_;
 
+        # Limit access to authorized personell only
+        return unless Thruk::Action::AddDefaults::add_defaults($c, Thruk::ADD_SAFE_DEFAULTS);
+        if( !$c->check_user_roles("authorized_for_configuration_information") || !$c->check_user_roles("authorized_for_system_commands")) {
+                return $c->detach('/error/index/8');
+        }
+
 	# This is Configuration options used by Thruk
 	$c->stash->{'readonly'}        = 0;
 	$c->stash->{'title'}           = 'Configuration Editor';
@@ -839,14 +845,7 @@ sub index {
 		$confdir = dirname($c->stash->{usercontent_folder});
 	}
 	$c->stash->{'confdir'} = $confdir; 
-
-	# Limit access to authorized personell only
-	if( !$c->check_user_roles("authorized_for_configuration_information")
-        || !$c->check_user_roles("authorized_for_system_commands")) {
-		$c->stash->{body} = "<h1>You are not authorized to access this page!</h1>";
-	} else {
-		$c->stash->{body} = body $c;
-	}
+	$c->stash->{body} = body $c;
 }
 
 =head1 LICENSE
