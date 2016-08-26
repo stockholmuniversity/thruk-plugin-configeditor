@@ -422,7 +422,32 @@ TODO: Implement this
 
 =cut
 sub host_groups {
-	return "Host Groups Placeholder";
+	# $c holds all our context info 
+	my ($c) = @_; 
+
+	# $host_page is the html for the hosts
+	my $hostgroup_page = '<div class="reportSelectTitle" align="center">Hosts</div>';
+
+	# Set up cgi
+	my $q = CGI->new;
+	my $params = $c->req->parameters;
+
+	#Extract parameters from the request
+	my $host = $params->{'host'};
+	my $host = $params->{'hostgroup'};
+	my $zone = $params->{'zone'};
+	my $confirm = $params->{'confirm'};
+	my $cascading = $params->{'cascading'};
+	my $mode = $params->{'mode'};
+	my $templates = $params->{'templates'};
+
+	# Get hosts
+	my @temp_arr;
+	for my $hashref (values $c->stash->{hosts}) {
+        	push @temp_arr,  $hashref->{name};
+	}
+	my @host_arr = sort @temp_arr;
+	return hostgroup_page;
 }
 
 =head2 host_escalations
@@ -431,7 +456,7 @@ TODO: Implement this
 
 =cut
 sub host_escalations {
-	return "Host Groups Placeholder";
+	return "Host Escalations Placeholder";
 }
 
 =head2 host_dependencies
@@ -440,7 +465,7 @@ TODO: Implement this
 
 =cut
 sub host_dependencies {
-	return "Host Groups Placeholder";
+	return "Host Dependencies Placeholder";
 }
 
 =head2 services
@@ -818,11 +843,11 @@ sub index {
 
 	my ( $c ) = @_;
 
-        # Limit access to authorized personell only
-        return unless Thruk::Action::AddDefaults::add_defaults($c, Thruk::ADD_SAFE_DEFAULTS);
-        if( !$c->check_user_roles("authorized_for_configuration_information") || !$c->check_user_roles("authorized_for_system_commands")) {
-                return $c->detach('/error/index/8');
-        }
+	# Limit access to authorized personell only
+	return unless Thruk::Action::AddDefaults::add_defaults($c, Thruk::ADD_SAFE_DEFAULTS);
+	if( !$c->check_user_roles("authorized_for_configuration_information") || !$c->check_user_roles("authorized_for_system_commands")) {
+			return $c->detach('/error/index/8');
+	}
 
 	# This is Configuration options used by Thruk
 	$c->stash->{'readonly'}        = 0;
@@ -836,9 +861,10 @@ sub index {
 	chomp $hostname;
 	$c->stash->{'hostname'} = $hostname;
 
-	# This is data we might need one more than one type of page
+	# This is data we need to have handy
 	$c->stash->{services} = $c->{'db'}->get_services(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'services')]); 
 	$c->stash->{hosts} = $c->{'db'}->get_hosts(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hosts')]); 
+	$c->stash->{hostgroups} = $c->{'db'}->get_hostgroups(filter => [ Thruk::Utils::Auth::get_auth_filter($c, 'hostgroups')]); 
 	$c->stash->{commands} = $c->{'db'}->get_commands(); 
 	my $confdir = '/etc/thruk';
 	if ($c->stash->{usercontent_folder} =~ m/\//) {
