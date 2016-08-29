@@ -211,7 +211,7 @@ sub selector {
 		'hosts' => 'Hosts', 
 	#	'hostdependencies' => 'Host Dependencies',
 	#	'hostescalations' => 'Host Escalations', 
-	#	'hostgroups' => 'Host Groups',
+		'hostgroups' => 'Host Groups',
 		'services' => 'Services',
 	#	'servicegroups' => 'Service Groups',
 	#	'servicedependencies' => 'Service Dependencies',
@@ -426,7 +426,7 @@ sub host_groups {
 	my ($c) = @_; 
 
 	# $host_page is the html for the hosts
-	my $hostgroup_page = '<div class="reportSelectTitle" align="center">Hosts</div>';
+	my $hostgroup_page = '<div class="reportSelectTitle" align="center">Host Groups</div>';
 
 	# Set up cgi
 	my $q = CGI->new;
@@ -434,7 +434,7 @@ sub host_groups {
 
 	#Extract parameters from the request
 	my $host = $params->{'host'};
-	my $host = $params->{'hostgroup'};
+	my $hostgroup = $params->{'hostgroup'};
 	my $zone = $params->{'zone'};
 	my $confirm = $params->{'confirm'};
 	my $cascading = $params->{'cascading'};
@@ -447,7 +447,40 @@ sub host_groups {
         	push @temp_arr,  $hashref->{name};
 	}
 	my @host_arr = sort @temp_arr;
-	return hostgroup_page;
+
+	if ($mode eq "create") {
+		$hostgroup_page .= "Creation";
+	} elsif ($mode eq "delete") {
+		# If we have selected a hostgroup but have not yet confirmed
+		if ( $hostgroup =~ m/.+/ and $confirm ne "Confirm"  ) {
+			$hostgroup_page .= "Hostgroup but not confirmed ";
+		# If we have both hostgroup and confirm
+		} elsif( $hostgroup =~ m/.+/ and $confirm eq "Confirm"  ) {
+			$hostgroup_page .= "Hostgroup and confirmed ";
+		# Fall back on a drop down list
+		} else {
+			$hostgroup_page .= $q->start_form(-method=>"POST",
+				    -action=>"api_conf.cgi");
+			$hostgroup_page .= $q->p("Enter hostgroupname:");
+			$hostgroup_page .= '<select name="hostgroup">';
+			foreach my $hostgroup ( values $c->stash->{hostgroups} ) {
+				$hostgroup_page .= "<option value=\"$hostgroup->{alias}\">$hostgroup->{alias}</option>";
+			} 
+			$hostgroup_page .= '</select>';
+			$hostgroup_page .= $q->hidden('page_type',"hostgroups");
+			$hostgroup_page .= $q->hidden('mode',"delete");
+			$hostgroup_page .= $q->submit(-name=>'submit',
+				-value=>'Submit');
+			$hostgroup_page .=  $q->end_form;
+		}
+
+	} elsif ($mode eq "modify") {
+		$hostgroup_page .= "Modification";
+		$hostgroup_page .= Dumper $c->stash->{hostgroups};
+	} else {
+		$hostgroup_page .=  create_delete_dialog("hostgroups");
+	}
+	return $hostgroup_page;
 }
 
 =head2 host_escalations
