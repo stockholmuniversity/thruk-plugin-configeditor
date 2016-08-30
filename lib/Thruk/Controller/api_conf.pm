@@ -34,6 +34,10 @@ use Data::Dumper;
 use JSON::XS qw(encode_json decode_json);
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use File::Basename qw( dirname );
+use URI::Encode qw(uri_encode uri_decode);
+
+# This is the form method for dialogs, useful to change all for debug purposes
+my $METHOD = "GET";
 
 =head2 api_call
 
@@ -115,7 +119,7 @@ sub create_back_button {
         # A cgi object to help with some html creation
         my $q = CGI->new;
 	my $page = $q->p('Go back?');
-	$page .= $q->start_form(-method=>"POST",
+	$page .= $q->start_form(-method=>$METHOD,
 		    -action=>"api_conf.cgi");
 	$page .= $q->hidden('page_type',"$page_type");
 	$page .= $q->hidden('mode',"$mode");
@@ -146,7 +150,7 @@ sub create_delete_dialog {
         # A cgi object to help with some html creation
         my $q = CGI->new;
 	my $page = $q->p('What do you want to do?');
-	$page .= $q->start_form(-method=>"POST",
+	$page .= $q->start_form(-method=>$METHOD,
 		    -action=>"api_conf.cgi");
 	$page .= '<select name="mode">';
 	$page .= "<option value=\"create\">Create</option>";
@@ -227,7 +231,7 @@ sub selector {
 	$landing_page .= '<div class="reportSelectTitle" align="center">Select Type of Config Data You Wish To Edit</div>';
 	$landing_page .= '<br>';
 	$landing_page .= '<br>';
-	$landing_page .= $q->start_form(-method=>"POST",
+	$landing_page .= $q->start_form(-method=>$METHOD,
 		    -action=>"api_conf.cgi");
 	$landing_page .= '<div align="center">';
 	$landing_page .= '<table border="0">';
@@ -297,7 +301,7 @@ sub hosts {
 		# This case is first dialog
 		if (not defined($confirm) and $host  =~ m/\..*\./  ) {
 			$host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
-			$host_page .= $q->start_form(-method=>"POST",
+			$host_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$host_page .= $q->hidden('host',$host);
 			$host_page .= $q->hidden('page_type',"hosts");
@@ -323,7 +327,7 @@ sub hosts {
 		# Main dialog box of the delete mode for hosts page
 		else {
 			$host_page .= $q->p('Enter host to delete');
-			$host_page .= $q->start_form(-method=>"POST",
+			$host_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$host_page .= '<select name="host">';
 			for my $ho ( @host_arr ) {
@@ -341,7 +345,7 @@ sub hosts {
 		# This case is confirm dialog
 		if ( $host  =~ m/\..*\./ and ( is_ipv4($ip) or is_ipv6($ip) ) and $confirm ne "Confirm" ) {
 		        $host_page .= $q->p('Are you sure you want to create ' . $host . ' with ip address: ' . $ip .' and checkcommand: '. $command . '?<br/>');
-		        $host_page .= $q->start_form(-method=>"POST",
+		        $host_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 		        $host_page .= $q->hidden('host',$host);
 		        $host_page .= $q->hidden('page_type',"hosts");
@@ -372,7 +376,7 @@ sub hosts {
 		} else {
 
 			my %zones = %{ api_call( $c->stash->{'confdir'}, "GET", "objects/zones") };
-                        $host_page .= $q->start_form(-method=>"POST",
+                        $host_page .= $q->start_form(-method=>$METHOD,
                             -action=>"api_conf.cgi");
                         $host_page .= $q->p("Enter hostname:");
                         $host_page .= $q->textfield('host','',50,80);
@@ -451,20 +455,30 @@ sub host_groups {
 	if ($mode eq "create") {
 		$hostgroup_page .= "Creation";
 	} elsif ($mode eq "delete") {
-		# If we have selected a hostgroup but have not yet confirmed
+		# If we have selected a hostgroup but have not yet confirmed, i.e. we show confirm dialog
 		if ( $hostgroup =~ m/.+/ and $confirm ne "Confirm"  ) {
-			$hostgroup_page .= "Hostgroup but not confirmed ";
-		# If we have both hostgroup and confirm
+                        $hostgroup_page .= $q->p('Are you sure you want to delete ' .  $hostgroup . '?<br/>');
+                        $hostgroup_page .= $q->start_form(-method=>$METHOD,
+                                    -action=>"api_conf.cgi");
+                        $hostgroup_page .= $q->hidden('hostgroup',$hostgroup);
+                        $hostgroup_page .= $q->hidden('page_type',"hostgroups");
+                        $hostgroup_page .= $q->hidden('mode',"delete");
+                        $hostgroup_page .= $q->submit(-name=>'confirm',
+                                        -value=>'Confirm');
+                        $hostgroup_page .=  $q->end_form;
+		# If we have both hostgroup and confirm, i.e. we delete via api call
 		} elsif( $hostgroup =~ m/.+/ and $confirm eq "Confirm"  ) {
-			$hostgroup_page .= "Hostgroup and confirmed ";
+                        my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "objects/hostgroups/" . uri_encode($hostgroup) );
+                        $hostgroup_page .= display_api_response(@arr);
+                        $hostgroup_page .= create_back_button($mode, 'hostgroups');
 		# Fall back on a drop down list
 		} else {
-			$hostgroup_page .= $q->start_form(-method=>"POST",
+			$hostgroup_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$hostgroup_page .= $q->p("Enter hostgroupname:");
 			$hostgroup_page .= '<select name="hostgroup">';
 			foreach my $hostgroup ( values $c->stash->{hostgroups} ) {
-				$hostgroup_page .= "<option value=\"$hostgroup->{alias}\">$hostgroup->{alias}</option>";
+				$hostgroup_page .= "<option value=\"$hostgroup->{name}\">$hostgroup->{alias}</option>";
 			} 
 			$hostgroup_page .= '</select>';
 			$hostgroup_page .= $q->hidden('page_type',"hostgroups");
@@ -534,7 +548,7 @@ sub services {
 		# This is the service deletion dialog for a specific host
 		if ( $host  =~ m/\..*\./ and $confirm ne "Confirm" and not $servicename =~ m/.+/ ) {
 		        $service_page .= $q->p("Enter service to delete for host: $host ");
-		        $service_page .= $q->start_form(-method=>"POST",
+		        $service_page .= $q->start_form(-method=>$METHOD,
 				   -action=>"api_conf.cgi");
 		        $service_page .= '<select name="servicename">';
 			# Loop all services asscoiated with the host
@@ -551,7 +565,7 @@ sub services {
 		# This case is confirmation dialog for delete mode
 		} elsif ( $host  =~ m/\..*\./ and $confirm ne "Confirm" and $servicename =~ m/.+/ ) {
 		        $service_page .= $q->p('Are you sure you want to delete ' .  $servicename . ' for host: ' . $host .'?<br/>');
-		        $service_page .= $q->start_form(-method=>"POST",
+		        $service_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 		        $service_page .= $q->hidden('host',$host);
 		        $service_page .= $q->hidden('page_type',"services");
@@ -568,7 +582,7 @@ sub services {
 		# Host selection dialog i.e. the main dialog for service deletion
 		} else {
 			$service_page .= $q->p('Enter host to modify');
-			$service_page .= $q->start_form(-method=>"POST",
+			$service_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$service_page .= '<select name="host">';
 			foreach my $service_host (sort keys %services ) {
@@ -590,7 +604,7 @@ sub services {
 				$service_page .= ' with attributes: ' . $attributes;
 			}
 			$service_page .='?</p><br/>';
-		        $service_page .= $q->start_form(-method=>"POST",
+		        $service_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 		        $service_page .= $q->hidden('host',$host);
 		        $service_page .= $q->hidden('page_type',"services");
@@ -627,7 +641,7 @@ sub services {
 			my @host_arr = sort @temp_arr;
 
 			$service_page .= $q->p('Select host to modify:');
-			$service_page .= $q->start_form(-method=>"POST",
+			$service_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$service_page .= '<select name="host">';
 			for my $ho ( @host_arr ) {
@@ -729,7 +743,7 @@ sub commands {
 		# This case is the confirmation dialog
 		if ( $confirm ne "Confirm" and  $command =~ m/.+/ ) {
 			$command_page .= $q->p('Are you sure you want to delete ' . $command . '?<br/>');
-			$command_page .= $q->start_form(-method=>"POST",
+			$command_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$command_page .= $q->hidden('page_type',"commands");
 			$command_page .= $q->hidden('command',$command);
@@ -750,7 +764,7 @@ sub commands {
 		# This is the main dialog for command deletion
 		} else {
 			$command_page .= $q->p('Enter command to delete');
-			$command_page .= $q->start_form(-method=>"POST",
+			$command_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$command_page .= '<select name="command">';
 			foreach my $hash (values $c->stash->{commands}) {
@@ -791,7 +805,7 @@ sub commands {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
 			$command_page .= $q->p($mess);
-			$command_page .= $q->start_form(-method=>"POST",
+			$command_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$command_page .= $q->hidden('page_type',"commands");
 			$command_page .= $q->hidden('command',$command);
@@ -803,7 +817,7 @@ sub commands {
 			$command_page .=  $q->end_form;
 		# This is main command creation dialog
 		} else {
-                        $command_page .= $q->start_form(-method=>"POST",
+                        $command_page .= $q->start_form(-method=>$METHOD,
                             -action=>"api_conf.cgi");
                         $command_page .= $q->p("Enter command name (\"check_\" will be prepended automaticaly):");
                         $command_page .= $q->textfield('command','',50,80);
