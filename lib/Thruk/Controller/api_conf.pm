@@ -93,6 +93,72 @@ sub api_call {
 	return decode_json $response->decoded_content;
 }
 
+=head2 create_multi_select
+
+This function returns javascript for multi select
+
+=head3 Parameters
+
+=over
+
+=item *
+
+id for select
+
+=item *
+
+array of items
+
+=back
+
+=cut
+
+sub create_multi_select {
+        my ($id, @items) = @_;
+        my $html = '';
+
+        # Dont try with too many items, or it will fail
+
+
+        if(scalar @items > 300) {
+                        $html .= '<a href=\'#\' id=\'select-300\'>Select first 300</a><br>' . "\n";
+        } else {
+                        $html .= '<a href=\'#\' id=\'select-all\'>Select all</a><br>' . "\n";
+        }
+        $html .= '<a href=\'#\' id=\'deselect-all\'>Deselect all</a>' . "\n";
+        $html .= '<script type="text/javascript">' . "\n";
+        $html .= ';(function($) {' . "\n";
+        $html .= '$(\'#' . $id . '\').multiSelect({ ' . "\n";
+        $html .= 'selectableHeader: "<div>Available items</div>",' . "\n";
+        $html .= 'selectionHeader: "<div>Selected items</div>",' . "\n";
+        $html .= '});' . "\n";
+
+        if(scalar @items > 300) {
+                $html .= '$(\'#select-300\').click(function(){' . "\n";
+                $html .= '$(\'#' . $id . '\').multiSelect(\'select\', [';
+                foreach my $i (0 .. 298) {
+                                $html .= "\'@items[$i]\', ";
+                }
+                $html .= "\'@items[299]\'";
+                $html .= ']);' . "\n";
+                $html .= 'return false;' . "\n";
+                $html .= '});' . "\n";
+        } else {
+                $html .= '$(\'#select-all\').click(function(){' . "\n";
+                $html .= '$(\'#' . $id . '\').multiSelect(\'select_all\');' . "\n";
+                $html .= 'return false;' . "\n";
+                $html .= '});' . "\n";
+        }
+        $html .= '$(\'#deselect-all\').click(function(){' . "\n";
+        $html .= '$(\'#' . $id . '\').multiSelect(\'deselect_all\');' . "\n";
+        $html .= 'return false;' . "\n";
+        $html .= '});' . "\n";
+        $html .= "})(jQuery);\n";
+        $html .= "</script>\n";
+
+        return $html;
+}
+
 =head2 display_back_button
 
 This function returns the back button
@@ -366,38 +432,7 @@ sub hosts {
 			$host_page .= $q->submit(-name=>'submit',
 					-value=>'Submit');
 			$host_page .=  $q->end_form;
-			# Dont try with too many items, or it will fail
-			if(scalar @host_arr > 300) {
-    				$host_page .= '<a href=\'#\' id=\'select-300\'>Select first 300</a><br>' . "\n";
-			} else {
-    				$host_page .= '<a href=\'#\' id=\'select-all\'>Select all</a><br>' . "\n";
-			}
-    			$host_page .= '<a href=\'#\' id=\'deselect-all\'>Deselect all</a>' . "\n";
-			$host_page .= '<script type="text/javascript">' . "\n";
-			$host_page .= ';(function($) {' . "\n";
-			$host_page .= '$(\'#host-select\').multiSelect({ ' . "\n";
-                        $host_page .= 'selectableHeader: "<div>Available hosts</div>",' . "\n";
-                        $host_page .= 'selectionHeader: "<div>Selected hosts</div>",' . "\n";
-                	$host_page .= '});' . "\n";
-			$host_page .= '$(\'#select-all\').click(function(){' . "\n";
-                  	$host_page .= '$(\'#host-select\').multiSelect(\'select_all\');' . "\n";
-                    	$host_page .= 'return false;' . "\n";
-                    	$host_page .= '});' . "\n";
-			$host_page .= '$(\'#select-300\').click(function(){' . "\n";
-  			$host_page .= '$(\'#host-select\').multiSelect(\'select\', [';
-			foreach my $i (0 .. 298) {
-				$host_page .= "\'@host_arr[$i]\', ";
-			}
-			$host_page .= "\'@host_arr[299]\'";
-			$host_page .= ']);' . "\n";
-  			$host_page .= 'return false;' . "\n";
-                    	$host_page .= '});' . "\n";
-			$host_page .= '$(\'#deselect-all\').click(function(){' . "\n";
-                  	$host_page .= '$(\'#host-select\').multiSelect(\'deselect_all\');' . "\n";
-                    	$host_page .= 'return false;' . "\n";
-                    	$host_page .= '});' . "\n";
-			$host_page .= "})(jQuery);\n"; 
-			$host_page .= "</script>\n";
+			$host_page .= create_multi_select('host-select', @host_arr);
 		}
 	# This is create mode
 	} elsif ($mode eq "create") {
