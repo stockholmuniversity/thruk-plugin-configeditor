@@ -1,5 +1,5 @@
 [% PROCESS _header.tt overlib=1
-                      css=["plugins/conf/conf.css","plugins/conf/linedtextarea/jquery-linedtextarea.css", "javascript/jstree-3.0.9/themes/default/style.min.css", "plugins/configuration_editor/resources/lou-multi-select-a0f48de/css/multi-select.css"]
+                      css=["plugins/conf/conf.css","plugins/conf/linedtextarea/jquery-linedtextarea.css", "javascript/jstree-3.0.9/themes/default/style.min.css", "plugins/configuration_editor/resources/lou-multi-select-a0f48de/css/multi-select.css", "plugins/configuration_editor/resources/override.css"]
                       js=["plugins/conf/conf.js", "javascript/jstree-3.0.9/jstree.min.js", "plugins/configuration_editor/resources/lou-multi-select-a0f48de/js/jquery.multi-select.js"]
 %]
     <script type="text/javascript">

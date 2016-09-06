@@ -350,7 +350,10 @@ sub hosts {
 		}
 		# Main dialog box of the delete mode for hosts page
 		else {
-			$host_page .= $q->p('Select one or more hosts to delete');
+			$host_page .= $q->p('Select one or more hosts to delete.');
+			if(scalar @host_arr > 300) {
+				$host_page .= $q->p('Please don\'t try with more than ~300 at a time or it will fail');
+			}
 			$host_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
 			$host_page .= "<select name='host' id='host-select' multiple='multiple'>\n";
@@ -363,10 +366,37 @@ sub hosts {
 			$host_page .= $q->submit(-name=>'submit',
 					-value=>'Submit');
 			$host_page .=  $q->end_form;
+			# Dont try with too many items, or it will fail
+			if(scalar @host_arr > 300) {
+    				$host_page .= '<a href=\'#\' id=\'select-300\'>Select first 300</a><br>' . "\n";
+			} else {
+    				$host_page .= '<a href=\'#\' id=\'select-all\'>Select all</a><br>' . "\n";
+			}
+    			$host_page .= '<a href=\'#\' id=\'deselect-all\'>Deselect all</a>' . "\n";
 			$host_page .= '<script type="text/javascript">' . "\n";
 			$host_page .= ';(function($) {' . "\n";
-			$host_page .= '$(\'#host-select\').multiSelect({ keepOrder: true });' . "\n";
-			$host_page .= "})(jQuery);\n";
+			$host_page .= '$(\'#host-select\').multiSelect({ ' . "\n";
+                        $host_page .= 'selectableHeader: "<div>Available hosts</div>",' . "\n";
+                        $host_page .= 'selectionHeader: "<div>Selected hosts</div>",' . "\n";
+                	$host_page .= '});' . "\n";
+			$host_page .= '$(\'#select-all\').click(function(){' . "\n";
+                  	$host_page .= '$(\'#host-select\').multiSelect(\'select_all\');' . "\n";
+                    	$host_page .= 'return false;' . "\n";
+                    	$host_page .= '});' . "\n";
+			$host_page .= '$(\'#select-300\').click(function(){' . "\n";
+  			$host_page .= '$(\'#host-select\').multiSelect(\'select\', [';
+			foreach my $i (0 .. 298) {
+				$host_page .= "\'@host_arr[$i]\', ";
+			}
+			$host_page .= "\'@host_arr[299]\'";
+			$host_page .= ']);' . "\n";
+  			$host_page .= 'return false;' . "\n";
+                    	$host_page .= '});' . "\n";
+			$host_page .= '$(\'#deselect-all\').click(function(){' . "\n";
+                  	$host_page .= '$(\'#host-select\').multiSelect(\'deselect_all\');' . "\n";
+                    	$host_page .= 'return false;' . "\n";
+                    	$host_page .= '});' . "\n";
+			$host_page .= "})(jQuery);\n"; 
 			$host_page .= "</script>\n";
 		}
 	# This is create mode
