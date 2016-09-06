@@ -95,7 +95,7 @@ sub api_call {
 
 =head2 csv_from_arr
 
-This function returns javascript for multi select
+This function returns a comma seperated string from an array
 
 =head3 Parameters
 
