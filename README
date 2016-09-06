@@ -5,9 +5,9 @@ This plugin allows you to configure Icinga2 via the in built HTTP API.
 This plugin is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
-Dependencies for ubuntu 14.04 is: 
-liblwp-protocol-https-perl libconfig-json-perl libnet-sslglue-perl libdata-validate-ip-perl
-
+Dependencies for ubuntu 16.04 is: 
+libcgi-pm-perl libconfig-json-perl libdata-validate-ip-perl liblwp-protocol-https-perl libnet-sslglue-perl
+  
 Install instructions:
 cd plugins-available
 git clone https://github.com/stockholmuniversity/thruk-plugin-configeditor.git configuration_editor
