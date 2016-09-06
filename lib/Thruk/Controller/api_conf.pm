@@ -93,6 +93,30 @@ sub api_call {
 	return decode_json $response->decoded_content;
 }
 
+=head2 csv_from_arr
+
+This function returns javascript for multi select
+
+=head3 Parameters
+
+=over
+
+=item *
+
+array of items
+
+=back
+
+=cut
+sub csv_from_arr {
+	my $str = '';
+	foreach my $s (@_) {
+		$str .= $s . ', ';
+	}
+	$str =~ s/, $//;
+	return $str;
+}
+
 =head2 create_multi_select
 
 This function returns javascript for multi select
@@ -351,15 +375,17 @@ sub hosts {
 	my $params = $c->req->parameters;
 
 	#Extract parameters from the request
-	#my $host = $params->{'host'};
 	my @hosts = ();
 	my $host = '';
-	if($params->{'host'}[0] =~ m/\..*\./) {
-		foreach my $hst (values $params->{'host'}) {
-			push @hosts, $hst;
-		}
-		$host = @hosts[0];
-	}
+        if (ref $params->{'host'} eq 'ARRAY') {
+                foreach my $hst (values $params->{'host'}) {
+                        push @hosts, $hst;
+                }
+                $host = @hosts[0];
+        } else {
+                $host = $params->{'host'};
+                push @hosts, $host;
+        }
 	my $ip = $params->{'ip'};
 	my $os = $params->{'os'};
 	my $zone = $params->{'zone'};
@@ -380,12 +406,7 @@ sub hosts {
 	if ($mode eq "delete") {
 		# This case is first dialog
 		if (not defined($confirm) and $host  =~ m/\..*\./  ) {
-			my $hoststr;
-			foreach my $hst (@hosts) {
-				$hoststr .= $hst . ', ';
-			}
-                        $hoststr =~ s/, $//;
-			#$host_page .= $q->p('Are you sure you want to delete '. $host .'?<br/>');
+                        my $hoststr = csv_from_arr(@hosts);
 			$host_page .= $q->p('Are you sure you want to delete '. $hoststr .'?<br/>');
 			$host_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
@@ -671,7 +692,17 @@ sub services {
 	my $params = $c->req->parameters;
 
 	#Get host and see if this is the delete request or not
-	my $host = $params->{'host'};
+        my @hosts = ();
+        my $host = '';
+	if (ref $params->{'host'} eq 'ARRAY') {
+		foreach my $hst (values $params->{'host'}) {
+			push @hosts, $hst;
+		}
+		$host = @hosts[0];
+	} else {
+		$host = $params->{'host'};
+		push @hosts, $host;
+	}
 	my $confirm = $params->{'confirm'};
 	my $submit = $params->{'submit'};
 	my $check = $params->{'check'};
@@ -744,14 +775,17 @@ sub services {
 	} elsif ($mode eq "create") {
 		# This is the confirm dialog
 		if( $host =~ m/\..*\./ and $check =~ m/.+/ and $displayname =~ m/.+/ and $servicename =~ m/.+/ and $confirm ne "Confirm" ) {
-		        $service_page .= '<p>Are you sure you want to add the service ' . $servicename . ' to host: ' . $host;
+			my $hoststr = csv_from_arr(@hosts);
+		        $service_page .= '<p>Are you sure you want to add the service ' . $servicename . ' to the host(s): ' . $hoststr;
                         if ($attributes =~ m/.+/ ) {
 				$service_page .= ' with attributes: ' . $attributes;
 			}
 			$service_page .='?</p><br/>';
 		        $service_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
-		        $service_page .= $q->hidden('host',$host);
+                        foreach my $hst (@hosts) {
+                                $service_page .= $q->hidden('host',$hst);
+                        }
 		        $service_page .= $q->hidden('page_type',"services");
 			$service_page .= $q->hidden('mode',"create");
 		        $service_page .= $q->hidden('servicename',$servicename);
@@ -772,8 +806,10 @@ sub services {
                                 }
                         }
 			$payload .=  ' } }';
-			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "objects/services/$host!$servicename", $payload);
-			$service_page .= display_api_response(@arr, $payload);
+                        foreach my $hst (@hosts) {
+				my @arr = api_call( $c->stash->{'confdir'}, "PUT", "objects/services/$hst!$servicename", $payload);
+                                $service_page .= display_api_response(@arr, $payload) ;
+                        }
 			$service_page .= display_back_button($mode, 'services');
 		# This is the main dialog for service creation
 		} else {
@@ -788,7 +824,7 @@ sub services {
 			$service_page .= $q->p('Select host to modify:');
 			$service_page .= $q->start_form(-method=>$METHOD,
 				    -action=>"api_conf.cgi");
-			$service_page .= '<select name="host">';
+			$service_page .= '<select name="host" id="host-select" multiple="multiple"">';
 			for my $ho ( @host_arr ) {
 				my $selected = '';
 		
@@ -798,8 +834,8 @@ sub services {
 
 				$service_page .= "<option value=\"$ho\" $selected>$ho</option>";
 			}
-			$service_page .= '</select>';
-
+			$service_page .= '</select><br>';
+			$service_page .= create_multi_select("host-select", @host_arr);
 			$service_page .= $q->p('Select check command:');
 			$service_page .= '<select name="check">';
 			foreach my $hash (values $c->stash->{commands}) {
