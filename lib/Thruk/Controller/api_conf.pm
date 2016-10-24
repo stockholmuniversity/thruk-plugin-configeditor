@@ -979,14 +979,14 @@ sub commands {
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
-			my $all_is_well = 0;
+			my $all_is_well = 1;
 			unless( is_valid_json $arguments or $arguments eq "") {
 				$command_page .= "<p>You supplied faulty json.</p>";
-				$all_is_well = 1;
+				$all_is_well = 0;
 			}
 			unless ( basename ($commandline) =~ m/^check_/ ) {
 				$command_page .= "<p>Basename of your commandline must start with check_, e.g.: /usr/local/bin/check_test. Please try again.</p>";
-				$all_is_well = 1;
+				$all_is_well = 0;
 			} 
 			if ($all_is_well){
 				$command_page .= $q->p($mess);
