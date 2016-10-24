@@ -34,7 +34,7 @@ use Data::Dumper;
 use JSON::XS qw(encode_json decode_json);
 use Test::JSON;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
-use File::Basename qw( dirname );
+use File::Basename qw( dirname basename );
 
 # This is the form method for dialogs, useful to change all for debug purposes
 #my $METHOD = "GET";
@@ -968,10 +968,9 @@ sub commands {
 		if ($confirm eq "Confirm" and $commandline =~ m/.+/  and  $command =~ m/.+/ ) {
 			my $payload = '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "' . $commandline . '" ]';
 			# Arguments are optional so we only add them if they exist
-			if ($arguments =~ m/.+/ ) {
-				is_valid_json $arguments or die "You have supplied invalid json, please try again."; 
+			if ($arguments =~ m/.+/ and is_valid_json $arguments ) {
 				$payload .= ', "arguments": ' .$arguments;
-			}
+			} 
 			$payload .= ' } }';
 			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "objects/checkcommands/$command", $payload);
 			$command_page .= display_api_response(@arr, $payload);
@@ -980,17 +979,25 @@ sub commands {
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
-			$command_page .= $q->p($mess);
-			$command_page .= $q->start_form(-method=>$METHOD,
-				    -action=>"api_conf.cgi");
-			$command_page .= $q->hidden('page_type',"commands");
-			$command_page .= $q->hidden('command',$command);
-			$command_page .= $q->hidden('arguments',$arguments);
-			$command_page .= $q->hidden('commandline',$commandline);
-			$command_page .= $q->hidden('mode',"create");
-			$command_page .= $q->submit(-name=>'confirm',
-					-value=>'Confirm');
-			$command_page .=  $q->end_form;
+			unless( is_valid_json $arguments) {
+				$command_page .= "<p>You supplied faulty json, please try again.</p>";
+				$command_page .= display_back_button($mode, 'commands'); 
+			} elsif (! basename ($commandline) =~ m/^check_/ ) {
+				$command_page .= "<p>Basename of your commandline must start with check_, e.g.: /usr/local/bin/check_test. Please try again.</p>";
+				$command_page .= display_back_button($mode, 'commands'); 
+			} else {
+				$command_page .= $q->p($mess);
+				$command_page .= $q->start_form(-method=>$METHOD,
+					    -action=>"api_conf.cgi");
+				$command_page .= $q->hidden('page_type',"commands");
+				$command_page .= $q->hidden('command',$command);
+				$command_page .= $q->hidden('arguments',$arguments);
+				$command_page .= $q->hidden('commandline',$commandline);
+				$command_page .= $q->hidden('mode',"create");
+				$command_page .= $q->submit(-name=>'confirm',
+						-value=>'Confirm');
+				$command_page .=  $q->end_form;
+			}
 		# This is main command creation dialog
 		} else {
                         $command_page .= $q->start_form(-method=>$METHOD,
