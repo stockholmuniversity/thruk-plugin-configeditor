@@ -6,7 +6,7 @@ This plugin is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 Dependencies for ubuntu 16.04 is: 
-libcgi-pm-perl libconfig-json-perl libdata-validate-ip-perl liblwp-protocol-https-perl libnet-sslglue-perl
+libcgi-pm-perl libconfig-json-perl libdata-validate-ip-perl liblwp-protocol-https-perl libnet-sslglue-perl libtest-json-perl
   
 Install instructions:
 cd plugins-available
