@@ -979,7 +979,7 @@ sub commands {
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
-			unless( is_valid_json $arguments) {
+			unless( is_valid_json $arguments or $arguments eq "") {
 				$command_page .= "<p>You supplied faulty json, please try again.</p>";
 				$command_page .= display_back_button($mode, 'commands'); 
 			} elsif (! basename ($commandline) =~ m/^check_/ ) {
