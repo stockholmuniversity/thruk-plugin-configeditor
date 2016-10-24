@@ -32,6 +32,7 @@ use Net::SSLGlue::LWP;
 use IO::Socket::SSL;
 use Data::Dumper;
 use JSON::XS qw(encode_json decode_json);
+use Test::JSON;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use File::Basename qw( dirname );
 
@@ -968,14 +969,8 @@ sub commands {
 			my $payload = '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "' . $commandline . '" ]';
 			# Arguments are optional so we only add them if they exist
 			if ($arguments =~ m/.+/ ) {
-				$payload .= ', "arguments": { ';
-				for my $commas ( split(',', $arguments) ) {
-					my @colon = split(':', $commas);
-					$payload .= "\"-$colon[0]\": \"$colon[1]\", ";
-				}
-				$payload =~ s/, $//;
-				$payload .= ' }';
-
+				is_valid_json $arguments or die "You have supplied invalid json, please try again."; 
+				$payload .= ', "arguments": ' .$arguments;
 			}
 			$payload .= ' } }';
 			my @arr = api_call( $c->stash->{'confdir'}, "PUT", "objects/checkcommands/$command", $payload);
@@ -1004,8 +999,8 @@ sub commands {
                         $command_page .= $q->textfield('command','',50,80);
                         $command_page .= $q->p("Enter commandline to be executed:");
                         $command_page .= $q->textfield('commandline','',50,80);
-                        $command_page .= $q->p("Enter arguments (an optional comma separated list of option pairs, if you want -w 90 and -c 95 to be options put w:90,c:95 here):");
-                        $command_page .= $q->textfield('arguments','',50,80);
+                        $command_page .= $q->p('Enter arguments (an optional json string e.g. {"--some_long_arg": { "value": "$a_macro$" }, "-s": {"value": "$another_macro$" }} ):');
+                        $command_page .= $q->textarea('arguments','',20,50);
                         $command_page .= $q->hidden('page_type',"commands");
                         $command_page .= $q->hidden('mode',"create");
                         $command_page .= $q->submit(-name=>'submit',
