@@ -979,13 +979,16 @@ sub commands {
 		} elsif ($submit eq "Submit" and $command =~ m/.+/ and $commandline =~ m/.+/ ) {
 			my $mess = 'Are you sure you want to create ' . $command . ' with commandline: ' . $commandline;
 			$mess .=  $arguments =~ m/.+/  ? " and arguments: $arguments?<br>" : "?<br>";
+			my $all_is_well = 0;
 			unless( is_valid_json $arguments or $arguments eq "") {
-				$command_page .= "<p>You supplied faulty json, please try again.</p>";
-				$command_page .= display_back_button($mode, 'commands'); 
-			} elsif (! basename ($commandline) =~ m/^check_/ ) {
+				$command_page .= "<p>You supplied faulty json.</p>";
+				$all_is_well = 1;
+			}
+			unless ( basename ($commandline) =~ m/^check_/ ) {
 				$command_page .= "<p>Basename of your commandline must start with check_, e.g.: /usr/local/bin/check_test. Please try again.</p>";
-				$command_page .= display_back_button($mode, 'commands'); 
-			} else {
+				$all_is_well = 1;
+			} 
+			if ($all_is_well){
 				$command_page .= $q->p($mess);
 				$command_page .= $q->start_form(-method=>$METHOD,
 					    -action=>"api_conf.cgi");
@@ -997,7 +1000,10 @@ sub commands {
 				$command_page .= $q->submit(-name=>'confirm',
 						-value=>'Confirm');
 				$command_page .=  $q->end_form;
+			} else {
+				$command_page .= display_back_button($mode, 'commands'); 
 			}
+
 		# This is main command creation dialog
 		} else {
                         $command_page .= $q->start_form(-method=>$METHOD,
