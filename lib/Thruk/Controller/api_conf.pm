@@ -297,6 +297,76 @@ sub display_api_response {
 	}
 	return $result;
 }
+
+=head2 display_modify_textbox
+This function gets the editable json of a configuration object
+=head3 Parameters
+=over
+=item *
+name (of the form)
+=item *
+endpoint (e.g. objects/services/<hostname>!<servicename>)
+=item *
+keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
+=back
+=cut
+
+sub display_modify_textbox {
+
+    my ($name, $endpoint, @keys) = @_;
+    my $json_text = get_json $endpoint, @keys;
+    my $rows = () = $json_text =~ /\n/g;
+    my $cols = 0;
+    my $cgi = CGI->new;
+    open my $fh, '<', \$json_text or die $!;
+
+    while (<$fh>) {
+        my $len = length($_);
+        if ($len > $cols) {
+            $cols = $len;
+        }
+    }
+
+    close $fh or die $!;
+    my $textbox;
+
+    $textbox .= $cgi->start_form;
+    $textbox .= $cgi->textarea(   -name=>$name,
+                            -default=> $json_text,
+                            -rows=>$rows,
+                            -columns=>$cols );
+    $textbox .= $cgi->button;
+    $textbox .= $cgi->end_form;
+    return decode_entities($textbox);
+}
+
+=head2 get_json
+This function gets the editable json of a configuration object
+=head3 Parameters
+=over
+=item *
+endpoint (e.g. objects/services/<hostname>!<servicename>)
+=item *
+keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
+=back
+=cut
+
+sub get_json {
+    my ($endpoint, @keys) = @_;
+    my $result = $icinga->do_request("GET", $endpoint);
+
+    my %to_json;
+    foreach my $key (sort @keys) {
+
+        $to_json{"attrs"}{$key} = $result->{"results"}[0]{"attrs"}{$key};
+
+    }
+
+    my $json = JSON->new;
+    $json->pretty->canonical(1);
+    return $json->pretty->encode(\%to_json);
+}
+
 =head2 selector
 
 This displays the main scroll list och different type of objects
