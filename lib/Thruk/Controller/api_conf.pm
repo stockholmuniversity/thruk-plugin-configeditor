@@ -24,21 +24,24 @@ BEGIN {
 
 ##########################################################
 use CGI;
-use HTTP::Request::Common;
-use LWP::UserAgent;
-use LWP::Protocol::https;
 use Config::JSON;
-use Net::SSLGlue::LWP;
-use IO::Socket::SSL;
 use Data::Dumper;
-use JSON::XS qw(encode_json decode_json);
-use Test::JSON;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use File::Basename qw( dirname basename );
+use HTML::Entities;
+use HTTP::Request::Common;
+use IO::Socket::SSL;
+use JSON::XS qw(encode_json decode_json);
+use LWP::Protocol::https;
+use LWP::UserAgent;
+use Net::SSLGlue::LWP;
+use Test::JSON;
 
 # This is the form method for dialogs, useful to change all for debug purposes
 #my $METHOD = "GET";
 my $METHOD = "POST";
+my @service_keys = ("vars", "action_url", "check_command", "check_interval", "display_name", "notes_url", "event_command");
+
 
 =head2 api_call
 
@@ -353,7 +356,7 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 sub get_json {
     my ($endpoint, @keys) = @_;
-    my $result = $icinga->do_request("GET", $endpoint);
+    my $result = api_call( $c->stash->{'confdir'}, $endpoint); 
 
     my %to_json;
     foreach my $key (sort @keys) {
@@ -425,6 +428,8 @@ sub selector {
 	$landing_page .= '</tbody>';
 	$landing_page .= '</table>';
 	$landing_page .= '</div>';
+
+	$landing_page .= get_json "objects/services/svn-prod-srv01.it.su.se!ssh_port_22", @service_keys;
 
 	return $landing_page;
 }
