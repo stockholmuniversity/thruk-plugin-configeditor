@@ -39,8 +39,8 @@ use Net::SSLGlue::LWP;
 use Test::JSON;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
-my $METHOD = "POST";
+my $METHOD = "GET";
+#my $METHOD = "POST";
 my @service_keys = ("vars", "action_url", "check_command", "check_interval", "display_name", "notes_url", "event_command");
 
 
@@ -91,7 +91,8 @@ sub api_call {
 	$ua->default_header('Accept' => 'application/json');
 	$ua->credentials("$api_host:$api_port", $api_realm, $api_user, $api_password);
 	my $req = HTTP::Request->new($verb => $api_url);
-	if ($payload =~ m/.+/ ) {
+	#if ($payload =~ m/.+/ ) {
+	if ($payload) {
 		$req->add_content( $payload );
 	}
 	my $response = $ua->request($req);
@@ -244,7 +245,7 @@ sub display_create_delete_modify_dialog {
 	my ($page_type) = @_;
 	# Show modify option for only these pagetypes
 #	my @display_modify_arr = ("hostgroups");
-	my @display_modify_arr = ();
+	my @display_modify_arr = ("services");
         # A cgi object to help with some html creation
         my $q = CGI->new;
 	my $page = $q->p('What do you want to do?');
@@ -286,10 +287,10 @@ optional: payload
 
 sub display_api_response {
 	
-	my @arr = @_[0];
+	my @arr = $_[0];
 	my $payload = '';
-	if (@_[1]) {
-		$payload = @_[1];
+	if ($_[1]) {
+		$payload = $_[1];
 	}
         # A cgi object to help with some html creation
         my $q = CGI->new;
@@ -307,7 +308,7 @@ This function gets the editable json of a configuration object
 =head3 Parameters
 =over
 =item *
-name (of the form)
+page_typr (services, hosts, etc)
 =item *
 endpoint (e.g. objects/services/<hostname>!<servicename>)
 =item *
@@ -317,11 +318,11 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 sub display_modify_textbox {
 
-    my ($name, $endpoint, @keys) = @_;
-    my $json_text = get_json $endpoint, @keys;
+    my ($c, $hidden, $endpoint, @keys) = @_;
+    my $json_text = get_json($c, $endpoint, @keys);
     my $rows = () = $json_text =~ /\n/g;
     my $cols = 0;
-    my $cgi = CGI->new;
+    my $q = CGI->new;
     open my $fh, '<', \$json_text or die $!;
 
     while (<$fh>) {
@@ -333,15 +334,96 @@ sub display_modify_textbox {
 
     close $fh or die $!;
     my $textbox;
-
-    $textbox .= $cgi->start_form;
-    $textbox .= $cgi->textarea(   -name=>$name,
+    $textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
+    $textbox .= $q->start_form(-method=>$METHOD,
+                    -action=>"api_conf.cgi");
+    foreach my $key (keys $hidden) {
+        $textbox .= $q->hidden($key,$hidden->{"$key"});
+    }
+    $textbox .= $q->hidden('mode',"modify");
+    $textbox .= $q->textarea(   -name=> "json",
                             -default=> $json_text,
                             -rows=>$rows,
                             -columns=>$cols );
-    $textbox .= $cgi->button;
-    $textbox .= $cgi->end_form;
+    $textbox .= "<br/>";
+    $textbox .= $q->submit(-name=> "submit",
+                        -value=>'Submit');
+    $textbox .= $q->end_form;
     return decode_entities($textbox);
+}
+
+sub display_service_confirmation {
+    my $q = CGI->new;
+    my ($c, $mode, $host, $servicename) = @_;
+    my $service_form;
+
+    $service_form .= $q->p("Are you sure you want to $mode $servicename for host: $host?<br/>");
+    $service_form .= $q->start_form(-method=>$METHOD,
+                -action=>"api_conf.cgi");
+    $service_form .= $q->hidden('host',$host);
+    $service_form .= $q->hidden('page_type',"services");
+    $service_form .= $q->hidden('mode',$mode);
+    $service_form .= $q->hidden('servicename',$servicename);
+    $service_form .= $q->submit(-name=>'confirm',
+                    -value=>'Confirm');
+    $service_form .=  $q->end_form;
+}
+sub display_service_selection {
+    my $q = CGI->new;
+    my ($c, $mode, $host) = @_;
+    my $service_form;
+    # Get services
+    my %services = ();
+    foreach my $hash ($c->stash->{services} ) {
+            foreach my $service (values $hash) {
+                    $services{ $service->{host_name} }{$service->{description} } =  $service->{display_name} ;
+            }
+    }
+        
+    $service_form .= $q->p("Enter service to $mode for host: $host ");
+    $service_form .= $q->start_form(-method=>$METHOD,
+               -action=>"api_conf.cgi");
+    $service_form .= '<select name="servicename">';
+    # Loop all services asscoiated with the host
+    foreach my $service ( sort keys $services{$host}) {
+            $service_form .= "<option value=\"$service\">$services{$host}{$service}</option>";
+    }
+    $service_form .= '</select">';
+    $service_form .= $q->hidden('page_type',"services");
+    $service_form .= $q->hidden('mode',$mode);
+    $service_form .= $q->hidden('host',$host);
+    $service_form .= $q->submit(-name=>'submit',
+                   -value=>'Submit');
+    $service_form .=  $q->end_form;
+}
+
+sub display_single_host_selection {
+    my $q = CGI->new;
+    my ($c, $mode) = @_;
+    my $service_form;
+    # Get services
+    my %services = ();
+    foreach my $hash ($c->stash->{services} ) {
+        foreach my $service (values $hash) {
+            $services{ $service->{host_name} }{$service->{description} } =  $service->{display_name} ;
+        }
+    }
+    
+    $service_form = $q->p("Enter host to $mode");
+    $service_form .= $q->start_form(-method=>$METHOD,
+                -action=>"api_conf.cgi");
+    $service_form .= '<select name="host">';
+    foreach my $service_host (sort keys %services ) {
+        $service_form .= "<option value=\"$service_host\">$service_host</option>";
+    }
+    $service_form .= '</select">';
+    $service_form .= $q->hidden('page_type',"services");
+    $service_form .= $q->hidden('mode', $mode);
+    $service_form .= $q->submit(-name=>'submit',
+                    -value=>'Submit');
+    $service_form .=  $q->end_form;
+    
+    return $service_form;
 }
 
 =head2 get_json
@@ -357,7 +439,7 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 sub get_json {
     my ($c, $endpoint, @keys) = @_;
-    my $result = api_call( $c->stash->{'confdir'}, $endpoint); 
+    my $result = api_call( $c->stash->{'confdir'}, "GET", $endpoint); 
 
     my %to_json;
     foreach my $key (sort @keys) {
@@ -369,6 +451,7 @@ sub get_json {
     my $json = JSON->new;
     $json->pretty->canonical(1);
     return $json->pretty->encode(\%to_json);
+    return $result;
 }
 
 =head2 selector
@@ -379,7 +462,6 @@ This displays the main scroll list och different type of objects
 
 sub selector {
 	
-	my ($c) = @_;
 	# A cgi object to help with some html creation 
 	
 	my $q = CGI->new;
@@ -433,8 +515,6 @@ sub selector {
 	$landing_page .= '</table>';
 	$landing_page .= '</div>';
 
-	$landing_page .= get_json $c, "objects/services/svn-prod-srv01.it.su.se!ssh_port_22", @service_keys;
-
 	return $landing_page;
 }
 
@@ -461,7 +541,7 @@ sub hosts {
                 foreach my $hst (values $params->{'host'}) {
                         push @hosts, $hst;
                 }
-                $host = @hosts[0];
+                $host = $hosts[0];
         } else {
                 $host = $params->{'host'};
                 push @hosts, $host;
@@ -778,7 +858,7 @@ sub services {
 		foreach my $hst (values $params->{'host'}) {
 			push @hosts, $hst;
 		}
-		$host = @hosts[0];
+		$host = $hosts[0];
 	} else {
 		$host = $params->{'host'};
 		push @hosts, $host;
@@ -803,33 +883,10 @@ sub services {
 	if ( $mode eq "delete") {
 		# This is the service deletion dialog for a specific host
 		if ( $host  =~ m/\..*\./ and $confirm ne "Confirm" and not $servicename =~ m/.+/ ) {
-		        $service_page .= $q->p("Enter service to delete for host: $host ");
-		        $service_page .= $q->start_form(-method=>$METHOD,
-				   -action=>"api_conf.cgi");
-		        $service_page .= '<select name="servicename">';
-			# Loop all services asscoiated with the host
-		        foreach my $service ( sort keys $services{$host}) {
-				$service_page .= "<option value=\"$service\">$services{$host}{$service}</option>";
-		        }
-		        $service_page .= '</select">';
-		        $service_page .= $q->hidden('page_type',"services");
-			$service_page .= $q->hidden('mode',"delete");
-		        $service_page .= $q->hidden('host',$host);
-		        $service_page .= $q->submit(-name=>'submit',
-				       -value=>'Submit');
-		        $service_page .=  $q->end_form;
+                        $service_page .= display_service_selection($c, $mode, $host);
 		# This case is confirmation dialog for delete mode
 		} elsif ( $host  =~ m/\..*\./ and $confirm ne "Confirm" and $servicename =~ m/.+/ ) {
-		        $service_page .= $q->p('Are you sure you want to delete ' .  $servicename . ' for host: ' . $host .'?<br/>');
-		        $service_page .= $q->start_form(-method=>$METHOD,
-				    -action=>"api_conf.cgi");
-		        $service_page .= $q->hidden('host',$host);
-		        $service_page .= $q->hidden('page_type',"services");
-			$service_page .= $q->hidden('mode',"delete");
-		        $service_page .= $q->hidden('servicename',$servicename);
-		        $service_page .= $q->submit(-name=>'confirm',
-					-value=>'Confirm');
-		        $service_page .=  $q->end_form;
+                        $service_page .= display_service_confirmation( $c, $mode, $host, $servicename);
 		# This case is actual deletion via api_call
 		} elsif ( $host  =~ m/\..*\./ and $confirm  eq "Confirm" and $servicename =~ m/.+/ ) {
 			my @arr = api_call( $c->stash->{'confdir'}, "DELETE", "objects/services/$host!$servicename");
@@ -837,19 +894,7 @@ sub services {
 			$service_page .= display_back_button($mode, 'services'); 
 		# Host selection dialog i.e. the main dialog for service deletion
 		} else {
-			$service_page .= $q->p('Enter host to modify');
-			$service_page .= $q->start_form(-method=>$METHOD,
-				    -action=>"api_conf.cgi");
-			$service_page .= '<select name="host">';
-			foreach my $service_host (sort keys %services ) {
-				$service_page .= "<option value=\"$service_host\">$service_host</option>";
-			}
-			$service_page .= '</select">';
-			$service_page .= $q->hidden('page_type',"services");
-			$service_page .= $q->hidden('mode',"delete");
-			$service_page .= $q->submit(-name=>'submit',
-					-value=>'Submit');
-			$service_page .=  $q->end_form;
+                        $service_page .= display_single_host_selection($c, $mode); 
 		}
 	# Creation mode
 	} elsif ($mode eq "create") {
@@ -937,6 +982,16 @@ sub services {
 			$service_page .=  $q->end_form;
 		}
 	# This is the first selection page i.e. create/delete dialog for services
+	} elsif ($mode eq "modify" ) {
+            # This is the editor
+            if($host and $servicename) {
+                my %hidden =  ("page_type" => "services", "host" => $host, "servicename" => $servicename);
+                $service_page .=  display_modify_textbox($c, \%hidden, "objects/services/$host!$servicename", @service_keys);
+            } elsif($host) {
+                $service_page .= display_service_selection($c, $mode, $host);
+            } else {
+                $service_page .= display_single_host_selection($c, $mode); 
+            }
 	} else {
 		$service_page .=  display_create_delete_modify_dialog("services"); 
 	}
@@ -1138,7 +1193,7 @@ sub body {
 	} elsif ($page_type eq "commands") {
 		$body = commands $c;
 	} else {
-		$body = selector $c;
+		$body = selector;
 	}
 	return $body;
 }
