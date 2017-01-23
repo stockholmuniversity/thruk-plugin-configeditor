@@ -31,6 +31,7 @@ use File::Basename qw( dirname basename );
 use HTML::Entities;
 use HTTP::Request::Common;
 use IO::Socket::SSL;
+use JSON;
 use JSON::XS qw(encode_json decode_json);
 use LWP::Protocol::https;
 use LWP::UserAgent;
@@ -165,9 +166,9 @@ sub create_multi_select {
                 $html .= '$(\'#select-300\').click(function(){' . "\n";
                 $html .= '$(\'#' . $id . '\').multiSelect(\'select\', [';
                 foreach my $i (0 .. 298) {
-                                $html .= "\'@items[$i]\', ";
+                                $html .= "\'$items[$i]\', ";
                 }
-                $html .= "\'@items[299]\'";
+                $html .= "\'$items[299]\'";
                 $html .= ']);' . "\n";
                 $html .= 'return false;' . "\n";
                 $html .= '});' . "\n";
@@ -355,7 +356,7 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 =cut
 
 sub get_json {
-    my ($endpoint, @keys) = @_;
+    my ($c, $endpoint, @keys) = @_;
     my $result = api_call( $c->stash->{'confdir'}, $endpoint); 
 
     my %to_json;
@@ -377,7 +378,10 @@ This displays the main scroll list och different type of objects
 =cut
 
 sub selector {
+	
+	my ($c) = @_;
 	# A cgi object to help with some html creation 
+	
 	my $q = CGI->new;
 
 	# These are the different kinds of objects we can manipulate
@@ -429,7 +433,7 @@ sub selector {
 	$landing_page .= '</table>';
 	$landing_page .= '</div>';
 
-	$landing_page .= get_json "objects/services/svn-prod-srv01.it.su.se!ssh_port_22", @service_keys;
+	$landing_page .= get_json $c, "objects/services/svn-prod-srv01.it.su.se!ssh_port_22", @service_keys;
 
 	return $landing_page;
 }
@@ -1134,7 +1138,7 @@ sub body {
 	} elsif ($page_type eq "commands") {
 		$body = commands $c;
 	} else {
-		$body = selector;
+		$body = selector $c;
 	}
 	return $body;
 }
