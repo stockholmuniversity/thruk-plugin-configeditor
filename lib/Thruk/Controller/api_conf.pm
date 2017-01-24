@@ -101,7 +101,8 @@ sub api_call {
 	my $req = HTTP::Request->new( $verb => $api_url );
 
 	if ($payload) {
-		$payload =~ s/&nbsp;/ /g;
+		#$payload =~ s/&nbsp;/ /g;
+		print "This is the payload in api_call: $payload";
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
@@ -345,7 +346,7 @@ sub display_modify_textbox {
 	close $fh or die $!;
 	
 	# Pretty print
-	$json_text =~ s/ /&nbsp;/g;
+	#$json_text =~ s/ /&nbsp;/g;
 	
 	print "Printing json: " . $json_text;
 
