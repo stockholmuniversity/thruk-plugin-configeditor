@@ -404,7 +404,7 @@ sub display_service_confirmation {
 	if ($attributes) {
 		print "Payload before" . $attributes;
 		my $json_text =  $attributes;
-		$json_text =~ s/^ +//g;
+		$json_text =~ s/(&nbsp;)/ /g;
 		print "Payload after" . $json_text;
 		#$service_form .= $q->hidden( 'attributes', $attributes );
 		$service_form .= $q->hidden( 'attributes', $json_text );
