@@ -50,6 +50,7 @@ my @command_keys = (
 					 "arguments",          "command",
 					 "vars"
 );
+
 =head2 api_call
 
 This function reads api config and makes api calls
@@ -1419,10 +1420,6 @@ sub commands {
 
 		# Do edit here
 		} elsif ( $command and $submit eq "Submit" ) {
-			print "Placeholder";
-
-		# Do edit here
-		} elsif ($command) {
 			my %hidden = (
 						   "page_type"   => "commands",
 						   "command"        => $command
