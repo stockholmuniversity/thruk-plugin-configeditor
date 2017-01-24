@@ -100,8 +100,11 @@ sub api_call {
 					  $api_password );
 	my $req = HTTP::Request->new( $verb => $api_url );
 
-	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
+	    print "Payload before" . $payload;
+		my $json_text =  $payload;
+		$json_text =~ s/ //g;
+		print "Payload after" . $json_text;
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
@@ -402,12 +405,7 @@ sub display_service_confirmation {
 	$service_form .= $q->hidden( 'page_type', "services" );
 	$service_form .= $q->hidden( 'mode',      $mode );
 	if ($attributes) {
-		print "Payload before" . $attributes;
-		my $json_text =  $attributes;
-		$json_text =~ s/&nbsp;/ /g;
-		print "Payload after" . $json_text;
-		#$service_form .= $q->hidden( 'attributes', $attributes );
-		$service_form .= $q->hidden( 'attributes', $json_text );
+		$service_form .= $q->hidden( 'attributes', $attributes );
 	}
 	$service_form .= $q->hidden( 'servicename', $servicename );
 	$service_form .= $q->submit( -name  => 'confirm',
