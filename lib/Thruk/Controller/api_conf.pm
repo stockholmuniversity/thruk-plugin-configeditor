@@ -103,7 +103,7 @@ sub api_call {
 	if ($payload) {
 	    print "Payload before" . $payload;
 		my $json_text =  $payload;
-		$json_text =~ s/ //g;
+		$json_text =~ s/\s//g;
 		print "Payload after" . $json_text;
 		$req->add_content($payload);
 	}
