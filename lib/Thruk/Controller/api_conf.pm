@@ -103,8 +103,8 @@ sub api_call {
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
 		print "Payload before" . $payload;
-		my $perl_object = decode_json $payload;
-		my $json_text = encode_json $perl_object;
+		my $perl_object = encode_json $payload;
+		my $json_text = decode_json $perl_object;
 		print "Payload after" . $json_text;
 		#$req->add_content($payload);
 		$req->add_content($json_text);
