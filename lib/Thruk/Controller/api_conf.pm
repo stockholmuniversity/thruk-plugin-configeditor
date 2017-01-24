@@ -343,10 +343,9 @@ sub display_modify_textbox {
 	}
 	close $fh or die $!;
 	
-	#$json_text =~ s/ /&nbsp;/g;
-	#$json_text =~ s/\t/&nbsp;&nbsp;/g;
-	$json_text =~ s/\t/  /g;
-	#$json_text =~s/(&nbsp;)+$/\n/;	
+	$json_text =~ s/ /&nbsp;/g;
+	$json_text =~ s/\t/&nbsp;&nbsp;/g;
+	$json_text =~s/(&nbsp;)+$/\n/;	
 
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
