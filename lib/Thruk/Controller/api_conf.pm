@@ -101,6 +101,7 @@ sub api_call {
 	my $req = HTTP::Request->new( $verb => $api_url );
 
 	if ($payload) {
+		$payload =~ s/&nbsp;/ /g;
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
