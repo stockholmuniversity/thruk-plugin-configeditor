@@ -106,7 +106,9 @@ sub api_call {
 		my $json_text;
 		open my $fh, '<', \$payload or die $!;
 		while (<$fh>) {
-			$json_text .= s/^\s+// $_;
+			my $line = $_;
+			$line =~ s/^\s+//;
+			$json_text .= $line;
 		}
 		close $fh;
 		
