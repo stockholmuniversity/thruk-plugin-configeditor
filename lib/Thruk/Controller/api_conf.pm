@@ -102,7 +102,8 @@ sub api_call {
 
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
-		$req->add_content(decode_entities($payload));
+		$payload =~ s/&nbsp;/ /g;
+		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
 	return decode_json $response->decoded_content;
