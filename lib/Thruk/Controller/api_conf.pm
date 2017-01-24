@@ -410,7 +410,7 @@ mode, create, delete or modify
 
 sub display_command_selection {
 	
-	my ($c, $mode) = $@_;
+	my ($c, $mode) = @_;
 	my $q = CGI->new;
 		
 	my $command_form .= $q->p("Enter command to $mode");
