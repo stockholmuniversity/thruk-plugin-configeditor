@@ -46,10 +46,7 @@ my @service_keys = (
 					 "display_name",  "notes_url",
 					 "event_command"
 );
-my @command_keys = (
-					 "arguments",          "command",
-					 "vars"
-);
+my @command_keys = ( "arguments", "command", "vars" );
 
 =head2 api_call
 
@@ -103,8 +100,6 @@ sub api_call {
 	if ($payload) {
 		$payload =~ s/&nbsp;/ /g;
 		$payload =~ s/\s+/ /g;
-		
-		print "This is the payload in api_call: $payload";
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
@@ -331,13 +326,12 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 sub display_modify_textbox {
 	my ( $c, $hidden, $endpoint, @keys ) = @_;
-	my $q    = CGI->new;
+	my $q = CGI->new;
 
 	#my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
 	my $json_text = get_json( $c, $endpoint, @keys );
 	my $rows = () = $json_text =~ /\n/g;
 	my $cols = 0;
-
 	open my $fh, '<', \$json_text or die $!;
 	while (<$fh>) {
 		my $len = length($_);
@@ -346,12 +340,10 @@ sub display_modify_textbox {
 		}
 	}
 	close $fh or die $!;
-	
+
 	# Pretty print
 	$json_text =~ s/ /&nbsp;/g;
-	
 	print "Printing json: " . $json_text;
-
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
 	$textbox .= $q->start_form( -method => $METHOD,
@@ -371,6 +363,45 @@ sub display_modify_textbox {
 							-value => 'Submit' );
 	$textbox .= $q->end_form;
 	return decode_entities($textbox);
+}
+
+=head2 display_command_confirmation
+This function gets a confirmation dialog
+=head3 Parameters
+=over
+=item *
+$c - a context
+=item *
+mode, create, delete or modify
+=item *
+commandname
+=item *
+attributes, i.e. the json to send to the api
+=back
+=cut
+
+sub display_command_confirmation {
+	my $q = CGI->new;
+	my ( $c, $mode, $commandname, $attributes ) = @_;
+	my $command_form;
+	$command_form .= $q->p("Are you sure you want to $mode $command?<br/>");
+	$command_form .=
+	  $q->start_form( -method => $METHOD,
+					  -action => "api_conf.cgi" );
+	$command_form .= $q->hidden( 'page_type', "commands" );
+	$command_form .= $q->hidden( 'command',   $commandname );
+	$command_form .= $q->hidden( 'mode',      $mode );
+
+	if ( $mode eq "delete" ) {
+		$command_form .= $q->checkbox( 'cascading', 0, 'true',
+									   'Use cascading delete - WARNING' );
+	} elsif ( $mode eq "modify" and $attributes ) {
+		$command_form .= $q->hidden( 'attributes', $attributes );
+	}
+	$command_form .= $q->submit( -name  => 'confirm',
+								 -value => 'Confirm' );
+	$command_form .= $q->end_form;
+	return $command_form;
 }
 
 =head2 display_service_confirmation
@@ -568,16 +599,18 @@ sub selector {
 	# These are the different kinds of objects we can manipulate
 	my %pagetypes = (
 		'hosts' => 'Hosts',
+
 	#	'hostdependencies' => 'Host Dependencies',
 	#	'hostescalations' => 'Host Escalations',
 	#	'hostgroups' => 'Host Groups', # Create and delete is implemented for this
 		'services' => 'Services',
-	#	'servicegroups' => 'Service Groups',
-	#	'servicedependencies' => 'Service Dependencies',
-	#	'serviceescalations' => 'Service Escalations',
-	#	'contacts' => 'Contacts',
-	#	'contactgroups' => 'Contact Groups',
-	#	'timeperiods' => 'Timeperiods',
+
+		#	'servicegroups' => 'Service Groups',
+		#	'servicedependencies' => 'Service Dependencies',
+		#	'serviceescalations' => 'Service Escalations',
+		#	'contacts' => 'Contacts',
+		#	'contactgroups' => 'Contact Groups',
+		#	'timeperiods' => 'Timeperiods',
 		'commands' => 'Commands',
 	);
 
@@ -1305,20 +1338,8 @@ sub commands {
 
 		# This case is the confirmation dialog
 		if ( $confirm ne "Confirm" and $command =~ m/.+/ ) {
-			$command_page .=
-			  $q->p( 'Are you sure you want to delete ' . $command . '?<br/>' );
-			$command_page .=
-			  $q->start_form( -method => $METHOD,
-							  -action => "api_conf.cgi" );
-			$command_page .= $q->hidden( 'page_type', "commands" );
-			$command_page .= $q->hidden( 'command',   $command );
-			$command_page .= $q->hidden( 'mode',      "delete" );
-			$command_page .= $q->checkbox( 'cascading', 0, 'true',
-										   'Use cascading delete - WARNING' );
-			$command_page .= $q->submit( -name  => 'confirm',
-										 -value => 'Confirm' );
-			$command_page .= $q->end_form;
-
+			$command_page .= display_command_confirmation($c, $mode, $command);
+			
 			# This is the actual deletion via api call
 		} elsif ( $confirm eq "Confirm" and $command =~ m/.+/ ) {
 			my $cascade = '';
@@ -1423,18 +1444,23 @@ sub commands {
 		# This is create/delete dialog
 	} elsif ( $mode eq "modify" ) {
 
-		# Do api call here
-		if ( $command and $confirm eq "Confirm" ) {
+		# Do confirmation here
+		if ( $command and $attributes ) {
+			$command_page .= display_command_confirmation($c, $mode, $command, $attributes);
+
+			# Do api call here
+		} elsif ( $command and $confirm eq "Confirm" ) {
 			print "Placeholder";
 
-		# Do edit here
+			# Do edit here
 		} elsif ( $command and $submit eq "Submit" ) {
 			my %hidden = (
-						   "page_type"   => "commands",
-						   "command"        => $command
-			);			
+						   "page_type" => "commands",
+						   "command"   => $command
+			);
 			my $endpoint = "objects/checkcommands/$command";
-			$command_page = display_modify_textbox($c, \%hidden, $endpoint, @command_keys);
+			$command_page =
+			  display_modify_textbox( $c, \%hidden, $endpoint, @command_keys );
 		} else {
 			$command_page = display_command_selection( $c, $mode );
 		}
@@ -1540,5 +1566,4 @@ This library is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
-
 1;
