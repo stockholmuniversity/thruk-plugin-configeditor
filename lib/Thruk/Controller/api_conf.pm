@@ -46,7 +46,10 @@ my @service_keys = (
 					 "display_name",  "notes_url",
 					 "event_command"
 );
-
+my @command_keys = (
+					 "arguments",          "command",
+					 "vars"
+);
 =head2 api_call
 
 This function reads api config and makes api calls
@@ -1414,9 +1417,18 @@ sub commands {
 		if ( $command and $confirm eq "Confirm" ) {
 			print "Placeholder";
 
-			# Do confirmation here
-		} elsif ($command) {
+		# Do edit here
+		} elsif ( $command and $submit eq "Submit" ) {
 			print "Placeholder";
+
+		# Do edit here
+		} elsif ($command) {
+			my %hidden = (
+						   "page_type"   => "commands",
+						   "command"        => $command
+			);			
+			my $endpoint = "objects/checkcommands/$command";
+			$command_page = display_modify_textbox($c, \%hidden, $endpoint, @command_keys);
 		} else {
 			$command_page = display_command_selection( $c, $mode );
 		}
