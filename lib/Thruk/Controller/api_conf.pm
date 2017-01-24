@@ -403,7 +403,8 @@ sub display_service_confirmation {
 	$service_form .= $q->hidden( 'mode',      $mode );
 	if ($attributes) {
 		print "Payload before" . $attributes;
-		my $json_text = decode_entities $attributes;
+		my $json_text =  $attributes;
+		$json_text =~ s/^ +//g;
 		print "Payload after" . $json_text;
 		#$service_form .= $q->hidden( 'attributes', $attributes );
 		$service_form .= $q->hidden( 'attributes', $json_text );
