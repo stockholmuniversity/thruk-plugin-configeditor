@@ -250,7 +250,7 @@ sub display_create_delete_modify_dialog {
 
 	# Show modify option for only these pagetypes
 	#	my @display_modify_arr = ("hostgroups");
-	my @display_modify_arr = ("commands", "services");
+	my @display_modify_arr = ( "commands", "services" );
 
 	# A cgi object to help with some html creation
 	my $q    = CGI->new;
@@ -409,31 +409,23 @@ mode, create, delete or modify
 =cut
 
 sub display_command_selection {
-	
-	my ($c, $mode) = @_;
+	my ( $c, $mode ) = @_;
 	my $q = CGI->new;
-		
 	my $command_form .= $q->p("Enter command to $mode");
-	$command_form .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$command_form .= $q->start_form( -method => $METHOD,
+									 -action => "api_conf.cgi" );
 	$command_form .= '<select name="command">';
 	foreach my $hash ( values $c->stash->{commands} ) {
 		my $name = $hash->{name};
 		$name =~ s/check_//g;
-		$command_form .=
-		  "<option value=\"$name\">$hash->{name}</option>";
+		$command_form .= "<option value=\"$name\">$hash->{name}</option>";
 	}
 	$command_form .= '</select">';
 	$command_form .= $q->hidden( 'page_type', "commands" );
 	$command_form .= $q->hidden( 'mode', $mode );
-	$command_form .= $q->submit(
-		-name  => 'submit',
-		-value => 'Submit'
-	);
+	$command_form .= $q->submit( -name  => 'submit',
+								 -value => 'Submit' );
 	$command_form .= $q->end_form;
-	
 	return $command_form;
 }
 
@@ -1328,7 +1320,7 @@ sub commands {
 
 			# This is the main dialog for command deletion
 		} else {
-			$command_page .= display_command_selection($c, $mode );
+			$command_page .= display_command_selection( $c, $mode );
 		}
 
 		# Creation dialog
@@ -1394,16 +1386,6 @@ sub commands {
 			}
 
 			# This is main command creation dialog
-		} elsif ( $mode eq "modify" ) {
-			# Do api call here
-			if ($command and $confirm eq "Confirm") {
-				print "Placeholder";
-			# Do confirmation here
-			} elsif ($command) {
-				print "Placeholder";
-			} else {
-				$command_page = display_command_selection($c, $mode);
-			}
 		} else {
 			$command_page .=
 			  $q->start_form( -method => $METHOD,
@@ -1426,6 +1408,18 @@ sub commands {
 		}
 
 		# This is create/delete dialog
+	} elsif ( $mode eq "modify" ) {
+
+		# Do api call here
+		if ( $command and $confirm eq "Confirm" ) {
+			print "Placeholder";
+
+			# Do confirmation here
+		} elsif ($command) {
+			print "Placeholder";
+		} else {
+			$command_page = display_command_selection( $c, $mode );
+		}
 	} else {
 		$command_page .= display_create_delete_modify_dialog("commands");
 	}
@@ -1528,4 +1522,5 @@ This library is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
+
 1;
