@@ -1395,10 +1395,14 @@ sub commands {
 
 			# This is main command creation dialog
 		} elsif ( $mode eq "modify" ) {
-			if () {
-				
+			# Do api call here
+			if ($command and $confirm eq "Confirm") {
+				print "Placeholder";
+			# Do confirmation here
+			} elsif ($command) {
+				print "Placeholder";
 			} else {
-				
+				$command_page = display_command_selection($c, $mode);
 			}
 		} else {
 			$command_page .=
