@@ -370,8 +370,7 @@ sub display_modify_textbox {
 	$textbox .= $q->submit( -name  => "submit",
 							-value => 'Submit' );
 	$textbox .= $q->end_form;
-	#return decode_entities($textbox);
-	return $textbox;
+	return decode_entities($textbox);
 }
 
 =head2 display_service_confirmation
