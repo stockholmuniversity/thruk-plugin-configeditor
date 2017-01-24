@@ -333,6 +333,8 @@ sub display_modify_textbox {
 	$json_text =~ s/\t/&nbsp;&nbsp;/g;
 	$json_text =~s/(&nbsp;)+$/\n/;
 	my $rows = () = $json_text =~ /\n/g;
+	my $whitespace = 0;
+	
 	my $cols = 0;
 	my $q    = CGI->new;
 	open my $fh, '<', \$json_text or die $!;
@@ -340,9 +342,18 @@ sub display_modify_textbox {
 		my $len = length($_);
 		if ( $len > $cols ) {
 			$cols = $len;
+			my $whitespacetemp = () = $_ =~ /&nbsp;/g;
+			if($whitespacetemp > $whitespace) {
+				$whitespace = $whitespace;
+				
+			}
 		}
 	}
 	close $fh or die $!;
+	
+	if( $whitespace > 0 ) {
+		$cols = $cols - ($whitespace - 1);
+	}
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
 	$textbox .= $q->start_form( -method => $METHOD,
