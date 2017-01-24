@@ -102,7 +102,6 @@ sub api_call {
 
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
-		$payload =~ s/&nbsp;/ /g;
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
@@ -344,9 +343,10 @@ sub display_modify_textbox {
 	}
 	close $fh or die $!;
 	
+	# Pretty print
 	$json_text =~ s/ /&nbsp;/g;
 	$json_text =~ s/\t/&nbsp;&nbsp;/g;
-	$json_text =~s/(&nbsp;)+$/\n/;	
+	#$json_text =~s/(&nbsp;)+$/\n/;	
 
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
