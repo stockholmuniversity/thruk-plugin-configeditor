@@ -329,6 +329,8 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 sub display_modify_textbox {
 	my ( $c, $hidden, $endpoint, @keys ) = @_;
 	my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
+	$json_text =~ s/ /&nbsp;/g;
+	$json_text =~ s/\t/&nbsp;&nbsp;/g;
 	my $rows = () = $json_text =~ /\n/g;
 	my $cols = 0;
 	my $q    = CGI->new;
@@ -540,7 +542,6 @@ sub get_json {
 	my $json = JSON->new;
 	$json->pretty->canonical(1);
 	return $json->pretty->encode( \%to_json );
-	return $result;
 }
 
 =head2 selector
