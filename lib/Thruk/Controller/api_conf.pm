@@ -328,32 +328,25 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 sub display_modify_textbox {
 	my ( $c, $hidden, $endpoint, @keys ) = @_;
-	my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
-	$json_text =~ s/ /&nbsp;/g;
-	$json_text =~ s/\t/&nbsp;&nbsp;/g;
-	$json_text =~s/(&nbsp;)+$/\n/;
-	my $rows = () = $json_text =~ /\n/g;
-	my $whitespace = 0;
-	
-	my $cols = 0;
 	my $q    = CGI->new;
+
+	my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
+	my $rows = () = $json_text =~ /\n/g;
+	my $cols = 0;
+
 	open my $fh, '<', \$json_text or die $!;
 	while (<$fh>) {
 		my $len = length($_);
 		if ( $len > $cols ) {
 			$cols = $len;
-			my $whitespacetemp = () = $_ =~ /&nbsp;/g;
-			if($whitespacetemp > $whitespace) {
-				$whitespace = $whitespace;
-				
-			}
 		}
 	}
 	close $fh or die $!;
 	
-	if( $whitespace > 0 ) {
-		$cols = $cols - ($whitespace - 1);
-	}
+	$json_text =~ s/ /&nbsp;/g;
+	$json_text =~ s/\t/&nbsp;&nbsp;/g;
+	$json_text =~s/(&nbsp;)+$/\n/;	
+
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
 	$textbox .= $q->start_form( -method => $METHOD,
