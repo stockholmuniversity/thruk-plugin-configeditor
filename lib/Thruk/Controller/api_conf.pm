@@ -1,5 +1,4 @@
 package Thruk::Controller::api_conf;
-
 use strict;
 use warnings;
 
@@ -20,7 +19,6 @@ We build our page by using one method per page type, plus some common helper fun
 BEGIN {
 	# Not in use yet;
 }
-
 ##########################################################
 use CGI;
 use Config::JSON;
@@ -43,8 +41,10 @@ my $METHOD = "GET";
 
 #my $METHOD = "POST";
 my @service_keys = (
-	"vars",         "action_url", "check_command", "check_interval",
-	"display_name", "notes_url",  "event_command"
+					 "vars",          "action_url",
+					 "check_command", "check_interval",
+					 "display_name",  "notes_url",
+					 "event_command"
 );
 
 =head2 api_call
@@ -93,7 +93,7 @@ sub api_call {
 	my $ua = LWP::UserAgent->new( ssl_opts => { verify_hostname => 0 } );
 	$ua->default_header( 'Accept' => 'application/json' );
 	$ua->credentials( "$api_host:$api_port", $api_realm, $api_user,
-		$api_password );
+					  $api_password );
 	my $req = HTTP::Request->new( $verb => $api_url );
 
 	#if ($payload =~ m/.+/ ) {
@@ -154,12 +154,10 @@ sub create_multi_select {
 	my $html = '';
 
 	# Dont try with too many items, or it will fail
-
 	if ( scalar @items > 300 ) {
 		$html .=
 		  '<a href=\'#\' id=\'select-300\'>Select first 300</a><br>' . "\n";
-	}
-	else {
+	} else {
 		$html .= '<a href=\'#\' id=\'select-all\'>Select all</a><br>' . "\n";
 	}
 	$html .= '<a href=\'#\' id=\'deselect-all\'>Deselect all</a>' . "\n";
@@ -169,7 +167,6 @@ sub create_multi_select {
 	$html .= 'selectableHeader: "<div>Available items</div>",' . "\n";
 	$html .= 'selectionHeader: "<div>Selected items</div>",' . "\n";
 	$html .= '});' . "\n";
-
 	if ( scalar @items > 300 ) {
 		$html .= '$(\'#select-300\').click(function(){' . "\n";
 		$html .= '$(\'#' . $id . '\').multiSelect(\'select\', [';
@@ -180,8 +177,7 @@ sub create_multi_select {
 		$html .= ']);' . "\n";
 		$html .= 'return false;' . "\n";
 		$html .= '});' . "\n";
-	}
-	else {
+	} else {
 		$html .= '$(\'#select-all\').click(function(){' . "\n";
 		$html .= '$(\'#' . $id . '\').multiSelect(\'select_all\');' . "\n";
 		$html .= 'return false;' . "\n";
@@ -193,7 +189,6 @@ sub create_multi_select {
 	$html .= '});' . "\n";
 	$html .= "})(jQuery);\n";
 	$html .= "</script>\n";
-
 	return $html;
 }
 
@@ -224,16 +219,12 @@ sub display_back_button {
 	# A cgi object to help with some html creation
 	my $q    = CGI->new;
 	my $page = $q->p('Go back?');
-	$page .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$page .= $q->start_form( -method => $METHOD,
+							 -action => "api_conf.cgi" );
 	$page .= $q->hidden( 'page_type', "$page_type" );
 	$page .= $q->hidden( 'mode',      "$mode" );
-	$page .= $q->submit(
-		-name  => 'return',
-		-value => 'Return'
-	);
+	$page .= $q->submit( -name  => 'return',
+						 -value => 'Return' );
 	$page .= $q->end_form;
 	return $page;
 }
@@ -264,10 +255,8 @@ sub display_create_delete_modify_dialog {
 	# A cgi object to help with some html creation
 	my $q    = CGI->new;
 	my $page = $q->p('What do you want to do?');
-	$page .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$page .= $q->start_form( -method => $METHOD,
+							 -action => "api_conf.cgi" );
 	$page .= '<select name="mode">';
 	$page .= "<option value=\"create\">Create</option>";
 	$page .= "<option value=\"delete\">Delete</option>";
@@ -276,10 +265,8 @@ sub display_create_delete_modify_dialog {
 	}
 	$page .= '</select">';
 	$page .= $q->hidden( 'page_type', "$page_type" );
-	$page .= $q->submit(
-		-name  => 'submit',
-		-value => 'Submit'
-	);
+	$page .= $q->submit( -name  => 'submit',
+						 -value => 'Submit' );
 	$page .= $q->end_form;
 	return $page;
 }
@@ -305,7 +292,6 @@ optional: payload
 =cut
 
 sub display_api_response {
-
 	my @arr     = $_[0];
 	my $payload = '';
 	if ( $_[1] ) {
@@ -328,7 +314,7 @@ This function gets the editable json of a configuration object
 =head3 Parameters
 =over
 =item *
-page_typr (services, hosts, etc)
+page_type (services, hosts, etc)
 =item *
 endpoint (e.g. objects/services/<hostname>!<servicename>)
 =item *
@@ -337,43 +323,36 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 =cut
 
 sub display_modify_textbox {
-
 	my ( $c, $hidden, $endpoint, @keys ) = @_;
 	my $json_text = get_json( $c, $endpoint, @keys );
 	my $rows = () = $json_text =~ /\n/g;
 	my $cols = 0;
 	my $q    = CGI->new;
 	open my $fh, '<', \$json_text or die $!;
-
 	while (<$fh>) {
 		my $len = length($_);
 		if ( $len > $cols ) {
 			$cols = $len;
 		}
 	}
-
 	close $fh or die $!;
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
-	$textbox .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$textbox .= $q->start_form( -method => $METHOD,
+								-action => "api_conf.cgi" );
 	foreach my $key ( keys $hidden ) {
 		$textbox .= $q->hidden( $key, $hidden->{"$key"} );
 	}
 	$textbox .= $q->hidden( 'mode', "modify" );
 	$textbox .= $q->textarea(
-		-name    => "attributes",
-		-default => $json_text,
-		-rows    => $rows,
-		-columns => $cols
+							  -name    => "attributes",
+							  -default => $json_text,
+							  -rows    => $rows,
+							  -columns => $cols
 	);
 	$textbox .= "<br/>";
-	$textbox .= $q->submit(
-		-name  => "submit",
-		-value => 'Submit'
-	);
+	$textbox .= $q->submit( -name  => "submit",
+							-value => 'Submit' );
 	$textbox .= $q->end_form;
 	return decode_entities($textbox);
 }
@@ -399,16 +378,13 @@ sub display_service_confirmation {
 	my $q = CGI->new;
 	my ( $c, $mode, $host, $servicename, $attributes ) = @_;
 	my $service_form;
-
 	$service_form .= $q->p(
-		"Are you sure you want to $mode $servicename for host: $host?<br/>");
+		   "Are you sure you want to $mode $servicename for host: $host?<br/>");
 	if ($attributes) {
 		$service_form .= $q->p("Attributes are: <br/> $attributes");
 	}
-	$service_form .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$service_form .= $q->start_form( -method => $METHOD,
+									 -action => "api_conf.cgi" );
 	$service_form .= $q->hidden( 'host',      $host );
 	$service_form .= $q->hidden( 'page_type', "services" );
 	$service_form .= $q->hidden( 'mode',      $mode );
@@ -416,11 +392,49 @@ sub display_service_confirmation {
 		$service_form .= $q->hidden( 'attributes', $attributes );
 	}
 	$service_form .= $q->hidden( 'servicename', $servicename );
-	$service_form .= $q->submit(
-		-name  => 'confirm',
-		-value => 'Confirm'
-	);
+	$service_form .= $q->submit( -name  => 'confirm',
+								 -value => 'Confirm' );
 	$service_form .= $q->end_form;
+}
+
+=head2 display_service_selection
+This function gets the command selection
+=head3 Parameters
+=over
+=item *
+$c - a context
+=item *
+mode, create, delete or modify
+=back
+=cut
+
+sub display_command_selection {
+	
+	my ($c, $mode) = $@_;
+	my $q = CGI->new;
+		
+	my $command_form .= $q->p("Enter command to $mode");
+	$command_form .= $q->start_form(
+		-method => $METHOD,
+		-action => "api_conf.cgi"
+	);
+	$command_form .= '<select name="command">';
+	foreach my $hash ( values $c->stash->{commands} ) {
+		my $name = $hash->{name};
+		$name =~ s/check_//g;
+		$command_form .=
+		  "<option value=\"$name\">$hash->{name}</option>";
+	}
+	$command_form .= '</select">';
+	$command_form .= $q->hidden( 'page_type', "commands" );
+	$command_form .= $q->hidden( 'mode', $mode );
+	$command_form .= $q->submit(
+		-name  => 'submit',
+		-value => 'Submit'
+	);
+	$command_form .= $q->end_form;
+	
+	return $command_form;
 }
 
 =head2 display_service_selection
@@ -436,7 +450,6 @@ host
 =back
 =cut
 
-
 sub display_service_selection {
 	my $q = CGI->new;
 	my ( $c, $mode, $host ) = @_;
@@ -450,12 +463,9 @@ sub display_service_selection {
 			  $service->{display_name};
 		}
 	}
-
 	$service_form .= $q->p("Enter service to $mode for host: $host ");
-	$service_form .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$service_form .= $q->start_form( -method => $METHOD,
+									 -action => "api_conf.cgi" );
 	$service_form .= '<select name="servicename">';
 
 	# Loop all services asscoiated with the host
@@ -467,10 +477,8 @@ sub display_service_selection {
 	$service_form .= $q->hidden( 'page_type', "services" );
 	$service_form .= $q->hidden( 'mode', $mode );
 	$service_form .= $q->hidden( 'host', $host );
-	$service_form .= $q->submit(
-		-name  => 'submit',
-		-value => 'Submit'
-	);
+	$service_form .= $q->submit( -name  => 'submit',
+								 -value => 'Submit' );
 	$service_form .= $q->end_form;
 }
 
@@ -498,12 +506,9 @@ sub display_single_host_selection {
 			  $service->{display_name};
 		}
 	}
-
 	$service_form = $q->p("Enter host to $mode");
-	$service_form .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$service_form .= $q->start_form( -method => $METHOD,
+									 -action => "api_conf.cgi" );
 	$service_form .= '<select name="host">';
 	foreach my $service_host ( sort keys %services ) {
 		$service_form .=
@@ -512,12 +517,9 @@ sub display_single_host_selection {
 	$service_form .= '</select">';
 	$service_form .= $q->hidden( 'page_type', "services" );
 	$service_form .= $q->hidden( 'mode', $mode );
-	$service_form .= $q->submit(
-		-name  => 'submit',
-		-value => 'Submit'
-	);
+	$service_form .= $q->submit( -name  => 'submit',
+								 -value => 'Submit' );
 	$service_form .= $q->end_form;
-
 	return $service_form;
 }
 
@@ -535,14 +537,10 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 sub get_json {
 	my ( $c, $endpoint, @keys ) = @_;
 	my $result = api_call( $c->stash->{'confdir'}, "GET", $endpoint );
-
 	my %to_json;
 	foreach my $key ( sort @keys ) {
-
 		$to_json{"attrs"}{$key} = $result->{"results"}[0]{"attrs"}{$key};
-
 	}
-
 	my $json = JSON->new;
 	$json->pretty->canonical(1);
 	return $json->pretty->encode( \%to_json );
@@ -558,7 +556,6 @@ This displays the main scroll list och different type of objects
 sub selector {
 
 	# A cgi object to help with some html creation
-
 	my $q = CGI->new;
 
 	# These are the different kinds of objects we can manipulate
@@ -585,10 +582,8 @@ sub selector {
 '<div class="reportSelectTitle" align="center">Select Type of Config Data You Wish To Edit</div>';
 	$landing_page .= '<br>';
 	$landing_page .= '<br>';
-	$landing_page .= $q->start_form(
-		-method => $METHOD,
-		-action => "api_conf.cgi"
-	);
+	$landing_page .= $q->start_form( -method => $METHOD,
+									 -action => "api_conf.cgi" );
 	$landing_page .= '<div align="center">';
 	$landing_page .= '<table border="0">';
 	$landing_page .= '<tbody>';
@@ -608,23 +603,20 @@ sub selector {
 	$landing_page .= '</tr>';
 	$landing_page .= '<tr>';
 	$landing_page .= '<td class="reportSelectItem" >';
-	$landing_page .= $q->submit(
-		-name  => 'continue',
-		-value => 'Continue'
-	);
+	$landing_page .= $q->submit( -name  => 'continue',
+								 -value => 'Continue' );
 	$landing_page .= $q->end_form;
 	$landing_page .= '</td>';
 	$landing_page .= '</tr>';
 	$landing_page .= '</tbody>';
 	$landing_page .= '</table>';
 	$landing_page .= '</div>';
-
 	return $landing_page;
 }
 
 =head2 hosts
 
-This where we manipulate host obects
+This where we manipulate host objects
 
 =cut
 
@@ -648,8 +640,7 @@ sub hosts {
 			push @hosts, $hst;
 		}
 		$host = $hosts[0];
-	}
-	else {
+	} else {
 		$host = $params->{'host'};
 		push @hosts, $host;
 	}
@@ -677,23 +668,18 @@ sub hosts {
 			my $hoststr = csv_from_arr(@hosts);
 			$host_page .=
 			  $q->p( 'Are you sure you want to delete ' . $hoststr . '?<br/>' );
-			$host_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+			$host_page .= $q->start_form( -method => $METHOD,
+										  -action => "api_conf.cgi" );
 			foreach my $hst (@hosts) {
 				$host_page .= $q->hidden( 'host', $hst );
 			}
 			$host_page .= $q->hidden( 'page_type', "hosts" );
 			$host_page .= $q->hidden( 'mode',      "delete" );
 			$host_page .= $q->checkbox( 'cascading', 0, 'true',
-				'Use cascading delete - WARNING' );
-			$host_page .= $q->submit(
-				-name  => 'confirm',
-				-value => 'Confirm'
-			);
+										'Use cascading delete - WARNING' );
+			$host_page .= $q->submit( -name  => 'confirm',
+									  -value => 'Confirm' );
 			$host_page .= $q->end_form;
-
 		}
 
 		# This case is delete request
@@ -704,7 +690,7 @@ sub hosts {
 			}
 			foreach my $hst (@hosts) {
 				my @arr = api_call( $c->stash->{'confdir'},
-					"DELETE", "objects/hosts/$hst$cascade" );
+									"DELETE", "objects/hosts/$hst$cascade" );
 				$host_page .= display_api_response(@arr);
 			}
 			$host_page .= display_back_button( $mode, 'hosts' );
@@ -718,10 +704,8 @@ sub hosts {
 'Please don\'t try with more than ~300 at a time or it will fail'
 				);
 			}
-			$host_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+			$host_page .= $q->start_form( -method => $METHOD,
+										  -action => "api_conf.cgi" );
 			$host_page .=
 			  "<select name='host' id='host-select' multiple='multiple'>\n";
 			for my $ho (@host_arr) {
@@ -730,35 +714,30 @@ sub hosts {
 			$host_page .= "</select>\n";
 			$host_page .= $q->hidden( 'page_type', "hosts" );
 			$host_page .= $q->hidden( 'mode', "delete" );
-			$host_page .= $q->submit(
-				-name  => 'submit',
-				-value => 'Submit'
-			);
+			$host_page .= $q->submit( -name  => 'submit',
+									  -value => 'Submit' );
 			$host_page .= $q->end_form;
 			$host_page .= create_multi_select( 'host-select', @host_arr );
 		}
 
 		# This is create mode
-	}
-	elsif ( $mode eq "create" ) {
+	} elsif ( $mode eq "create" ) {
 
 		# This case is confirm dialog
-		if (    $host =~ m/\..*\./
-			and ( is_ipv4($ip) or is_ipv6($ip) )
-			and $confirm ne "Confirm" )
+		if (     $host =~ m/\..*\./
+			 and ( is_ipv4($ip) or is_ipv6($ip) )
+			 and $confirm ne "Confirm" )
 		{
 			$host_page .=
-			  $q->p('Are you sure you want to create '
-				  . $host
-				  . ' with ip address: '
-				  . $ip
-				  . ' and checkcommand: '
-				  . $command
-				  . '?<br/>' );
-			$host_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+			  $q->p(   'Are you sure you want to create '
+					 . $host
+					 . ' with ip address: '
+					 . $ip
+					 . ' and checkcommand: '
+					 . $command
+					 . '?<br/>' );
+			$host_page .= $q->start_form( -method => $METHOD,
+										  -action => "api_conf.cgi" );
 			$host_page .= $q->hidden( 'host',      $host );
 			$host_page .= $q->hidden( 'page_type', "hosts" );
 			$host_page .= $q->hidden( 'mode',      "create" );
@@ -767,19 +746,16 @@ sub hosts {
 			$host_page .= $q->hidden( 'command',   $command );
 			$host_page .= $q->hidden( 'templates', $templates );
 			$host_page .= $q->hidden( 'os',        $os );
-			$host_page .= $q->submit(
-				-name  => 'confirm',
-				-value => 'Confirm'
-			);
+			$host_page .= $q->submit( -name  => 'confirm',
+									  -value => 'Confirm' );
 			$host_page .= $q->end_form;
 
 			# This case is the  actual creation
-		}
-		elsif ( $host =~ m/\..*\./
-			and ( is_ipv4($ip) or is_ipv6($ip) )
-			and $confirm eq "Confirm"
-			and $os =~ m/.+/
-			and $zone )
+		} elsif (     $host =~ m/\..*\./
+				  and ( is_ipv4($ip) or is_ipv6($ip) )
+				  and $confirm eq "Confirm"
+				  and $os =~ m/.+/
+				  and $zone )
 		{
 			my $payload = '{ ';
 			if ( $templates =~ m/.+/ ) {
@@ -798,23 +774,17 @@ sub hosts {
 			  . $command
 			  . '", "vars.os" : "'
 			  . $os . '" } }';
-			my @arr = api_call(
-				$c->stash->{'confdir'}, "PUT",
-				"objects/hosts/$host",  $payload
-			);
+			my @arr = api_call( $c->stash->{'confdir'}, "PUT",
+								"objects/hosts/$host",  $payload );
 			$host_page .= display_api_response( @arr, $payload );
 			$host_page .= display_back_button( $mode, 'hosts' );
 
 			# This is the main host creation dialog
-		}
-		else {
-
+		} else {
 			my %zones =
 			  %{ api_call( $c->stash->{'confdir'}, "GET", "objects/zones" ) };
-			$host_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+			$host_page .= $q->start_form( -method => $METHOD,
+										  -action => "api_conf.cgi" );
 			$host_page .= $q->p("Enter hostname:");
 			$host_page .= $q->textfield( 'host', '', 50, 80 );
 			$host_page .= $q->p("Enter ip address:");
@@ -838,7 +808,6 @@ sub hosts {
 			# TODO: Move default checkcommand to conf file?
 			foreach my $hash ( values $c->stash->{commands} ) {
 				my $selected = '';
-
 				if ( $hash->{name} eq "check_hostalive" ) {
 					$selected = 'selected="selected" ';
 				}
@@ -852,14 +821,11 @@ sub hosts {
 			$host_page .= $q->textfield( 'os', '', 50, 80 );
 			$host_page .= $q->hidden( 'page_type', "hosts" );
 			$host_page .= $q->hidden( 'mode',      "create" );
-			$host_page .= $q->submit(
-				-name  => 'submit',
-				-value => 'Submit'
-			);
+			$host_page .= $q->submit( -name  => 'submit',
+									  -value => 'Submit' );
 			$host_page .= $q->end_form;
 		}
-	}
-	else {
+	} else {
 		$host_page .= display_create_delete_modify_dialog("hosts");
 	}
 	return $host_page;
@@ -898,7 +864,6 @@ sub host_groups {
 		push @temp_arr, $hashref->{name};
 	}
 	my @host_arr = sort @temp_arr;
-
 	if ( $mode eq "create" ) {
 
 # If we have selected a hostgroup but have not yet confirmed, i.e. we show confirm dialog
@@ -907,25 +872,22 @@ sub host_groups {
 				$displayname = $hostgroup;
 			}
 			$hostgroup_page .= $q->p(
-				'Are you sure you want to create ' . $hostgroup . '?<br/>' );
-			$hostgroup_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+				   'Are you sure you want to create ' . $hostgroup . '?<br/>' );
+			$hostgroup_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			$hostgroup_page .= $q->hidden( 'hostgroup',   $hostgroup );
 			$hostgroup_page .= $q->hidden( 'page_type',   "hostgroups" );
 			$hostgroup_page .= $q->hidden( 'templates',   $templates );
 			$hostgroup_page .= $q->hidden( 'displayname', $displayname );
 			$hostgroup_page .= $q->hidden( 'mode',        "create" );
-			$hostgroup_page .= $q->submit(
-				-name  => 'confirm',
-				-value => 'Confirm'
-			);
+			$hostgroup_page .=
+			  $q->submit( -name  => 'confirm',
+						  -value => 'Confirm' );
 			$hostgroup_page .= $q->end_form;
 
 		   # If we have both hostgroup and confirm, i.e. we  create via api call
-		}
-		elsif ( $hostgroup =~ m/.+/ and $confirm eq "Confirm" ) {
+		} elsif ( $hostgroup =~ m/.+/ and $confirm eq "Confirm" ) {
 			my $payload = '{ "attrs": {"display_name":"' . $displayname . '"';
 
 			# templates are otional so we can only add them if they exist
@@ -937,20 +899,16 @@ sub host_groups {
 				$payload =~ s/, $/]/;
 			}
 			$payload .= ' } }';
-			my @arr = api_call(
-				$c->stash->{'confdir'},          "PUT",
-				"objects/hostgroups/$hostgroup", $payload
-			);
+			my @arr = api_call( $c->stash->{'confdir'},          "PUT",
+								"objects/hostgroups/$hostgroup", $payload );
 			$hostgroup_page .= display_api_response( @arr, $payload );
 			$hostgroup_page .= display_back_button( $mode, 'hostgroups' );
 
 			# This is the create dialog
-		}
-		else {
-			$hostgroup_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+		} else {
+			$hostgroup_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			$hostgroup_page .= $q->p("Enter hostgroupname:");
 			$hostgroup_page .= $q->textfield( 'hostgroup', '', 50, 80 );
 			$hostgroup_page .= $q->p("Enter displayname:");
@@ -960,53 +918,47 @@ sub host_groups {
 			$hostgroup_page .= $q->textfield( 'templates', '', 50, 80 );
 			$hostgroup_page .= $q->hidden( 'page_type', "hostgroups" );
 			$hostgroup_page .= $q->hidden( 'mode',      "create" );
-			$hostgroup_page .= $q->submit(
-				-name  => 'submit',
-				-value => 'Submit'
-			);
+			$hostgroup_page .=
+			  $q->submit( -name  => 'submit',
+						  -value => 'Submit' );
 			$hostgroup_page .= $q->end_form;
 		}
-	}
-	elsif ( $mode eq "delete" ) {
+	} elsif ( $mode eq "delete" ) {
 
 # If we have selected a hostgroup but have not yet confirmed, i.e. we show confirm dialog
 		if ( $hostgroup =~ m/.+/ and $confirm ne "Confirm" ) {
 			$hostgroup_page .= $q->p(
-				'Are you sure you want to delete ' . $hostgroup . '?<br/>' );
-			$hostgroup_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+				   'Are you sure you want to delete ' . $hostgroup . '?<br/>' );
+			$hostgroup_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			$hostgroup_page .= $q->hidden( 'hostgroup', $hostgroup );
 			$hostgroup_page .= $q->hidden( 'page_type', "hostgroups" );
 			$hostgroup_page .= $q->hidden( 'mode',      "delete" );
 			$hostgroup_page .= $q->checkbox( 'cascading', 0, 'true',
-				'Use cascading delete - WARNING' );
-			$hostgroup_page .= $q->submit(
-				-name  => 'confirm',
-				-value => 'Confirm'
-			);
+											 'Use cascading delete - WARNING' );
+			$hostgroup_page .=
+			  $q->submit( -name  => 'confirm',
+						  -value => 'Confirm' );
 			$hostgroup_page .= $q->end_form;
 
 			# If we have both hostgroup and confirm, i.e. we delete via api call
-		}
-		elsif ( $hostgroup =~ m/.+/ and $confirm eq "Confirm" ) {
+		} elsif ( $hostgroup =~ m/.+/ and $confirm eq "Confirm" ) {
 			my $cascade = '';
 			if ( $cascading eq "true" ) {
 				$cascade .= '?cascade=1';
 			}
 			my @arr = api_call( $c->stash->{'confdir'},
-				"DELETE", "objects/hostgroups/$hostgroup$cascade" );
+								"DELETE",
+								"objects/hostgroups/$hostgroup$cascade" );
 			$hostgroup_page .= display_api_response(@arr);
 			$hostgroup_page .= display_back_button( $mode, 'hostgroups' );
 
 			# Fall back on a drop down list
-		}
-		else {
-			$hostgroup_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+		} else {
+			$hostgroup_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			$hostgroup_page .= $q->p("Enter hostgroupname:");
 			$hostgroup_page .= '<select name="hostgroup">';
 			foreach my $hostgroup ( values $c->stash->{hostgroups} ) {
@@ -1016,18 +968,16 @@ sub host_groups {
 			$hostgroup_page .= '</select>';
 			$hostgroup_page .= $q->hidden( 'page_type', "hostgroups" );
 			$hostgroup_page .= $q->hidden( 'mode', "delete" );
-			$hostgroup_page .= $q->submit(
-				-name  => 'submit',
-				-value => 'Submit'
-			);
+			$hostgroup_page .=
+			  $q->submit( -name  => 'submit',
+						  -value => 'Submit' );
 			$hostgroup_page .= $q->end_form;
 		}
 
 		#	} elsif ($mode eq "modify") {
 		#		$hostgroup_page .= "Modification";
 		#		$hostgroup_page .= Dumper $c->stash->{hostgroups};
-	}
-	else {
+	} else {
 		$hostgroup_page .= display_create_delete_modify_dialog("hostgroups");
 	}
 	return $hostgroup_page;
@@ -1072,8 +1022,7 @@ sub services {
 			push @hosts, $hst;
 		}
 		$host = $hosts[0];
-	}
-	else {
+	} else {
 		$host = $params->{'host'};
 		push @hosts, $host;
 	}
@@ -1084,7 +1033,6 @@ sub services {
 	my $servicename = $params->{'servicename'};
 	my $displayname = $params->{'displayname'};
 	my $attributes  = $params->{'attributes'};
-
 	my $service_page =
 	  '<div class="reportSelectTitle" align="center">Services</div>';
 
@@ -1101,48 +1049,45 @@ sub services {
 	if ( $mode eq "delete" ) {
 
 		# This is the service deletion dialog for a specific host
-		if (    $host =~ m/\..*\./
-			and $confirm ne "Confirm"
-			and not $servicename =~ m/.+/ )
+		if (     $host =~ m/\..*\./
+			 and $confirm ne "Confirm"
+			 and not $servicename =~ m/.+/ )
 		{
 			$service_page .= display_service_selection( $c, $mode, $host );
 
 			# This case is confirmation dialog for delete mode
-		}
-		elsif ( $host =~ m/\..*\./
-			and $confirm ne "Confirm"
-			and $servicename =~ m/.+/ )
+		} elsif (     $host =~ m/\..*\./
+				  and $confirm ne "Confirm"
+				  and $servicename =~ m/.+/ )
 		{
 			$service_page .=
 			  display_service_confirmation( $c, $mode, $host, $servicename );
 
 			# This case is actual deletion via api_call
-		}
-		elsif ( $host =~ m/\..*\./
-			and $confirm eq "Confirm"
-			and $servicename =~ m/.+/ )
+		} elsif (     $host =~ m/\..*\./
+				  and $confirm eq "Confirm"
+				  and $servicename =~ m/.+/ )
 		{
 			my @arr = api_call( $c->stash->{'confdir'},
-				"DELETE", "objects/services/$host!$servicename" );
+								"DELETE",
+								"objects/services/$host!$servicename" );
 			$service_page .= display_api_response(@arr);
 			$service_page .= display_back_button( $mode, 'services' );
 
 			# Host selection dialog i.e. the main dialog for service deletion
-		}
-		else {
+		} else {
 			$service_page .= display_single_host_selection( $c, $mode );
 		}
 
 		# Creation mode
-	}
-	elsif ( $mode eq "create" ) {
+	} elsif ( $mode eq "create" ) {
 
 		# This is the confirm dialog
-		if (    $host =~ m/\..*\./
-			and $check =~ m/.+/
-			and $displayname =~ m/.+/
-			and $servicename =~ m/.+/
-			and $confirm ne "Confirm" )
+		if (     $host =~ m/\..*\./
+			 and $check =~ m/.+/
+			 and $displayname =~ m/.+/
+			 and $servicename =~ m/.+/
+			 and $confirm ne "Confirm" )
 		{
 			my $hoststr = csv_from_arr(@hosts);
 			$service_page .=
@@ -1154,10 +1099,9 @@ sub services {
 				$service_page .= ' with attributes: ' . $attributes;
 			}
 			$service_page .= '?</p><br/>';
-			$service_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+			$service_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			foreach my $hst (@hosts) {
 				$service_page .= $q->hidden( 'host', $hst );
 			}
@@ -1167,19 +1111,16 @@ sub services {
 			$service_page .= $q->hidden( 'displayname', $displayname );
 			$service_page .= $q->hidden( 'attributes',  $attributes );
 			$service_page .= $q->hidden( 'check',       $check );
-			$service_page .= $q->submit(
-				-name  => 'confirm',
-				-value => 'Confirm'
-			);
+			$service_page .= $q->submit( -name  => 'confirm',
+										 -value => 'Confirm' );
 			$service_page .= $q->end_form;
 
 			# This is the actual creation via api_call
-		}
-		elsif ( $host =~ m/\..*\./
-			and $check =~ m/.+/
-			and $displayname =~ m/.+/
-			and $servicename =~ m/.+/
-			and $confirm eq "Confirm" )
+		} elsif (     $host =~ m/\..*\./
+				  and $check =~ m/.+/
+				  and $displayname =~ m/.+/
+				  and $servicename =~ m/.+/
+				  and $confirm eq "Confirm" )
 		{
 			my $payload =
 			    '{  "attrs": { "check_command": "'
@@ -1198,14 +1139,14 @@ sub services {
 			$payload .= ' } }';
 			foreach my $hst (@hosts) {
 				my @arr = api_call( $c->stash->{'confdir'},
-					"PUT", "objects/services/$hst!$servicename", $payload );
+									"PUT", "objects/services/$hst!$servicename",
+									$payload );
 				$service_page .= display_api_response( @arr, $payload );
 			}
 			$service_page .= display_back_button( $mode, 'services' );
 
 			# This is the main dialog for service creation
-		}
-		else {
+		} else {
 
 			# Get hosts
 			my @temp_arr;
@@ -1213,21 +1154,17 @@ sub services {
 				push @temp_arr, $hashref->{name};
 			}
 			my @host_arr = sort @temp_arr;
-
 			$service_page .= $q->p('Select host to modify:');
-			$service_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+			$service_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			$service_page .=
 			  '<select name="host" id="host-select" multiple="multiple"">';
 			for my $ho (@host_arr) {
 				my $selected = '';
-
 				if ( $host =~ m/$ho/ ) {
 					$selected = 'selected="selected" ';
 				}
-
 				$service_page .= "<option value=\"$ho\" $selected>$ho</option>";
 			}
 			$service_page .= '</select><br>';
@@ -1249,16 +1186,13 @@ sub services {
 			$service_page .= $q->textfield( 'attributes', '', 50, 80 );
 			$service_page .= $q->hidden( 'page_type', "services" );
 			$service_page .= $q->hidden( 'mode',      "create" );
-			$service_page .= $q->submit(
-				-name  => 'submit',
-				-value => 'Submit'
-			);
+			$service_page .= $q->submit( -name  => 'submit',
+										 -value => 'Submit' );
 			$service_page .= $q->end_form;
 		}
 
 	   # This is the first selection page i.e. create/delete dialog for services
-	}
-	elsif ( $mode eq "modify" ) {
+	} elsif ( $mode eq "modify" ) {
 
 		# This is the editor
 		if ( $host and $servicename and $attributes and $confirm eq "Confirm" )
@@ -1266,36 +1200,34 @@ sub services {
 			# Do api magic here
 			my $payload = uri_unescape($attributes);
 			my @arr     = api_call( $c->stash->{'confdir'},
-				"POST", "objects/services/$host!$servicename", $payload );
+								"POST", "objects/services/$host!$servicename",
+								$payload );
 			$service_page .= display_api_response( @arr, $payload );
 			$service_page .= display_back_button( $mode, 'services' );
-
-		}
-		elsif ( $host and $servicename and $attributes and $submit eq "Submit" )
+		} elsif (     $host
+				  and $servicename
+				  and $attributes
+				  and $submit eq "Submit" )
 		{
 			$service_page .=
 			  display_service_confirmation( $c, $mode, $host, $servicename,
-				$attributes );
-		}
-		elsif ( $host and $servicename ) {
+											$attributes );
+		} elsif ( $host and $servicename ) {
 			my %hidden = (
-				"page_type"   => "services",
-				"host"        => $host,
-				"servicename" => $servicename
+						   "page_type"   => "services",
+						   "host"        => $host,
+						   "servicename" => $servicename
 			);
 			$service_page .=
 			  display_modify_textbox( $c, \%hidden,
-				"objects/services/$host!$servicename",
-				@service_keys );
-		}
-		elsif ($host) {
+									  "objects/services/$host!$servicename",
+									  @service_keys );
+		} elsif ($host) {
 			$service_page .= display_service_selection( $c, $mode, $host );
-		}
-		else {
+		} else {
 			$service_page .= display_single_host_selection( $c, $mode );
 		}
-	}
-	else {
+	} else {
 		$service_page .= display_create_delete_modify_dialog("services");
 	}
 	return $service_page;
@@ -1360,7 +1292,6 @@ sub commands {
 	my $mode        = $params->{'mode'};
 	my $submit      = $params->{'submit'};
 	my $arguments   = $params->{'arguments'};
-
 	my $command_page =
 	  '<div class="reportSelectTitle" align="center">Commands</div>';
 
@@ -1371,67 +1302,42 @@ sub commands {
 		if ( $confirm ne "Confirm" and $command =~ m/.+/ ) {
 			$command_page .=
 			  $q->p( 'Are you sure you want to delete ' . $command . '?<br/>' );
-			$command_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+			$command_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			$command_page .= $q->hidden( 'page_type', "commands" );
 			$command_page .= $q->hidden( 'command',   $command );
 			$command_page .= $q->hidden( 'mode',      "delete" );
 			$command_page .= $q->checkbox( 'cascading', 0, 'true',
-				'Use cascading delete - WARNING' );
-			$command_page .= $q->submit(
-				-name  => 'confirm',
-				-value => 'Confirm'
-			);
+										   'Use cascading delete - WARNING' );
+			$command_page .= $q->submit( -name  => 'confirm',
+										 -value => 'Confirm' );
 			$command_page .= $q->end_form;
 
 			# This is the actual deletion via api call
-		}
-		elsif ( $confirm eq "Confirm" and $command =~ m/.+/ ) {
+		} elsif ( $confirm eq "Confirm" and $command =~ m/.+/ ) {
 			my $cascade = '';
 			if ( $cascading eq "true" ) {
 				$cascade .= '?cascade=1';
 			}
 			my @arr = api_call( $c->stash->{'confdir'},
-				"DELETE", "objects/checkcommands/$command$cascade" );
+								"DELETE",
+								"objects/checkcommands/$command$cascade" );
 			$command_page .= display_api_response(@arr);
 			$command_page .= display_back_button( $mode, 'commands' );
 
 			# This is the main dialog for command deletion
-		}
-		else {
-			$command_page .= $q->p('Enter command to delete');
-			$command_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
-			$command_page .= '<select name="command">';
-			foreach my $hash ( values $c->stash->{commands} ) {
-				my $name = $hash->{name};
-				$name =~ s/check_//g;
-				$command_page .=
-				  "<option value=\"$name\">$hash->{name}</option>";
-			}
-			$command_page .= '</select">';
-			$command_page .= $q->hidden( 'page_type', "commands" );
-			$command_page .= $q->hidden( 'mode', "delete" );
-			$command_page .= $q->submit(
-				-name  => 'submit',
-				-value => 'Submit'
-			);
-			$command_page .= $q->end_form;
-
+		} else {
+			$command_page .= display_command_selection($c, $mode );
 		}
 
 		# Creation dialog
-	}
-	elsif ( $mode eq "create" ) {
+	} elsif ( $mode eq "create" ) {
 
 		# This is actual creation via api call
-		if (    $confirm eq "Confirm"
-			and $commandline =~ m/.+/
-			and $command =~ m/.+/ )
+		if (     $confirm eq "Confirm"
+			 and $commandline =~ m/.+/
+			 and $command =~ m/.+/ )
 		{
 			my $payload =
 '{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "'
@@ -1442,18 +1348,15 @@ sub commands {
 				$payload .= ', "arguments": ' . $arguments;
 			}
 			$payload .= ' } }';
-			my @arr = api_call(
-				$c->stash->{'confdir'},           "PUT",
-				"objects/checkcommands/$command", $payload
-			);
+			my @arr = api_call( $c->stash->{'confdir'},           "PUT",
+								"objects/checkcommands/$command", $payload );
 			$command_page .= display_api_response( @arr, $payload );
 			$command_page .= display_back_button( $mode, 'commands' );
 
 			# This is confirmation dialog for command creation
-		}
-		elsif ( $submit eq "Submit"
-			and $command =~ m/.+/
-			and $commandline =~ m/.+/ )
+		} elsif (     $submit eq "Submit"
+				  and $command =~ m/.+/
+				  and $commandline =~ m/.+/ )
 		{
 			my $mess =
 			    'Are you sure you want to create '
@@ -1474,32 +1377,33 @@ sub commands {
 			}
 			if ($all_is_well) {
 				$command_page .= $q->p($mess);
-				$command_page .= $q->start_form(
-					-method => $METHOD,
-					-action => "api_conf.cgi"
-				);
+				$command_page .=
+				  $q->start_form( -method => $METHOD,
+								  -action => "api_conf.cgi" );
 				$command_page .= $q->hidden( 'page_type',   "commands" );
 				$command_page .= $q->hidden( 'command',     $command );
 				$command_page .= $q->hidden( 'arguments',   $arguments );
 				$command_page .= $q->hidden( 'commandline', $commandline );
 				$command_page .= $q->hidden( 'mode',        "create" );
-				$command_page .= $q->submit(
-					-name  => 'confirm',
-					-value => 'Confirm'
-				);
+				$command_page .=
+				  $q->submit( -name  => 'confirm',
+							  -value => 'Confirm' );
 				$command_page .= $q->end_form;
-			}
-			else {
+			} else {
 				$command_page .= display_back_button( $mode, 'commands' );
 			}
 
 			# This is main command creation dialog
-		}
-		else {
-			$command_page .= $q->start_form(
-				-method => $METHOD,
-				-action => "api_conf.cgi"
-			);
+		} elsif ( $mode eq "modify" ) {
+			if () {
+				
+			} else {
+				
+			}
+		} else {
+			$command_page .=
+			  $q->start_form( -method => $METHOD,
+							  -action => "api_conf.cgi" );
 			$command_page .= $q->p(
 "Enter command name (\"check_\" will be prepended automaticaly):"
 			);
@@ -1512,16 +1416,13 @@ sub commands {
 			$command_page .= $q->textarea( 'arguments', '', 20, 50 );
 			$command_page .= $q->hidden( 'page_type', "commands" );
 			$command_page .= $q->hidden( 'mode',      "create" );
-			$command_page .= $q->submit(
-				-name  => 'submit',
-				-value => 'Submit'
-			);
+			$command_page .= $q->submit( -name  => 'submit',
+										 -value => 'Submit' );
 			$command_page .= $q->end_form;
 		}
 
 		# This is create/delete dialog
-	}
-	else {
+	} else {
 		$command_page .= display_create_delete_modify_dialog("commands");
 	}
 	return $command_page;
@@ -1540,35 +1441,25 @@ sub body {
 	my $page_type = $params->{'page_type'};
 	if ( $page_type eq "hosts" ) {
 		$body = hosts $c;
-	}
-	elsif ( $page_type eq "hostgroups" ) {
+	} elsif ( $page_type eq "hostgroups" ) {
 		$body = host_groups $c;
-	}
-	elsif ( $page_type eq "hostescalations" ) {
+	} elsif ( $page_type eq "hostescalations" ) {
 		$body = host_groups $c;
-	}
-	elsif ( $page_type eq "hostdependencies" ) {
+	} elsif ( $page_type eq "hostdependencies" ) {
 		$body = host_groups $c;
-	}
-	elsif ( $page_type eq "services" ) {
+	} elsif ( $page_type eq "services" ) {
 		$body = services $c;
-	}
-	elsif ( $page_type eq "servicegroups" ) {
+	} elsif ( $page_type eq "servicegroups" ) {
 		$body = service_groups $c;
-	}
-	elsif ( $page_type eq "contacts" ) {
+	} elsif ( $page_type eq "contacts" ) {
 		$body = contacts $c;
-	}
-	elsif ( $page_type eq "contactgroups" ) {
+	} elsif ( $page_type eq "contactgroups" ) {
 		$body = contact_groups $c;
-	}
-	elsif ( $page_type eq "timeperiods" ) {
+	} elsif ( $page_type eq "timeperiods" ) {
 		$body = timeperiods $c;
-	}
-	elsif ( $page_type eq "commands" ) {
+	} elsif ( $page_type eq "commands" ) {
 		$body = commands $c;
-	}
-	else {
+	} else {
 		$body = selector;
 	}
 	return $body;
@@ -1581,20 +1472,20 @@ This is the entry point
 =cut
 
 sub index {
-	my $context = new IO::Socket::SSL::SSL_Context(
-		SSL_version     => 'tlsv1',
-		SSL_verify_mode => Net::SSLeay::VERIFY_NONE(),
-	);
+	my $context =
+	  new IO::Socket::SSL::SSL_Context(
+								  SSL_version     => 'tlsv1',
+								  SSL_verify_mode => Net::SSLeay::VERIFY_NONE(),
+	  );
 	IO::Socket::SSL::set_default_context($context);
-
 	my ($c) = @_;
 
 	# Limit access to authorized personell only
 	return
 	  unless Thruk::Action::AddDefaults::add_defaults( $c,
-		Thruk::ADD_SAFE_DEFAULTS );
-	if (   !$c->check_user_roles("authorized_for_configuration_information")
-		|| !$c->check_user_roles("authorized_for_system_commands") )
+													 Thruk::ADD_SAFE_DEFAULTS );
+	if (    !$c->check_user_roles("authorized_for_configuration_information")
+		 || !$c->check_user_roles("authorized_for_system_commands") )
 	{
 		return $c->detach('/error/index/8');
 	}
@@ -1613,9 +1504,9 @@ sub index {
 
 	# This is data we need to have handy
 	$c->stash->{services} = $c->{'db'}->get_services(
-		filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'services' ) ] );
+		  filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'services' ) ] );
 	$c->stash->{hosts} = $c->{'db'}->get_hosts(
-		filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'hosts' ) ] );
+			 filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'hosts' ) ] );
 	$c->stash->{hostgroups} = $c->{'db'}->get_hostgroups(
 		filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'hostgroups' ) ] );
 	$c->stash->{commands} = $c->{'db'}->get_commands();
@@ -1633,5 +1524,4 @@ This library is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
-
 1;
