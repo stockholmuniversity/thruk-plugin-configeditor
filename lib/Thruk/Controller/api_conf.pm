@@ -330,7 +330,8 @@ sub display_modify_textbox {
 	my ( $c, $hidden, $endpoint, @keys ) = @_;
 	my $q    = CGI->new;
 
-	my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
+	#my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
+	my $json_text = get_json( $c, $endpoint, @keys );
 	my $rows = () = $json_text =~ /\n/g;
 	my $cols = 0;
 
@@ -346,7 +347,7 @@ sub display_modify_textbox {
 	# Pretty print
 	#$json_text =~ s/ /&nbsp;/g;
 	
-	#print "Printing json: " .decode_entities( $json_text);
+	print "Printing json: " . $json_text;
 
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
