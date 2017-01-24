@@ -328,7 +328,7 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 sub display_modify_textbox {
 	my ( $c, $hidden, $endpoint, @keys ) = @_;
-	my $json_text = get_json( $c, $endpoint, @keys );
+	my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
 	my $rows = () = $json_text =~ /\n/g;
 	my $cols = 0;
 	my $q    = CGI->new;
@@ -557,18 +557,16 @@ sub selector {
 	# These are the different kinds of objects we can manipulate
 	my %pagetypes = (
 		'hosts' => 'Hosts',
-
 	#	'hostdependencies' => 'Host Dependencies',
 	#	'hostescalations' => 'Host Escalations',
 	#	'hostgroups' => 'Host Groups', # Create and delete is implemented for this
 		'services' => 'Services',
-
-		#	'servicegroups' => 'Service Groups',
-		#	'servicedependencies' => 'Service Dependencies',
-		#	'serviceescalations' => 'Service Escalations',
-		#	'contacts' => 'Contacts',
-		#	'contactgroups' => 'Contact Groups',
-		#	'timeperiods' => 'Timeperiods',
+	#	'servicegroups' => 'Service Groups',
+	#	'servicedependencies' => 'Service Dependencies',
+	#	'serviceescalations' => 'Service Escalations',
+	#	'contacts' => 'Contacts',
+	#	'contactgroups' => 'Contact Groups',
+	#	'timeperiods' => 'Timeperiods',
 		'commands' => 'Commands',
 	);
 
