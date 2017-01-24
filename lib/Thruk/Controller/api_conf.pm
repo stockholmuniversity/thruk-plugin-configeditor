@@ -31,12 +31,13 @@ use File::Basename qw( dirname basename );
 use HTML::Entities;
 use HTTP::Request::Common;
 use IO::Socket::SSL;
-use JSON;
 use JSON::XS qw(encode_json decode_json);
+use JSON;
 use LWP::Protocol::https;
 use LWP::UserAgent;
 use Net::SSLGlue::LWP;
 use Test::JSON;
+use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
 my $METHOD = "GET";
@@ -341,7 +342,7 @@ sub display_modify_textbox {
         $textbox .= $q->hidden($key,$hidden->{"$key"});
     }
     $textbox .= $q->hidden('mode',"modify");
-    $textbox .= $q->textarea(   -name=> "json",
+    $textbox .= $q->textarea(   -name=> "attributes",
                             -default=> $json_text,
                             -rows=>$rows,
                             -columns=>$cols );
@@ -354,15 +355,21 @@ sub display_modify_textbox {
 
 sub display_service_confirmation {
     my $q = CGI->new;
-    my ($c, $mode, $host, $servicename) = @_;
+    my ($c, $mode, $host, $servicename, $attributes) = @_;
     my $service_form;
 
     $service_form .= $q->p("Are you sure you want to $mode $servicename for host: $host?<br/>");
+    if($attributes) {
+        $service_form .= $q->p("Attributes are: <br/> $attributes");
+    }
     $service_form .= $q->start_form(-method=>$METHOD,
                 -action=>"api_conf.cgi");
     $service_form .= $q->hidden('host',$host);
     $service_form .= $q->hidden('page_type',"services");
-    $service_form .= $q->hidden('mode',$mode);
+    $service_form .= $q->hidden('mode', $mode );
+    if( $attributes ) {
+        $service_form .= $q->hidden('attributes', $attributes);
+    }
     $service_form .= $q->hidden('servicename',$servicename);
     $service_form .= $q->submit(-name=>'confirm',
                     -value=>'Confirm');
@@ -471,7 +478,7 @@ sub selector {
 		'hosts' => 'Hosts', 
 	#	'hostdependencies' => 'Host Dependencies',
 	#	'hostescalations' => 'Host Escalations', 
-		'hostgroups' => 'Host Groups',
+	#	'hostgroups' => 'Host Groups', # Create and delete is implemented for this
 		'services' => 'Services',
 	#	'servicegroups' => 'Service Groups',
 	#	'servicedependencies' => 'Service Dependencies',
@@ -984,7 +991,16 @@ sub services {
 	# This is the first selection page i.e. create/delete dialog for services
 	} elsif ($mode eq "modify" ) {
             # This is the editor
-            if($host and $servicename) {
+            if($host and $servicename and $attributes and $confirm eq "Confirm") {
+            # Do api magic here
+                my $payload = uri_unescape($attributes); 
+                my @arr = api_call( $c->stash->{'confdir'}, "POST", "objects/services/$host!$servicename", $payload);
+                $service_page .= display_api_response(@arr, $payload) ;
+                $service_page .= display_back_button($mode, 'services');
+
+            }elsif($host and $servicename and $attributes and $submit eq "Submit") {
+                $service_page .= display_service_confirmation($c, $mode, $host, $servicename, $attributes);
+            } elsif($host and $servicename) {
                 my %hidden =  ("page_type" => "services", "host" => $host, "servicename" => $servicename);
                 $service_page .=  display_modify_textbox($c, \%hidden, "objects/services/$host!$servicename", @service_keys);
             } elsif($host) {
