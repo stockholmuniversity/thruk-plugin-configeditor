@@ -102,6 +102,9 @@ sub api_call {
 
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
+		print "Payload before" . $payload;
+		$payload =~ s/&nbsp;/ /;
+		print "Payload after" . $payload;
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
@@ -345,7 +348,7 @@ sub display_modify_textbox {
 	close $fh or die $!;
 	
 	# Pretty print
-	#$json_text =~ s/ /&nbsp;/g;
+	$json_text =~ s/ /&nbsp;/g;
 	
 	print "Printing json: " . $json_text;
 
@@ -367,7 +370,8 @@ sub display_modify_textbox {
 	$textbox .= $q->submit( -name  => "submit",
 							-value => 'Submit' );
 	$textbox .= $q->end_form;
-	return decode_entities($textbox);
+	#return decode_entities($textbox);
+	return $textbox;
 }
 
 =head2 display_service_confirmation
