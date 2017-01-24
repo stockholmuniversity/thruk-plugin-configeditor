@@ -331,6 +331,7 @@ sub display_modify_textbox {
 	my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
 	$json_text =~ s/ /&nbsp;/g;
 	$json_text =~ s/\t/&nbsp;&nbsp;/g;
+	$json_text =~s/(&nbsp;)+$/\n/;
 	my $rows = () = $json_text =~ /\n/g;
 	my $cols = 0;
 	my $q    = CGI->new;
