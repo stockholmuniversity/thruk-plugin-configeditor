@@ -403,9 +403,7 @@ sub display_service_confirmation {
 	$service_form .= $q->hidden( 'mode',      $mode );
 	if ($attributes) {
 		print "Payload before" . $attributes;
-		my $perl_object = decode_json $attributes;
-		print Dumper "Perlobject:", $perl_object;
-		my $json_text = encode_json $perl_object;
+		my $json_text = decode_entities $attributes;
 		print "Payload after" . $json_text;
 		#$service_form .= $q->hidden( 'attributes', $attributes );
 		$service_form .= $q->hidden( 'attributes', $json_text );
