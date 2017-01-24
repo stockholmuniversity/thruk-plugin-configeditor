@@ -344,9 +344,9 @@ sub display_modify_textbox {
 	close $fh or die $!;
 	
 	# Pretty print
-	#$json_text =~ s/ /&nbsp;/g;
-	$json_text =~ s/\t/&nbsp;&nbsp;/g;
-	#$json_text =~s/(&nbsp;)+$/\n/;	
+	$json_text =~ s/ /&nbsp;/g;
+	
+	print "Printing json: " . $json_text;
 
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
