@@ -102,8 +102,6 @@ sub api_call {
 
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
-		$payload = 	decode_entities($payload);
-		$payload =~ s/ +/ /g;
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
@@ -345,9 +343,10 @@ sub display_modify_textbox {
 	}
 	close $fh or die $!;
 	
-	$json_text =~ s/ /&nbsp;/g;
-	$json_text =~ s/\t/&nbsp;&nbsp;/g;
-	$json_text =~s/(&nbsp;)+$/\n/;	
+	#$json_text =~ s/ /&nbsp;/g;
+	#$json_text =~ s/\t/&nbsp;&nbsp;/g;
+	$json_text =~ s/\t/  /g;
+	#$json_text =~s/(&nbsp;)+$/\n/;	
 
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
@@ -367,7 +366,7 @@ sub display_modify_textbox {
 	$textbox .= $q->submit( -name  => "submit",
 							-value => 'Submit' );
 	$textbox .= $q->end_form;
-	return $textbox;
+	return decode_entities($textbox);
 }
 
 =head2 display_service_confirmation
