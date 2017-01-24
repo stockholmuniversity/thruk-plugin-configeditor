@@ -385,6 +385,9 @@ sub display_command_confirmation {
 	my ( $c, $mode, $commandname, $attributes ) = @_;
 	my $command_form;
 	$command_form .= $q->p("Are you sure you want to $mode $commandname?<br/>");
+	if ( $mode eq "modify" and $attributes ) {
+		$command_form .= $q->p("Attributes are: <br/>$attributes<br/>");
+	}
 	$command_form .=
 	  $q->start_form( -method => $METHOD,
 					  -action => "api_conf.cgi" );
@@ -428,7 +431,7 @@ sub display_service_confirmation {
 	$service_form .= $q->p(
 		   "Are you sure you want to $mode $servicename for host: $host?<br/>");
 	if ($attributes) {
-		$service_form .= $q->p("Attributes are: <br/> $attributes");
+		$service_form .= $q->p("Attributes are: <br/> $attributes<br/>");
 	}
 	$service_form .= $q->start_form( -method => $METHOD,
 									 -action => "api_conf.cgi" );
