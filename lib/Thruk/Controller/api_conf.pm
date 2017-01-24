@@ -102,7 +102,7 @@ sub api_call {
 
 	if ($payload) {
 		$payload =~ s/&nbsp;/ /g;
-		$payload =~ s/\s*/ /g;
+		$payload =~ s/\s+/ /g;
 		
 		print "This is the payload in api_call: $payload";
 		$req->add_content($payload);
