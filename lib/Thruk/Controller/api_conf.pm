@@ -384,7 +384,7 @@ sub display_command_confirmation {
 	my $q = CGI->new;
 	my ( $c, $mode, $commandname, $attributes ) = @_;
 	my $command_form;
-	$command_form .= $q->p("Are you sure you want to $mode $command?<br/>");
+	$command_form .= $q->p("Are you sure you want to $mode $commandname?<br/>");
 	$command_form .=
 	  $q->start_form( -method => $METHOD,
 					  -action => "api_conf.cgi" );
@@ -1330,6 +1330,8 @@ sub commands {
 	my $mode        = $params->{'mode'};
 	my $submit      = $params->{'submit'};
 	my $arguments   = $params->{'arguments'};
+	my $attributes  = $params->{'attributes'};
+	
 	my $command_page =
 	  '<div class="reportSelectTitle" align="center">Commands</div>';
 
