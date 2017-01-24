@@ -346,7 +346,7 @@ sub display_modify_textbox {
 	# Pretty print
 	$json_text =~ s/ /&nbsp;/g;
 	
-	print "Printing json: " . $json_text;
+	print "Printing json: " .decode_entities( $json_text);
 
 	my $textbox;
 	$textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
