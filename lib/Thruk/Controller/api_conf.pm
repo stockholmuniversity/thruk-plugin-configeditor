@@ -103,7 +103,7 @@ sub api_call {
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
 		print "Payload before" . $payload;
-		$payload =~ s/&nbsp;/ /;
+		$payload =~ s/^\s+//;
 		print "Payload after" . $payload;
 		$req->add_content($payload);
 	}
@@ -348,7 +348,7 @@ sub display_modify_textbox {
 	close $fh or die $!;
 	
 	# Pretty print
-	#$json_text =~ s/ /&nbsp;/g;
+	$json_text =~ s/ /&nbsp;/g;
 	
 	print "Printing json: " . $json_text;
 
