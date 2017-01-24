@@ -348,7 +348,7 @@ sub display_modify_textbox {
 	close $fh or die $!;
 	
 	# Pretty print
-	$json_text =~ s/ /&nbsp;/g;
+	#$json_text =~ s/ /&nbsp;/g;
 	
 	print "Printing json: " . $json_text;
 
