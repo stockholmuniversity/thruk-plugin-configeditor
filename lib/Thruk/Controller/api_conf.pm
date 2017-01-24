@@ -37,9 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
+my $METHOD = "GET";
 
-my $METHOD = "POST";
+#my $METHOD = "POST";
 my @service_keys = (
 					 "vars",          "action_url",
 					 "check_command", "check_interval",
@@ -102,7 +102,7 @@ sub api_call {
 
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
-		$req->add_content($payload);
+		$req->add_content(decode_entities($payload);
 	}
 	my $response = $ua->request($req);
 	return decode_json $response->decoded_content;
