@@ -102,6 +102,8 @@ sub api_call {
 
 	#if ($payload =~ m/.+/ ) {
 	if ($payload) {
+		$payload = 	decode_entities($payload);
+		$payload =~ s/ +/ /g;
 		$req->add_content($payload);
 	}
 	my $response = $ua->request($req);
@@ -365,7 +367,7 @@ sub display_modify_textbox {
 	$textbox .= $q->submit( -name  => "submit",
 							-value => 'Submit' );
 	$textbox .= $q->end_form;
-	return decode_entities($textbox);
+	return $textbox;
 }
 
 =head2 display_service_confirmation
