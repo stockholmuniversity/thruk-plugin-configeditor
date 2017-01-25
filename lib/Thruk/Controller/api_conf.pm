@@ -262,7 +262,7 @@ sub display_create_delete_modify_dialog {
 
     # Show modify option for only these pagetypes
     #	my @display_modify_arr = ("hostgroups");
-    my @display_modify_arr = ( "commands", "services" );
+    my @display_modify_arr = ( "commands", "hosts", "services" );
 
     # A cgi object to help with some html creation
     my $q    = CGI->new;
@@ -951,7 +951,7 @@ sub hosts {
         }
         else {
 
-            print "Placeholder";
+            $host_page .= display_single_host_selection($c, $mode, "hosts" )
 
         }
     }
