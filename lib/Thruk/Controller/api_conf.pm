@@ -47,8 +47,8 @@ my @service_keys = (
 my @command_keys = ( "arguments", "command", "vars" );
 
 my @host_keys = (
-    "address6", "address",    "display_name", "event_command",
-    "groups",   "action_url", "notes_url",    "vars"
+    "address6",   "address",   "display_name", "event_command",
+    "action_url", "notes_url", "vars"
 );
 
 =head2 api_call
@@ -413,7 +413,7 @@ sub display_generic_confirmation {
         -action => "api_conf.cgi"
     );
     $generic_form .= $q->hidden( 'page_type', $page_type );
-    $generic_form .= $q->hidden( $type,   $name );
+    $generic_form .= $q->hidden( $type,       $name );
     $generic_form .= $q->hidden( 'mode',      $mode );
 
     if ( $mode eq "delete" ) {
@@ -941,10 +941,13 @@ sub hosts {
 
         # This is where we make api call
         if ( $host and $attributes and $confirm eq "Confirm" ) {
+
             # Do api magic here
             my $payload = uri_unescape($attributes);
-            my @arr     = api_call( $c->stash->{'confdir'},
-                "POST", "objects/services/$host", $payload );
+            my @arr     = api_call(
+                $c->stash->{'confdir'},   "POST",
+                "objects/services/$host", $payload
+            );
             $host_page .= display_api_response( @arr, $payload );
             $host_page .= display_back_button( $mode, 'hosts' );
 
