@@ -949,6 +949,7 @@ sub hosts {
                 "page_type" => "hosts",
                 "host"      => $host
             );
+            my $endpoint = "objects/hosts/$host";
             $host_page .=
               display_modify_textbox( $c, \%hidden, $endpoint, @host_keys );
         }
