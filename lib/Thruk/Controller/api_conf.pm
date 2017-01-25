@@ -308,12 +308,12 @@ optional: payload
 =cut
 
 sub display_api_response {
-    my @arr     = $_[0];
-    my $payload = '';
-    if ( $_[1] ) {
-        $payload = $_[1];
-    }
-
+    #my @arr     = $_[0];
+    #my $payload = '';
+    #if ( $_[1] ) {
+    #    $payload = $_[1];
+    #}
+    my (@arr, $payload) = @_;
     # A cgi object to help with some html creation
     my $q      = CGI->new;
     my $result = $q->p("Result from API was:");
