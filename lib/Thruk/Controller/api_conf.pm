@@ -945,7 +945,7 @@ sub hosts {
             my $payload = uri_unescape($attributes);
             my @arr     = api_call(
                 $c->stash->{'confdir'},   "POST",
-                "objects/services/$host", $payload
+                "objects/hosts/$host", $payload
             );
             $host_page .= Dumper @arr;
             $host_page .= display_api_response( @arr, $payload );
