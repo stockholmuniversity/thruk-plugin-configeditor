@@ -938,14 +938,14 @@ sub hosts {
     elsif ( $mode eq "modify" ) {
 
         # This is where we make api call
-        if ( $host and $confirm eq "Confirm" ) {
+        if ( $host and $attributes and $confirm eq "Confirm" ) {
 
             print "Placeholder";
 
         }
 
         # This is where we show confirm
-        elsif ( $host and $submit eq "Submit" and $attributes ) {
+        elsif ( $host  and $attributes and $submit eq "Submit" ) {
             $host_page .=
               display_generic_confirmation( $c, $mode, $host, $attributes );
 
