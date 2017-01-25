@@ -962,7 +962,7 @@ sub hosts {
         }
 
         # This is where we edit
-        elsif ( $host and $submit eq "Submit" ) {
+        elsif ( $host ) {
             my %hidden = (
                 "page_type" => "hosts",
                 "host"      => $host
