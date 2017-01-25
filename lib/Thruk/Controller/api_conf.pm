@@ -736,6 +736,7 @@ sub hosts {
     my $confirm   = $params->{'confirm'};
     my $cascading = $params->{'cascading'};
     my $mode      = $params->{'mode'};
+    my $submit    = $params->{'submit'};
     my $command   = $params->{'command'};
     my $templates = $params->{'templates'};
 
