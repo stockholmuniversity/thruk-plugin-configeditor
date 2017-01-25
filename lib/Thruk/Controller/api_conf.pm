@@ -947,7 +947,6 @@ sub hosts {
                 $c->stash->{'confdir'},   "POST",
                 "objects/hosts/$host", $payload
             );
-            $host_page .= Dumper @arr;
             $host_page .= display_api_response( @arr, $payload );
             $host_page .= display_back_button( $mode, 'hosts' );
 
