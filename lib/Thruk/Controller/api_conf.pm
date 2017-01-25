@@ -87,13 +87,13 @@ sub api_call {
     my $config      = Config::JSON->new($config_file);
 
     # Setting up for api call
-    my $api_user     = $config->get('user');
-    my $api_password = $config->get('password');
-    my $api_realm    = $config->get('realm');
     my $api_host     = $config->get('host');
-    my $api_port     = $config->get('port');
+    my $api_password = $config->get('password');
     my $api_path     = $config->get('path');
+    my $api_port     = $config->get('port');
+    my $api_realm    = $config->get('realm');
     my $api_url      = "https://$api_host:$api_port/$api_path/$endpoint";
+    my $api_user     = $config->get('user');
     my $ua = LWP::UserAgent->new( ssl_opts => { verify_hostname => 0 } );
     $ua->default_header( 'Accept' => 'application/json' );
     $ua->credentials( "$api_host:$api_port", $api_realm, $api_user,
@@ -733,15 +733,15 @@ sub hosts {
         push @hosts, $host;
     }
     my $attributes = $params->{'attributes'};
-    my $ip         = $params->{'ip'};
-    my $os         = $params->{'os'};
-    my $zone       = $params->{'zone'};
-    my $confirm    = $params->{'confirm'};
     my $cascading  = $params->{'cascading'};
-    my $mode       = $params->{'mode'};
-    my $submit     = $params->{'submit'};
     my $command    = $params->{'command'};
+    my $confirm    = $params->{'confirm'};
+    my $ip         = $params->{'ip'};
+    my $mode       = $params->{'mode'};
+    my $os         = $params->{'os'};
+    my $submit     = $params->{'submit'};
     my $templates  = $params->{'templates'};
+    my $zone       = $params->{'zone'};
 
     # Get hosts
     my @temp_arr;
@@ -1197,13 +1197,14 @@ sub services {
         $host = $params->{'host'};
         push @hosts, $host;
     }
-    my $confirm     = $params->{'confirm'};
-    my $submit      = $params->{'submit'};
+    my $attributes  = $params->{'attributes'};
     my $check       = $params->{'check'};
+    my $confirm     = $params->{'confirm'};
+    my $displayname = $params->{'displayname'};
     my $mode        = $params->{'mode'};
     my $servicename = $params->{'servicename'};
-    my $displayname = $params->{'displayname'};
-    my $attributes  = $params->{'attributes'};
+    my $submit      = $params->{'submit'};
+
     my $service_page =
       '<div class="reportSelectTitle" align="center">Services</div>';
 
@@ -1281,12 +1282,12 @@ sub services {
             foreach my $hst (@hosts) {
                 $service_page .= $q->hidden( 'host', $hst );
             }
-            $service_page .= $q->hidden( 'page_type',   "services" );
-            $service_page .= $q->hidden( 'mode',        "create" );
-            $service_page .= $q->hidden( 'servicename', $servicename );
-            $service_page .= $q->hidden( 'displayname', $displayname );
             $service_page .= $q->hidden( 'attributes',  $attributes );
             $service_page .= $q->hidden( 'check',       $check );
+            $service_page .= $q->hidden( 'displayname', $displayname );
+            $service_page .= $q->hidden( 'mode',        "create" );
+            $service_page .= $q->hidden( 'page_type',   "services" );
+            $service_page .= $q->hidden( 'servicename', $servicename );
             $service_page .= $q->submit(
                 -name  => 'confirm',
                 -value => 'Confirm'
@@ -1473,14 +1474,14 @@ sub commands {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $confirm     = $params->{'confirm'};
-    my $command     = $params->{'command'};
-    my $commandline = $params->{'commandline'};
-    my $cascading   = $params->{'cascading'};
-    my $mode        = $params->{'mode'};
-    my $submit      = $params->{'submit'};
     my $arguments   = $params->{'arguments'};
     my $attributes  = $params->{'attributes'};
+    my $cascading   = $params->{'cascading'};
+    my $command     = $params->{'command'};
+    my $commandline = $params->{'commandline'};
+    my $confirm     = $params->{'confirm'};
+    my $mode        = $params->{'mode'};
+    my $submit      = $params->{'submit'};
 
     my $command_page =
       '<div class="reportSelectTitle" align="center">Commands</div>';
@@ -1714,13 +1715,14 @@ sub index {
     }
 
     # This is Configuration options used by Thruk
-    $c->stash->{'readonly'}       = 0;
-    $c->stash->{'title'}          = 'Configuration Editor';
-    $c->stash->{'subtitle'}       = 'Configuration Editor';
     $c->stash->{'infoBoxTitle'}   = 'Configuration Editor';
     $c->stash->{'no_auto_reload'} = 1;
+    $c->stash->{'readonly'}       = 0;
+    $c->stash->{'subtitle'}       = 'Configuration Editor';
     $c->stash->{'template'}       = 'api_conf.tt';
     $c->stash->{'testmode'}       = 1;
+    $c->stash->{'title'}          = 'Configuration Editor';
+
     my $hostname = `hostname --fqdn`;
     chomp $hostname;
     $c->stash->{'hostname'} = $hostname;
