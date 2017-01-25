@@ -942,9 +942,17 @@ sub hosts {
 
             print "Placeholder";
 
-            # This is where we show confirm
         }
+
+        # This is where we show confirm
         elsif ( $host and $submit eq "Submit" and $attributes ) {
+            $host_page .=
+              display_generic_confirmation( $c, $mode, $host, $attributes );
+
+        }
+
+        # This is where we edit
+        elsif ( $host and $submit eq "Submit" ) {
             my %hidden = (
                 "page_type" => "hosts",
                 "host"      => $host
@@ -952,14 +960,10 @@ sub hosts {
             my $endpoint = "objects/hosts/$host";
             $host_page .=
               display_modify_textbox( $c, \%hidden, $endpoint, @host_keys );
-        }
-        elsif ( $host and $submit eq "Submit" ) {
 
-            $host_page .=
-              display_generic_confirmation( $c, $mode, $host, $attributes );
-
-            # This is where we show single host selection dialog
         }
+
+        # This is where we show single host selection dialog
         else {
 
             $host_page .= display_single_host_selection( $c, $mode, "hosts" )
