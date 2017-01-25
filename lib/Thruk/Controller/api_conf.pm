@@ -400,7 +400,7 @@ attributes, i.e. the json to send to the api
 
 sub display_generic_confirmation {
     my $q = CGI->new;
-    my ( $c, $mode, $name, $attributes ) = @_;
+    my ( $c, $mode, $name, $page_type, $attributes ) = @_;
     my $generic_form;
     $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
     if ( $mode eq "modify" and $attributes ) {
@@ -410,7 +410,7 @@ sub display_generic_confirmation {
         -method => $METHOD,
         -action => "api_conf.cgi"
     );
-    $generic_form .= $q->hidden( 'page_type', "commands" );
+    $generic_form .= $q->hidden( 'page_type', $page_type );
     $generic_form .= $q->hidden( 'command',   $name );
     $generic_form .= $q->hidden( 'mode',      $mode );
 
@@ -939,15 +939,15 @@ sub hosts {
 
         # This is where we make api call
         if ( $host and $attributes and $confirm eq "Confirm" ) {
-
             print "Placeholder";
 
         }
 
         # This is where we show confirm
-        elsif ( $host  and $attributes and $submit eq "Submit" ) {
+        elsif ( $host and $attributes and $submit eq "Submit" ) {
             $host_page .=
-              display_generic_confirmation( $c, $mode, $host, $attributes );
+              display_generic_confirmation( $c, $mode, $host, "hosts",
+                $attributes );
 
         }
 
@@ -1481,7 +1481,7 @@ sub commands {
         # This case is the confirmation dialog
         if ( $confirm ne "Confirm" and $command =~ m/.+/ ) {
             $command_page .=
-              display_generic_confirmation( $c, $mode, $command );
+              display_generic_confirmation( $c, $mode, $command, "commands" );
 
             # This is the actual deletion via api call
         }
@@ -1603,7 +1603,8 @@ sub commands {
         # Do confirmation here
         if ( $command and $attributes ) {
             $command_page .=
-              display_generic_confirmation( $c, $mode, $command, $attributes );
+              display_generic_confirmation( $c, $mode, $command, "commands",
+                $attributes );
 
             # Do api call here
         }
