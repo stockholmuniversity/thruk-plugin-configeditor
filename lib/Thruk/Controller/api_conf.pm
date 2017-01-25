@@ -401,6 +401,8 @@ attributes, i.e. the json to send to the api
 sub display_generic_confirmation {
     my $q = CGI->new;
     my ( $c, $mode, $name, $page_type, $attributes ) = @_;
+    my $type = $page_type;
+    $type =~ s/s$//;
     my $generic_form;
     $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
     if ( $mode eq "modify" and $attributes ) {
@@ -411,7 +413,7 @@ sub display_generic_confirmation {
         -action => "api_conf.cgi"
     );
     $generic_form .= $q->hidden( 'page_type', $page_type );
-    $generic_form .= $q->hidden( 'command',   $name );
+    $generic_form .= $q->hidden( $type,   $name );
     $generic_form .= $q->hidden( 'mode',      $mode );
 
     if ( $mode eq "delete" ) {
