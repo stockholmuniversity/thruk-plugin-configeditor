@@ -941,7 +941,12 @@ sub hosts {
 
         # This is where we make api call
         if ( $host and $attributes and $confirm eq "Confirm" ) {
-            print "Placeholder";
+            # Do api magic here
+            my $payload = uri_unescape($attributes);
+            my @arr     = api_call( $c->stash->{'confdir'},
+                "POST", "objects/services/$host", $payload );
+            $host_page .= display_api_response( @arr, $payload );
+            $host_page .= display_back_button( $mode, 'hosts' );
 
         }
 
