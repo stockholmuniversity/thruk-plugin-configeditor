@@ -398,35 +398,35 @@ attributes, i.e. the json to send to the api
 =back
 =cut
 
-sub display_command_confirmation {
+sub display_generic_confirmation {
     my $q = CGI->new;
-    my ( $c, $mode, $commandname, $attributes ) = @_;
-    my $command_form;
-    $command_form .= $q->p("Are you sure you want to $mode $commandname?<br/>");
+    my ( $c, $mode, $name, $attributes ) = @_;
+    my $generic_form;
+    $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
     if ( $mode eq "modify" and $attributes ) {
-        $command_form .= $q->p("Attributes are: <br/>$attributes<br/>");
+        $generic_form .= $q->p("Attributes are: <br/>$attributes<br/>");
     }
-    $command_form .= $q->start_form(
+    $generic_form .= $q->start_form(
         -method => $METHOD,
         -action => "api_conf.cgi"
     );
-    $command_form .= $q->hidden( 'page_type', "commands" );
-    $command_form .= $q->hidden( 'command',   $commandname );
-    $command_form .= $q->hidden( 'mode',      $mode );
+    $generic_form .= $q->hidden( 'page_type', "commands" );
+    $generic_form .= $q->hidden( 'command',   $name );
+    $generic_form .= $q->hidden( 'mode',      $mode );
 
     if ( $mode eq "delete" ) {
-        $command_form .= $q->checkbox( 'cascading', 0, 'true',
+        $generic_form .= $q->checkbox( 'cascading', 0, 'true',
             'Use cascading delete - WARNING' );
     }
     elsif ( $mode eq "modify" and $attributes ) {
-        $command_form .= $q->hidden( 'attributes', $attributes );
+        $generic_form .= $q->hidden( 'attributes', $attributes );
     }
-    $command_form .= $q->submit(
+    $generic_form .= $q->submit(
         -name  => 'confirm',
         -value => 'Confirm'
     );
-    $command_form .= $q->end_form;
-    return $command_form;
+    $generic_form .= $q->end_form;
+    return $generic_form;
 }
 
 =head2 display_service_confirmation
@@ -730,15 +730,16 @@ sub hosts {
         $host = $params->{'host'};
         push @hosts, $host;
     }
-    my $ip        = $params->{'ip'};
-    my $os        = $params->{'os'};
-    my $zone      = $params->{'zone'};
-    my $confirm   = $params->{'confirm'};
-    my $cascading = $params->{'cascading'};
-    my $mode      = $params->{'mode'};
-    my $submit    = $params->{'submit'};
-    my $command   = $params->{'command'};
-    my $templates = $params->{'templates'};
+    my $attributes = $params->{'attributes'};
+    my $ip         = $params->{'ip'};
+    my $os         = $params->{'os'};
+    my $zone       = $params->{'zone'};
+    my $confirm    = $params->{'confirm'};
+    my $cascading  = $params->{'cascading'};
+    my $mode       = $params->{'mode'};
+    my $submit     = $params->{'submit'};
+    my $command    = $params->{'command'};
+    my $templates  = $params->{'templates'};
 
     # Get hosts
     my @temp_arr;
@@ -943,15 +944,24 @@ sub hosts {
 
             # This is where we show confirm
         }
+        elsif ( $host and $submit eq "Submit" and $attributes ) {
+            my %hidden = (
+                "page_type" => "hosts",
+                "host"      => $host
+            );
+            $host_page .=
+              display_modify_textbox( $c, \%hidden, $endpoint, @host_keys );
+        }
         elsif ( $host and $submit eq "Submit" ) {
 
-            print "Placeholder";
+            $host_page .=
+              display_generic_confirmation( $c, $mode, $host, $attributes );
 
             # This is where we show single host selection dialog
         }
         else {
 
-            $host_page .= display_single_host_selection($c, $mode, "hosts" )
+            $host_page .= display_single_host_selection( $c, $mode, "hosts" )
 
         }
     }
@@ -1466,7 +1476,7 @@ sub commands {
         # This case is the confirmation dialog
         if ( $confirm ne "Confirm" and $command =~ m/.+/ ) {
             $command_page .=
-              display_command_confirmation( $c, $mode, $command );
+              display_generic_confirmation( $c, $mode, $command );
 
             # This is the actual deletion via api call
         }
@@ -1588,7 +1598,7 @@ sub commands {
         # Do confirmation here
         if ( $command and $attributes ) {
             $command_page .=
-              display_command_confirmation( $c, $mode, $command, $attributes );
+              display_generic_confirmation( $c, $mode, $command, $attributes );
 
             # Do api call here
         }
