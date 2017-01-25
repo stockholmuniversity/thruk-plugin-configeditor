@@ -134,6 +134,273 @@ sub csv_from_arr {
     return $str;
 }
 
+=head2 display_api_response
+
+This function displays the api response
+
+=head3 Parameters
+
+=over
+
+=item *
+
+arr is the api response
+
+=item *
+
+optional: payload
+
+=back
+
+=cut
+
+sub display_api_response {
+    my @arr     = $_[0];
+    my $payload = '';
+    if ( $_[1] ) {
+        $payload = $_[1];
+    }
+
+    # A cgi object to help with some html creation
+    my $q      = CGI->new;
+    my $result = $q->p("Result from API was:");
+    $result .= $q->p( $arr[0]{results}[0]{status} );
+    $result .= $q->p( $arr[0]{results}[0]{errors} );
+    if ( $payload =~ m/.+/ ) {
+        $result .= $q->p("Payload was: $payload");
+    }
+    return $result;
+}
+
+=head2 display_back_button
+
+This function returns the back button
+
+=head3 Parameters
+
+=over
+
+=item * 
+
+mode 
+
+=item * 
+
+page_type 
+
+=back
+
+=cut
+
+sub display_back_button {
+    my $mode = shift;
+    my ($page_type) = @_;
+
+    # A cgi object to help with some html creation
+    my $q    = CGI->new;
+    my $page = $q->p('Go back?');
+    $page .= $q->start_form(
+        -method => $METHOD,
+        -action => "api_conf.cgi"
+    );
+    $page .= $q->hidden( 'page_type', "$page_type" );
+    $page .= $q->hidden( 'mode',      "$mode" );
+    $page .= $q->submit(
+        -name  => 'return',
+        -value => 'Return'
+    );
+    $page .= $q->end_form;
+    return $page;
+}
+
+=head2 display_command_selection
+This function gets the command selection
+=head3 Parameters
+=over
+=item *
+$c - a context
+=item *
+mode, create, delete or modify
+=back
+=cut
+
+sub display_command_selection {
+    my ( $c, $mode ) = @_;
+    my $q = CGI->new;
+    my $command_form .= $q->p("Enter command to $mode");
+    $command_form .= $q->start_form(
+        -method => $METHOD,
+        -action => "api_conf.cgi"
+    );
+    $command_form .= '<select name="command">';
+    foreach my $hash ( values $c->stash->{commands} ) {
+        my $name = $hash->{name};
+        $name =~ s/check_//g;
+        $command_form .= "<option value=\"$name\">$hash->{name}</option>";
+    }
+    $command_form .= '</select">';
+    $command_form .= $q->hidden( 'page_type', "commands" );
+    $command_form .= $q->hidden( 'mode', $mode );
+    $command_form .= $q->submit(
+        -name  => 'submit',
+        -value => 'Submit'
+    );
+    $command_form .= $q->end_form;
+    return $command_form;
+}
+
+=head2 display_create_delete_modify_dialog
+
+This function returns the create/delete dialog
+
+=head3 Parameters
+
+=over
+
+=item * 
+
+page_type 
+
+=back
+
+=cut
+
+sub display_create_delete_modify_dialog {
+    my ($page_type) = @_;
+
+    # Show modify option for only these pagetypes
+    #	my @display_modify_arr = ("hostgroups");
+    my @display_modify_arr = ( "commands", "hosts", "services" );
+
+    # A cgi object to help with some html creation
+    my $q    = CGI->new;
+    my $page = $q->p('What do you want to do?');
+    $page .= $q->start_form(
+        -method => $METHOD,
+        -action => "api_conf.cgi"
+    );
+    $page .= '<select name="mode">';
+    $page .= "<option value=\"create\">Create</option>";
+    $page .= "<option value=\"delete\">Delete</option>";
+    if ( grep { $_ eq $page_type } @display_modify_arr ) {
+        $page .= "<option value=\"modify\">Modify</option>";
+    }
+    $page .= '</select">';
+    $page .= $q->hidden( 'page_type', "$page_type" );
+    $page .= $q->submit(
+        -name  => 'submit',
+        -value => 'Submit'
+    );
+    $page .= $q->end_form;
+    return $page;
+}
+
+=head2 display_generic_confirmation
+This function gets a confirmation dialog
+=head3 Parameters
+=over
+=item *
+$c - a context
+=item *
+mode, create, delete or modify
+=item *
+name
+=item *
+attributes, i.e. the json to send to the api
+=back
+=cut
+
+sub display_generic_confirmation {
+    my $q = CGI->new;
+    my ( $c, $mode, $name, $page_type, $attributes ) = @_;
+    my $type = $page_type;
+    $type =~ s/s$//;
+    my $generic_form;
+    $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
+    if ( $mode eq "modify" and $attributes ) {
+        $generic_form .= $q->p("Attributes are: <br/>$attributes<br/>");
+    }
+    $generic_form .= $q->start_form(
+        -method => $METHOD,
+        -action => "api_conf.cgi"
+    );
+    $generic_form .= $q->hidden( 'page_type', $page_type );
+    $generic_form .= $q->hidden( $type,       $name );
+    $generic_form .= $q->hidden( 'mode',      $mode );
+
+    if ( $mode eq "delete" ) {
+        $generic_form .= $q->checkbox( 'cascading', 0, 'true',
+            'Use cascading delete - WARNING' );
+    }
+    elsif ( $mode eq "modify" and $attributes ) {
+        $generic_form .= $q->hidden( 'attributes', $attributes );
+    }
+    $generic_form .= $q->submit(
+        -name  => 'confirm',
+        -value => 'Confirm'
+    );
+    $generic_form .= $q->end_form;
+    return $generic_form;
+}
+
+=head2 display_modify_textbox
+This function gets the editable json of a configuration object
+=head3 Parameters
+=over
+=item *
+page_type (services, hosts, etc)
+=item *
+endpoint (e.g. objects/services/<hostname>!<servicename>)
+=item *
+keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
+=back
+=cut
+
+sub display_modify_textbox {
+    my ( $c, $hidden, $endpoint, @keys ) = @_;
+    my $q = CGI->new;
+
+    #my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
+    my $json_text = get_json( $c, $endpoint, @keys );
+    my $rows = () = $json_text =~ /\n/g;
+    my $cols = 0;
+    open my $fh, '<', \$json_text or die $!;
+    while (<$fh>) {
+        my $len = length($_);
+        if ( $len > $cols ) {
+            $cols = $len;
+        }
+    }
+    close $fh or die $!;
+
+    # Pretty print
+    $json_text =~ s/ /&nbsp;/g;
+    print "Printing json: " . $json_text;
+    my $textbox;
+    $textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
+    $textbox .= $q->start_form(
+        -method => $METHOD,
+        -action => "api_conf.cgi"
+    );
+    foreach my $key ( keys $hidden ) {
+        $textbox .= $q->hidden( $key, $hidden->{"$key"} );
+    }
+    $textbox .= $q->hidden( 'mode', "modify" );
+    $textbox .= $q->textarea(
+        -name    => "attributes",
+        -default => $json_text,
+        -rows    => $rows,
+        -columns => $cols
+    );
+    $textbox .= "<br/>";
+    $textbox .= $q->submit(
+        -name  => "submit",
+        -value => 'Submit'
+    );
+    $textbox .= $q->end_form;
+    return decode_entities($textbox);
+}
+
 =head2 display_multi_select
 
 This function returns javascript for multi select
@@ -200,236 +467,6 @@ sub display_multi_select {
     return $html;
 }
 
-=head2 display_back_button
-
-This function returns the back button
-
-=head3 Parameters
-
-=over
-
-=item * 
-
-mode 
-
-=item * 
-
-page_type 
-
-=back
-
-=cut
-
-sub display_back_button {
-    my $mode = shift;
-    my ($page_type) = @_;
-
-    # A cgi object to help with some html creation
-    my $q    = CGI->new;
-    my $page = $q->p('Go back?');
-    $page .= $q->start_form(
-        -method => $METHOD,
-        -action => "api_conf.cgi"
-    );
-    $page .= $q->hidden( 'page_type', "$page_type" );
-    $page .= $q->hidden( 'mode',      "$mode" );
-    $page .= $q->submit(
-        -name  => 'return',
-        -value => 'Return'
-    );
-    $page .= $q->end_form;
-    return $page;
-}
-
-=head2 display_create_delete_modify_dialog
-
-This function returns the create/delete dialog
-
-=head3 Parameters
-
-=over
-
-=item * 
-
-page_type 
-
-=back
-
-=cut
-
-sub display_create_delete_modify_dialog {
-    my ($page_type) = @_;
-
-    # Show modify option for only these pagetypes
-    #	my @display_modify_arr = ("hostgroups");
-    my @display_modify_arr = ( "commands", "hosts", "services" );
-
-    # A cgi object to help with some html creation
-    my $q    = CGI->new;
-    my $page = $q->p('What do you want to do?');
-    $page .= $q->start_form(
-        -method => $METHOD,
-        -action => "api_conf.cgi"
-    );
-    $page .= '<select name="mode">';
-    $page .= "<option value=\"create\">Create</option>";
-    $page .= "<option value=\"delete\">Delete</option>";
-    if ( grep { $_ eq $page_type } @display_modify_arr ) {
-        $page .= "<option value=\"modify\">Modify</option>";
-    }
-    $page .= '</select">';
-    $page .= $q->hidden( 'page_type', "$page_type" );
-    $page .= $q->submit(
-        -name  => 'submit',
-        -value => 'Submit'
-    );
-    $page .= $q->end_form;
-    return $page;
-}
-
-=head2 display_api_response
-
-This function displays the api response
-
-=head3 Parameters
-
-=over
-
-=item * 
-
-arr is the api response
-
-=item * 
-
-optional: payload 
-
-=back
-
-=cut
-
-sub display_api_response {
-    my @arr     = $_[0];
-    my $payload = '';
-    if ( $_[1] ) {
-        $payload = $_[1];
-    }
-    # A cgi object to help with some html creation
-    my $q      = CGI->new;
-    my $result = $q->p("Result from API was:");
-    $result .= $q->p( $arr[0]{results}[0]{status} );
-    $result .= $q->p( $arr[0]{results}[0]{errors} );
-    if ( $payload =~ m/.+/ ) {
-        $result .= $q->p("Payload was: $payload");
-    }
-    return $result;
-}
-
-=head2 display_modify_textbox
-This function gets the editable json of a configuration object
-=head3 Parameters
-=over
-=item *
-page_type (services, hosts, etc)
-=item *
-endpoint (e.g. objects/services/<hostname>!<servicename>)
-=item *
-keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
-=back
-=cut
-
-sub display_modify_textbox {
-    my ( $c, $hidden, $endpoint, @keys ) = @_;
-    my $q = CGI->new;
-
-    #my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
-    my $json_text = get_json( $c, $endpoint, @keys );
-    my $rows = () = $json_text =~ /\n/g;
-    my $cols = 0;
-    open my $fh, '<', \$json_text or die $!;
-    while (<$fh>) {
-        my $len = length($_);
-        if ( $len > $cols ) {
-            $cols = $len;
-        }
-    }
-    close $fh or die $!;
-
-    # Pretty print
-    $json_text =~ s/ /&nbsp;/g;
-    print "Printing json: " . $json_text;
-    my $textbox;
-    $textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
-    $textbox .= $q->start_form(
-        -method => $METHOD,
-        -action => "api_conf.cgi"
-    );
-    foreach my $key ( keys $hidden ) {
-        $textbox .= $q->hidden( $key, $hidden->{"$key"} );
-    }
-    $textbox .= $q->hidden( 'mode', "modify" );
-    $textbox .= $q->textarea(
-        -name    => "attributes",
-        -default => $json_text,
-        -rows    => $rows,
-        -columns => $cols
-    );
-    $textbox .= "<br/>";
-    $textbox .= $q->submit(
-        -name  => "submit",
-        -value => 'Submit'
-    );
-    $textbox .= $q->end_form;
-    return decode_entities($textbox);
-}
-
-=head2 display_command_confirmation
-This function gets a confirmation dialog
-=head3 Parameters
-=over
-=item *
-$c - a context
-=item *
-mode, create, delete or modify
-=item *
-commandname
-=item *
-attributes, i.e. the json to send to the api
-=back
-=cut
-
-sub display_generic_confirmation {
-    my $q = CGI->new;
-    my ( $c, $mode, $name, $page_type, $attributes ) = @_;
-    my $type = $page_type;
-    $type =~ s/s$//;
-    my $generic_form;
-    $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
-    if ( $mode eq "modify" and $attributes ) {
-        $generic_form .= $q->p("Attributes are: <br/>$attributes<br/>");
-    }
-    $generic_form .= $q->start_form(
-        -method => $METHOD,
-        -action => "api_conf.cgi"
-    );
-    $generic_form .= $q->hidden( 'page_type', $page_type );
-    $generic_form .= $q->hidden( $type,       $name );
-    $generic_form .= $q->hidden( 'mode',      $mode );
-
-    if ( $mode eq "delete" ) {
-        $generic_form .= $q->checkbox( 'cascading', 0, 'true',
-            'Use cascading delete - WARNING' );
-    }
-    elsif ( $mode eq "modify" and $attributes ) {
-        $generic_form .= $q->hidden( 'attributes', $attributes );
-    }
-    $generic_form .= $q->submit(
-        -name  => 'confirm',
-        -value => 'Confirm'
-    );
-    $generic_form .= $q->end_form;
-    return $generic_form;
-}
-
 =head2 display_service_confirmation
 This function gets a confirmation dialog
 =head3 Parameters
@@ -472,42 +509,6 @@ sub display_service_confirmation {
         -value => 'Confirm'
     );
     $service_form .= $q->end_form;
-}
-
-=head2 display_service_selection
-This function gets the command selection
-=head3 Parameters
-=over
-=item *
-$c - a context
-=item *
-mode, create, delete or modify
-=back
-=cut
-
-sub display_command_selection {
-    my ( $c, $mode ) = @_;
-    my $q = CGI->new;
-    my $command_form .= $q->p("Enter command to $mode");
-    $command_form .= $q->start_form(
-        -method => $METHOD,
-        -action => "api_conf.cgi"
-    );
-    $command_form .= '<select name="command">';
-    foreach my $hash ( values $c->stash->{commands} ) {
-        my $name = $hash->{name};
-        $name =~ s/check_//g;
-        $command_form .= "<option value=\"$name\">$hash->{name}</option>";
-    }
-    $command_form .= '</select">';
-    $command_form .= $q->hidden( 'page_type', "commands" );
-    $command_form .= $q->hidden( 'mode', $mode );
-    $command_form .= $q->submit(
-        -name  => 'submit',
-        -value => 'Submit'
-    );
-    $command_form .= $q->end_form;
-    return $command_form;
 }
 
 =head2 display_service_selection
@@ -944,8 +945,8 @@ sub hosts {
             # Do api magic here
             my $payload = uri_unescape($attributes);
             my @arr     = api_call(
-                $c->stash->{'confdir'},   "POST",
-                "objects/hosts/$host", $payload
+                $c->stash->{'confdir'}, "POST",
+                "objects/hosts/$host",  $payload
             );
             $host_page .= display_api_response( @arr, $payload );
             $host_page .= display_back_button( $mode, 'hosts' );
