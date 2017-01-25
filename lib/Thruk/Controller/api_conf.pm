@@ -48,6 +48,11 @@ my @service_keys = (
 );
 my @command_keys = ( "arguments", "command", "vars" );
 
+my @host_keys = ( 
+					"address6",	"address","display_name","event_command","groups","action_url","notes_url","vars" 
+); 
+
+
 =head2 api_call
 
 This function reads api config and makes api calls
@@ -532,12 +537,14 @@ This function gets a list of hosts where you can select one and one only
 $c - a context
 =item *
 mode, create, delete or modify
+=item *
+page_type, services, hosts etc
 =back
 =cut
 
 sub display_single_host_selection {
 	my $q = CGI->new;
-	my ( $c, $mode ) = @_;
+	my ( $c, $mode, $page_type ) = @_;
 	my $service_form;
 
 	# Get services
@@ -557,7 +564,7 @@ sub display_single_host_selection {
 		  "<option value=\"$service_host\">$service_host</option>";
 	}
 	$service_form .= '</select">';
-	$service_form .= $q->hidden( 'page_type', "services" );
+	$service_form .= $q->hidden( 'page_type', $page_type );
 	$service_form .= $q->hidden( 'mode', $mode );
 	$service_form .= $q->submit( -name  => 'submit',
 								 -value => 'Submit' );
@@ -866,6 +873,23 @@ sub hosts {
 									  -value => 'Submit' );
 			$host_page .= $q->end_form;
 		}
+	} elsif ($mode eq "modify") {
+		
+		# This is where we make api call
+		if($host and $confirm eq "Confirm") {
+			
+			print "Placeholder";
+		# This is where we show confirm	
+		} elsif($host and $submit eq "Submit") { 
+			
+			print "Placeholder";
+		
+		# This is where we show single host selection dialog
+		} else {
+		
+			print "Placeholder";
+		
+		}
 	} else {
 		$host_page .= display_create_delete_modify_dialog("hosts");
 	}
@@ -1117,7 +1141,7 @@ sub services {
 
 			# Host selection dialog i.e. the main dialog for service deletion
 		} else {
-			$service_page .= display_single_host_selection( $c, $mode );
+			$service_page .= display_single_host_selection( $c, $mode, "services" );
 		}
 
 		# Creation mode
@@ -1266,7 +1290,7 @@ sub services {
 		} elsif ($host) {
 			$service_page .= display_service_selection( $c, $mode, $host );
 		} else {
-			$service_page .= display_single_host_selection( $c, $mode );
+			$service_page .= display_single_host_selection( $c, $mode, "services" );
 		}
 	} else {
 		$service_page .= display_create_delete_modify_dialog("services");
