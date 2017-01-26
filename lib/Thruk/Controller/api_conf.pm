@@ -737,6 +737,7 @@ sub hosts {
     my $command    = $params->{'command'};
     my $confirm    = $params->{'confirm'};
     my $ip         = $params->{'ip'};
+    my $ip6        = $params->{'ip6'};
     my $mode       = $params->{'mode'};
     my $os         = $params->{'os'};
     my $submit     = $params->{'submit'};
@@ -843,6 +844,7 @@ sub hosts {
             $host_page .= $q->hidden( 'page_type', "hosts" );
             $host_page .= $q->hidden( 'mode',      "create" );
             $host_page .= $q->hidden( 'ip',        $ip );
+            $host_page .= $q->hidden( 'ip6',       $ip6 );
             $host_page .= $q->hidden( 'zone',      $zone );
             $host_page .= $q->hidden( 'command',   $command );
             $host_page .= $q->hidden( 'templates', $templates );
@@ -856,7 +858,7 @@ sub hosts {
             # This case is the  actual creation
         }
         elsif ( $host =~ m/\..*\./
-            and ( is_ipv4($ip) or is_ipv6($ip) )
+            and ( is_ipv4($ip) or is_ipv6($ip6) )
             and $confirm eq "Confirm"
             and $os =~ m/.+/
             and $zone )
@@ -874,6 +876,8 @@ sub hosts {
               . $zone
               . '", "address": "'
               . $ip
+              . '", "address6": "'
+              . $ip6
               . '", "check_command": "'
               . $command
               . '", "vars.os" : "'
@@ -898,6 +902,7 @@ sub hosts {
             $host_page .= $q->textfield( 'host', '', 50, 80 );
             $host_page .= $q->p("Enter ip address:");
             $host_page .= $q->textfield( 'ip', '', 50, 80 );
+            $host_page .= $q->textfield( 'ip6', '', 50, 80 );
             $host_page .=
               $q->p("Enter templates, optional comma separated list:");
             $host_page .= $q->textfield( 'templates', '', 50, 80 );
@@ -962,7 +967,7 @@ sub hosts {
         }
 
         # This is where we edit
-        elsif ( $host ) {
+        elsif ($host) {
             my %hidden = (
                 "page_type" => "hosts",
                 "host"      => $host
