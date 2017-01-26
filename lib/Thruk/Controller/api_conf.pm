@@ -833,6 +833,8 @@ sub hosts {
                   . $host
                   . ' with ip address: '
                   . $ip
+                  . ' and (optional) ipv6 address: '
+                  . $ip6
                   . ' and checkcommand: '
                   . $command
                   . '?<br/>' );
