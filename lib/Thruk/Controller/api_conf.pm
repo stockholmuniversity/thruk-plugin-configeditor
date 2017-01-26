@@ -902,6 +902,7 @@ sub hosts {
             $host_page .= $q->textfield( 'host', '', 50, 80 );
             $host_page .= $q->p("Enter ip address:");
             $host_page .= $q->textfield( 'ip', '', 50, 80 );
+            $host_page .= $q->p("Enter ipv6 address:");
             $host_page .= $q->textfield( 'ip6', '', 50, 80 );
             $host_page .=
               $q->p("Enter templates, optional comma separated list:");
