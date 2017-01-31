@@ -37,18 +37,22 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-my $METHOD = "GET";
+#my $METHOD = "GET";
 
-#my $METHOD = "POST";
+my $METHOD       = "POST";
 my @service_keys = (
-    "vars",         "action_url", "check_command", "check_interval",
-    "display_name", "notes_url",  "event_command"
+    "vars",          "action_url",
+    "check_command", "check_interval",
+    "display_name",  "notes_url",
+    "event_command", "max_check_attempts",
+    "retry_interval"
 );
 my @command_keys = ( "arguments", "command", "vars" );
 
 my @host_keys = (
-    "address6",   "address",   "display_name", "event_command",
-    "action_url", "notes_url", "vars"
+    "address6",       "address",   "display_name", "event_command",
+    "action_url",     "notes_url", "vars",         "icon_image",
+    "icon_image_alt", "check_interval"
 );
 
 =head2 api_call
