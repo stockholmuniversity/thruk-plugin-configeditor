@@ -1623,18 +1623,27 @@ sub commands {
     }
     elsif ( $mode eq "modify" ) {
 
+        if ( $command and $confirm eq "Confirm" and $attributes ) {
+
+            # Do api magic here
+            my $payload = uri_unescape($attributes);
+            my @arr     = api_call(
+                $c->stash->{'confdir'},     "POST",
+                "objects/ommands/$command", $pattributes
+            );
+            $command_page .= display_api_response( @arr, $attributes );
+            $command_page .= display_back_button( $mode, 'commands' );
+
+            # Do edit here
+        }
+
         # Do confirmation here
-        if ( $command and $attributes ) {
+        elsif ( $command and $attributes ) {
             $command_page .=
               display_generic_confirmation( $c, $mode, $command, "commands",
                 $attributes );
 
             # Do api call here
-        }
-        elsif ( $command and $confirm eq "Confirm" ) {
-            print "Placeholder";
-
-            # Do edit here
         }
         elsif ( $command and $submit eq "Submit" ) {
             my %hidden = (
