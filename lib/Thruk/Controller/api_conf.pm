@@ -170,10 +170,6 @@ sub display_api_response {
     my $result = $q->p("Result from API was:");
     $result .= $q->p( $arr[0]{results}[0]{status} );
     $result .= $q->p( $arr[0]{results}[0]{errors} );
-    unless( $arr[0]{results}[0]{status} and $arr[0]{results}[0]{errors} ){
-        $result = $q->p("Something unexpected happened.");
-        $result .= $q->p( Dumper $arr[0]{results}[0]);
-    }
     if ( $payload =~ m/.+/ ) {
         $result .= $q->p("Payload was: $payload");
     }
@@ -1633,7 +1629,7 @@ sub commands {
             my $payload = uri_unescape($attributes);
             my @arr     = api_call(
                 $c->stash->{'confdir'},     "POST",
-                "objects/ommands/$command", $payload
+                "objects/checkcommands/$command, $payload
             );
             $command_page .= display_api_response( @arr, $payload );
             $command_page .= display_back_button( $mode, 'commands' );
