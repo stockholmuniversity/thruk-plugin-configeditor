@@ -1623,14 +1623,16 @@ sub commands {
     }
     elsif ( $mode eq "modify" ) {
 
-        if ( $command and $confirm eq "Confirm" and $attributes ) {
+        if ( $command and ( $confirm eq "Confirm" ) and $attributes ) {
 
             # Do api magic here
             my $payload = uri_unescape($attributes);
-            my @arr     = api_call(
-                $c->stash->{'confdir'},     "POST",
-                "objects/checkcommands/$command, $payload
+
+            my @arr = api_call(
+                $c->stash->{'confdir'},           "POST",
+                "objects/checkcommands/$command", $payload
             );
+
             $command_page .= display_api_response( @arr, $payload );
             $command_page .= display_back_button( $mode, 'commands' );
 
@@ -1650,7 +1652,9 @@ sub commands {
                 "page_type" => "commands",
                 "command"   => $command
             );
+
             my $endpoint = "objects/checkcommands/$command";
+
             $command_page =
               display_modify_textbox( $c, \%hidden, $endpoint, @command_keys );
         }
