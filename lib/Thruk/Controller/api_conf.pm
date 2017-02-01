@@ -170,6 +170,10 @@ sub display_api_response {
     my $result = $q->p("Result from API was:");
     $result .= $q->p( $arr[0]{results}[0]{status} );
     $result .= $q->p( $arr[0]{results}[0]{errors} );
+    unless($arr[0]{results}[0]{status} and $arr[0]{results}[0]{errors}  ){
+        my $result = $q->p("Something unexpected happened.");
+        $result .= $q->p( Dumper $arr[0]{results}[0]);
+    }
     if ( $payload =~ m/.+/ ) {
         $result .= $q->p("Payload was: $payload");
     }
