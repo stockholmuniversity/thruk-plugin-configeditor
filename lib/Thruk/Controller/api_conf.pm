@@ -1629,9 +1629,9 @@ sub commands {
             my $payload = uri_unescape($attributes);
             my @arr     = api_call(
                 $c->stash->{'confdir'},     "POST",
-                "objects/ommands/$command", $pattributes
+                "objects/ommands/$command", $payload
             );
-            $command_page .= display_api_response( @arr, $attributes );
+            $command_page .= display_api_response( @arr, $payload );
             $command_page .= display_back_button( $mode, 'commands' );
 
             # Do edit here
