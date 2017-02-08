@@ -1516,7 +1516,7 @@ sub contacts {
 
     }
     else {
-        $service_page .= display_create_delete_modify_dialog("contacts");
+        $contacts_page .= display_create_delete_modify_dialog("contacts");
     }
 
     return $contacts_page;
