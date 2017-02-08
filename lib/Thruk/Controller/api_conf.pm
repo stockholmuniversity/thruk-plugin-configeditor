@@ -1458,10 +1458,10 @@ sub contacts {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $mode       = $params->{'mode'};
-    my $contact    = $params->{'contact'};
     my $attributes = $params->{'attributes'};
     my $confirm    = $params->{'confirm'};
+    my $contact    = $params->{'contact'};
+    my $mode       = $params->{'mode'};
 
     my @group_arr;
     for my $hashref ( values $c->stash->{'contactgroups'} ) {
@@ -1507,7 +1507,7 @@ sub contacts {
             $contacts_page .= display_multi_select( "group-select",  @groups );
             $contacts_page .= $q->p('Select timeperiods:');
             $contacts_page .= display_multi_select( "period-select", @periods );
-            $contacts_page .= $q->hidden( 'page_type', "commands" );
+            $contacts_page .= $q->hidden( 'page_type', "contacts" );
             $contacts_page .= $q->hidden( 'mode',      "create" );
             $contacts_page .= $q->submit(
                 -name  => 'submit',
