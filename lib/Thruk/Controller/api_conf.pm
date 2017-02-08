@@ -1463,15 +1463,18 @@ sub contacts {
     my $contact    = $params->{'contact'};
     my $mode       = $params->{'mode'};
 
+    my %group_hash = api_call($c->stash->{'confdir'}, "GET", "objects/usergroups");
+
     my @group_arr;
-    for my $hashref ( values $c->stash->{'contactgroups'} ) {
-        push @group_arr, $hashref->{'name'};
+    foreach my $element (values $group_hash{'result'} ) {
+        push @group_arr, $element->{'name'};
     }
     my @groups = sort @group_arr;
 
+    my %period_hash = api_call($c->stash->{'confdir'}, "GET", "objects/timeperiods");
     my @period_arr;
-    for my $hashref ( values $c->stash->{'timeperiods'} ) {
-        push @period_arr, $hashref->{'name'};
+    foreach my $element ( $period_hash{'result'} ) {
+        push @period_arr, $element->{'name'};
     }
 
     my @periods = sort @period_arr;
@@ -1841,10 +1844,6 @@ sub index {
         filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'hostgroups' ) ] );
 
     $c->stash->{'commands'} = $c->{'db'}->get_commands();
-
-    $c->stash->{'contactgroups'} = $c->{'db'}->get_contactgroups();
-
-    $c->stash->{'timeperiods'} = $c->{'db'}->get_timeperiods();
 
     my $confdir = '/etc/thruk';
     if ( $c->stash->{'usercontent_folder'} =~ m/\// ) {
