@@ -1463,13 +1463,6 @@ sub contacts {
     my $contact    = $params->{'contact'};
     my $mode       = $params->{'mode'};
 
-    print "Stash: ";
-    print Dumper  $c->stash;
-    print "Groups: ";
-    print Dumper  $c->stash->{'contactgroups'};
-    print "Periods: ";
-    print Dumper  $c->stash->{'timeperiods'};
-
     my @group_arr;
     for my $hashref ( values $c->stash->{'contactgroups'} ) {
         push @group_arr, $hashref->{'name'};
@@ -1838,18 +1831,30 @@ sub index {
     $c->stash->{'hostname'} = $hostname;
 
     # This is data we need to have handy
-    $c->stash->{services} = $c->{'db'}->get_services(
+    $c->stash->{'services'} = $c->{'db'}->get_services(
         filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'services' ) ] );
-    $c->stash->{hosts} = $c->{'db'}->get_hosts(
+
+    $c->stash->{'hosts'} = $c->{'db'}->get_hosts(
         filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'hosts' ) ] );
-    $c->stash->{hostgroups} = $c->{'db'}->get_hostgroups(
+
+    $c->stash->{'hostgroups'} = $c->{'db'}->get_hostgroups(
         filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'hostgroups' ) ] );
-    $c->stash->{commands} = $c->{'db'}->get_commands();
+
+    $c->stash->{'commands'} = $c->{'db'}->get_commands();
+
+    $c->stash->{'contactgroups'} = $c->{'db'}->get_contactgroups(
+        filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'contactgroups' ) ] );
+
+    $c->stash->{'timeperiods'} = $c->{'db'}->get_timeperiods(
+        filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'timeperiods' ) ] );
+
     my $confdir = '/etc/thruk';
-    if ( $c->stash->{usercontent_folder} =~ m/\// ) {
+    if ( $c->stash->{'usercontent_folder'} =~ m/\// ) {
         $confdir = dirname( $c->stash->{usercontent_folder} );
     }
     $c->stash->{'confdir'} = $confdir;
+
+
     $c->stash->{body} = body $c;
 }
 
