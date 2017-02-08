@@ -274,7 +274,7 @@ sub display_create_delete_modify_dialog {
 
     # Show modify option for only these pagetypes
     #	my @display_modify_arr = ("hostgroups");
-    my @display_modify_arr = ( "commands", "hosts", "services" );
+    my @display_modify_arr = ( "commands", "hosts", "services", "contacts" );
 
     # A cgi object to help with some html creation
     my $q    = CGI->new;
@@ -657,7 +657,8 @@ sub selector {
         #	'servicegroups' => 'Service Groups',
         #	'servicedependencies' => 'Service Dependencies',
         #	'serviceescalations' => 'Service Escalations',
-        #	'contacts' => 'Contacts',
+        'contacts' => 'Contacts',
+
         #	'contactgroups' => 'Contact Groups',
         #	'timeperiods' => 'Timeperiods',
         'commands' => 'Commands',
