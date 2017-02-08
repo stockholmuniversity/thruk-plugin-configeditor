@@ -1476,8 +1476,8 @@ sub contacts {
 
     my @periods = sort @period_arr;
 
-
-    my $contacts_page = '<div class="reportSelectTitle" align="center">Contacts</div>';
+    my $contacts_page =
+      '<div class="reportSelectTitle" align="center">Contacts</div>';
 
     if ( $mode eq "create" ) {
 
@@ -1842,18 +1842,15 @@ sub index {
 
     $c->stash->{'commands'} = $c->{'db'}->get_commands();
 
-    $c->stash->{'contactgroups'} = $c->{'db'}->get_contactgroups(
-        filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'contactgroups' ) ] );
+    $c->stash->{'contactgroups'} = $c->{'db'}->get_contactgroups();
 
-    $c->stash->{'timeperiods'} = $c->{'db'}->get_timeperiods(
-        filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'timeperiods' ) ] );
+    $c->stash->{'timeperiods'} = $c->{'db'}->get_timeperiods();
 
     my $confdir = '/etc/thruk';
     if ( $c->stash->{'usercontent_folder'} =~ m/\// ) {
         $confdir = dirname( $c->stash->{usercontent_folder} );
     }
     $c->stash->{'confdir'} = $confdir;
-
 
     $c->stash->{body} = body $c;
 }
