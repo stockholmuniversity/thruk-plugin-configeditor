@@ -1467,13 +1467,13 @@ sub contacts {
     for my $hashref (values $c->stash->{'contactgroups'}) {
         push @group_arr,  $hashref->{name};
     }
-    my @groups = sort @temp_arr;
+    my @groups = sort @group_arr;
 
     my @period_arr;
-    for my $hashref (values $c->stash->{'contactgroups'}) {
-        push @temp_arr,  $hashref->{name};
+    for my $hashref (values $c->stash->{'periods'}) {
+        push @period_arr,  $hashref->{name};
     }
-    my @groups = sort @temp_arr;
+    my @periods = sort @period_arr;
 
     my $contacts_page;
 
