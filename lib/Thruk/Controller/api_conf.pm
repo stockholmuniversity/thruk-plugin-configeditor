@@ -1473,7 +1473,17 @@ sub contacts {
     for my $hashref ( values $c->stash->{'timeperiods'} ) {
         push @period_arr, $hashref->{'name'};
     }
+
     my @periods = sort @period_arr;
+
+    print "Groups: ";
+    print Dumper  $c->stash->{'contactgroups'};
+    print "Period arr: ";
+    print Dumper @groups;
+    print "Periods: ";
+    print Dumper  $c->stash->{'timeperiods'};
+    print "Period arr: ";
+    print Dumper @periods;
 
     my $contacts_page = '<div class="reportSelectTitle" align="center">Contacts</div>';
 
