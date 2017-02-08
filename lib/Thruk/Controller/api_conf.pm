@@ -904,49 +904,7 @@ sub hosts {
                 -method => $METHOD,
                 -action => "api_conf.cgi"
             );
-            $host_page .= $q->p("Enter hostname:");
-            $host_page .= $q->textfield( 'host', '', 50, 80 );
-            $host_page .= $q->p("Enter ip address:");
-            $host_page .= $q->textfield( 'ip', '', 50, 80 );
-            $host_page .= $q->p("Enter ipv6 address:");
-            $host_page .= $q->textfield( 'ip6', '', 50, 80 );
-            $host_page .=
-              $q->p("Enter templates, optional comma separated list:");
-            $host_page .= $q->textfield( 'templates', '', 50, 80 );
-            $host_page .= $q->p("Enter zone:");
-            $host_page .= '<select name="zone">';
-
-            # Loop through the zones
-            for my $zone ( values $zones{results} ) {
-                $host_page .=
-                  "<option value=\"$zone->{name}\">$zone->{name}</option>";
-            }
-            $host_page .= '</select>';
-            $host_page .= $q->p("Enter host check command:");
-            $host_page .= '<select name="command">';
-
-            # We select check_hostalive as default command if it exists
-            # TODO: Move default checkcommand to conf file?
-            foreach my $hash ( values $c->stash->{commands} ) {
-                my $selected = '';
-                if ( $hash->{name} eq "check_hostalive" ) {
-                    $selected = 'selected="selected" ';
-                }
-                my $name = $hash->{name};
-                $name =~ s/check_//g;
-                $host_page .=
-                  "<option value=\"$name\" $selected>$hash->{name}</option>";
-            }
-            $host_page .= '</select>';
-            $host_page .= $q->p("Enter OS:");
-            $host_page .= $q->textfield( 'os', '', 50, 80 );
-            $host_page .= $q->hidden( 'page_type', "hosts" );
-            $host_page .= $q->hidden( 'mode',      "create" );
-            $host_page .= $q->submit(
-                -name  => 'submit',
-                -value => 'Submit'
-            );
-            $host_page .= $q->end_form;
+            $service_page .= display_create_delete_modify_dialog("services");
         }
     }
     elsif ( $mode eq "modify" ) {
@@ -1451,7 +1409,81 @@ TODO: Implement this
 =cut
 
 sub contacts {
-    return "Contacts Placeholder";
+    my ($c)    = @_;
+    my $q      = CGI->new;
+    my $params = $c->req->parameters;
+
+    # Capture parameters sent to page by user dialogs
+    my $mode       = $params->{'mode'};
+    my $contact    = $params->{'contact'};
+    my $attributes = $params->{'attributes'};
+    my $confirm    = $params->{'confirm'};
+
+    my @group_arr;
+    for my $hashref ( values $c->stash->{'contactgroups'} ) {
+        push @group_arr, $hashref->{name};
+    }
+    my @groups = sort @group_arr;
+
+    my @period_arr;
+    for my $hashref ( values $c->stash->{'timeperiods'} ) {
+        push @period_arr, $hashref->{name};
+    }
+    my @periods = sort @period_arr;
+
+    my $contacts_page;
+
+    if ( $mode eq "create" ) {
+
+        # This is the contact confirmation api call
+        if ( $contact and $attributes and $confirm eq "Confirm" ) {
+
+            # This is the contact creation confirmation
+        }
+        elsif ( $contact and $attributes ) {
+            $contacts_page .=
+              display_generic_confirmation( $c, $mode, "contacts", $attributes )
+
+              # This is the contact creation dialog
+        }
+        else {
+            $contacts_page .= $q->start_form(
+                -method => $METHOD,
+                -action => "api_conf.cgi"
+            );
+            $contacts_page .= $q->p("Enter contact name:");
+            $contacts_page .= $q->textfield( 'contact', '', 50, 80 );
+            $contacts_page .= $q->p(
+"Enter phone number (in international form without plus-sign, i.e. 46701234567):"
+            );
+            $contacts_page .= $q->textfield( 'pager', '', 50, 80 );
+            $contacts_page .= $q->p('Enter email address:');
+            $contacts_page .= $q->textarea( 'email', '', 20, 50 );
+            $contacts_page .= $q->p('Select user groups:');
+            $contacts_page .= display_multi_select( "group-select",  @groups );
+            $contacts_page .= $q->p('Select timeperiods:');
+            $contacts_page .= display_multi_select( "period-select", @periods );
+            $contacts_page .= $q->hidden( 'page_type', "commands" );
+            $contacts_page .= $q->hidden( 'mode',      "create" );
+            $contacts_page .= $q->submit(
+                -name  => 'submit',
+                -value => 'Submit'
+            );
+            $contacts_page .= $q->end_form;
+        }
+
+    }
+    elsif ( $mode eq "delete" ) {
+
+    }
+    elsif ( $mode eq "modify" ) {
+
+    }
+    else {
+        $service_page .= display_create_delete_modify_dialog("contacts");
+    }
+
+    return $contacts_page;
 }
 
 =head2 contact_groups
