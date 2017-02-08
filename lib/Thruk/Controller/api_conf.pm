@@ -1463,17 +1463,17 @@ sub contacts {
     my $contact    = $params->{'contact'};
     my $mode       = $params->{'mode'};
 
-    my %group_hash = api_call($c->stash->{'confdir'}, "GET", "objects/usergroups");
+    my $group_hash = api_call($c->stash->{'confdir'}, "GET", "objects/usergroups");
 
     my @group_arr;
-    foreach my $element (values $group_hash{'result'} ) {
+    foreach my $element (values $group_hash->{'result'} ) {
         push @group_arr, $element->{'name'};
     }
     my @groups = sort @group_arr;
 
-    my %period_hash = api_call($c->stash->{'confdir'}, "GET", "objects/timeperiods");
+    my $period_hash = api_call($c->stash->{'confdir'}, "GET", "objects/timeperiods");
     my @period_arr;
-    foreach my $element ( $period_hash{'result'} ) {
+    foreach my $element ( $period_hash->{'result'} ) {
         push @period_arr, $element->{'name'};
     }
 
