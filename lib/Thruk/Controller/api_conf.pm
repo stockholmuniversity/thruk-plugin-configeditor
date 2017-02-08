@@ -1463,6 +1463,8 @@ sub contacts {
     my $contact    = $params->{'contact'};
     my $mode       = $params->{'mode'};
 
+    print "Stash: ";
+    print Dumper  $c->stash;
     print "Groups: ";
     print Dumper  $c->stash->{'contactgroups'};
     print "Periods: ";
