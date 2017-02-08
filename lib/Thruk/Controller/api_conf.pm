@@ -37,9 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
+my $METHOD = "GET";
 
-my $METHOD       = "POST";
+#my $METHOD       = "POST";
 my @service_keys = (
     "vars",          "action_url",
     "check_command", "check_interval",
@@ -1475,7 +1475,7 @@ sub contacts {
     }
     my @periods = sort @period_arr;
 
-    my $contacts_page;
+    my $contacts_page = '<div class="reportSelectTitle" align="center">Contacts</div>';
 
     if ( $mode eq "create" ) {
 
