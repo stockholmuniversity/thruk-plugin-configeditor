@@ -1463,6 +1463,11 @@ sub contacts {
     my $contact    = $params->{'contact'};
     my $mode       = $params->{'mode'};
 
+    print "Groups: ";
+    print Dumper  $c->stash->{'contactgroups'};
+    print "Periods: ";
+    print Dumper  $c->stash->{'timeperiods'};
+
     my @group_arr;
     for my $hashref ( values $c->stash->{'contactgroups'} ) {
         push @group_arr, $hashref->{'name'};
@@ -1476,14 +1481,6 @@ sub contacts {
 
     my @periods = sort @period_arr;
 
-    print "Groups: ";
-    print Dumper  $c->stash->{'contactgroups'};
-    print "Period arr: ";
-    print Dumper @groups;
-    print "Periods: ";
-    print Dumper  $c->stash->{'timeperiods'};
-    print "Period arr: ";
-    print Dumper @periods;
 
     my $contacts_page = '<div class="reportSelectTitle" align="center">Contacts</div>';
 
