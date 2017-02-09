@@ -426,8 +426,9 @@ array of items
 =cut
 
 sub display_multi_select {
-    my ( $id, @items ) = @_;
-    my $html = '';
+    my ( $id, @input ) = @_;
+    my $html  = '';
+    my @items = sort @input;
 
     # Dont try with too many items, or it will fail
     if ( scalar @items > 300 ) {
@@ -1464,12 +1465,20 @@ sub contacts {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $attributes = $params->{'attributes'};
-    my $confirm    = $params->{'confirm'};
-    my $contact    = $params->{'contact'};
-    my $mode       = $params->{'mode'};
-    my @states     = ( "OK", "Warning", "Critical", "Unknown" );
-    my @types      = (
+    my $attributes    = $params->{'attributes'};
+    my $confirm       = $params->{'confirm'};
+    my $contact       = $params->{'contact'};
+    my $display_name  = $params->{'display_name'};
+    my $email         = $params->{'email'};
+    my @group_select  = $params->{'group-select'};
+    my $mode          = $params->{'mode'};
+    my $pager         = $params->{'pager'};
+    my @period_select = $params->{'period-select'};
+    my @state_select  = $params->{'state-select'};
+    my @type_select   = $params->{'type-select'};
+
+    my @states = ( "OK", "Warning", "Critical", "Unknown" );
+    my @types = (
         "Problem",       "Acknowledgement",
         "Recovery",      "Custom",
         "FlappingStart", "FlappingEnd",
@@ -1501,7 +1510,18 @@ sub contacts {
 
             # This is the contact creation confirmation
         }
-        elsif ( $contact and $attributes ) {
+        elsif ($contact) {
+            my %attrs = {
+                'name'         => $contact,
+                'display_name' => $display_name,
+                'pager'        => $pager,
+                'email'        => $email,
+                'groups'       => @groups,
+                'period'       => @periods,
+                'types'        => @types,
+                'states'       => @states
+            };
+            $attributes = encode_json( \%attrs );
             $contacts_page .=
               display_generic_confirmation( $c, $mode, "contacts", $attributes )
 
@@ -1559,6 +1579,7 @@ sub contacts {
 
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
             $contacts_page .= $q->hidden( 'mode',      "create" );
+            $contacts_page .= '<br/>';
             $contacts_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
