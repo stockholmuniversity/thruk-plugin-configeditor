@@ -1540,7 +1540,7 @@ sub contacts {
             }
             $contacts_page .= "</select>\n";
             $contacts_page .= display_multi_select( "period-select", @periods );
-
+            $contacts_page .= $q->p('Select states:');
             $contacts_page .=
               "<select name='group' id='state-select' multiple='multiple'>\n";
             for my $state (@states) {
@@ -1548,7 +1548,7 @@ sub contacts {
             }
             $contacts_page .= "</select>\n";
             $contacts_page .= display_multi_select( "state-select", @states );
-
+            $contacts_page .= $q->p('Select types:');
             $contacts_page .=
               "<select name='group' id='type-select' multiple='multiple'>\n";
             for my $type (@types) {
