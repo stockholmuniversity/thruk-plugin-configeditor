@@ -37,9 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-my $METHOD = "GET";
+#my $METHOD = "GET";
 
-#my $METHOD       = "POST";
+my $METHOD       = "POST";
 my @service_keys = (
     "vars",          "action_url",
     "check_command", "check_interval",
@@ -321,7 +321,7 @@ sub display_generic_confirmation {
     $type =~ s/s$//;
     my $generic_form;
     $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
-    if ( $mode eq "modify" and $attributes ) {
+    if ( $attributes ) {
         $generic_form .= $q->p("Attributes are: <br/>$attributes<br/>");
     }
     $generic_form .= $q->start_form(
@@ -1511,17 +1511,19 @@ sub contacts {
             # This is the contact creation confirmation
         }
         elsif ($contact) {
-            my %attrs = {
+            my %tmp = (
                 'name'         => $contact,
                 'display_name' => $display_name,
                 'pager'        => $pager,
                 'email'        => $email,
-                'groups'       => @groups,
-                'period'       => @periods,
-                'types'        => @types,
-                'states'       => @states
-            };
-            $attributes = encode_json( \%attrs );
+                'groups'       => \@groups,
+                'period'       => \@periods,
+                'types'        => \@types,
+                'states'       => \@states
+            );
+            my %attrs = ('attrs' => \%tmp);
+            $attributes = to_json( \%attrs );
+
             $contacts_page .=
               display_generic_confirmation( $c, $mode, $contact ,"contacts", $attributes )
 
