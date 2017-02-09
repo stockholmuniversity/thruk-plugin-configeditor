@@ -1471,12 +1471,12 @@ sub contacts {
         push @groups, $element->{'attrs'}{'name'};
     }
 
-#    my $period_hash =
-#      api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
-#    my @periods;
-#    foreach my $element ( $period_hash->{'results'} ) {
-#        push @periods, $element->{'attrs'}{'name'};
-#    }
+    my $period_hash =
+      api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
+    my @periods;
+    foreach my $element ( values $period_hash->{'results'} ) {
+        push @periods, $element->{'attrs'}{'name'};
+    }
 
     my $contacts_page =
       '<div class="reportSelectTitle" align="center">Contacts</div>';
@@ -1504,21 +1504,29 @@ sub contacts {
             $contacts_page .= $q->p(
 "Enter phone number (in international form without plus-sign, i.e. 46701234567):"
             );
-            $contacts_page .= $q->textfield( 'pager', '', 20, 50 );
+            $contacts_page .= $q->textfield( 'pager', '', 50, 80 );
             $contacts_page .= $q->p('Enter email address:');
-            $contacts_page .= $q->textarea( 'email', '', 20, 50 );
+            $contacts_page .= $q->textfield( 'email', '', 50, 80 );
             $contacts_page .= $q->p('Select user groups:');
             $contacts_page .=
-                "<select name='group' id='group-select' multiple='multiple'>\n";
+              "<select name='group' id='group-select' multiple='multiple'>\n";
+
             for my $group (@groups) {
                 $contacts_page .= "<option value=\"$group\">$group</option>\n";
             }
             $contacts_page .= "</select>\n";
-            $contacts_page .= display_multi_select( "group-select",  @groups );
-#            $contacts_page .= $q->p('Select timeperiods:');
-#            $contacts_page .= display_multi_select( "period-select", @periods );
+            $contacts_page .= display_multi_select( "group-select", @groups );
+            $contacts_page .= $q->p('Select timeperiods:');
+            $contacts_page .=
+              "<select name='group' id='period-select' multiple='multiple'>\n";
+            for my $period (@periods) {
+                $contacts_page .=
+                  "<option value=\"$period\">$period</option>\n";
+            }
+            $contacts_page .= "</select>\n";
+            $contacts_page .= display_multi_select( "period-select", @periods );
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
-            $contacts_page .= $q->hidden( 'mode',      "create" );
+            $contacts_page .= $q->hidden( 'mode', "create" );
             $contacts_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
