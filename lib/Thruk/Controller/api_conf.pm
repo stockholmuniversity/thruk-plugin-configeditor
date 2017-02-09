@@ -1463,21 +1463,24 @@ sub contacts {
     my $contact    = $params->{'contact'};
     my $mode       = $params->{'mode'};
 
-    my $group_hash = api_call($c->stash->{'confdir'}, "GET", "objects/usergroups");
+    my $group_hash =
+      api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
 
-    my @group_arr;
-    foreach my $element (values $group_hash->{'result'} ) {
-        push @group_arr, $element->{'name'};
-    }
-    my @groups = sort @group_arr;
-
-    my $period_hash = api_call($c->stash->{'confdir'}, "GET", "objects/timeperiods");
-    my @period_arr;
-    foreach my $element ( $period_hash->{'result'} ) {
-        push @period_arr, $element->{'name'};
+    my @groups;
+    foreach my $element ( values $group_hash->{'results'} ) {
+        push @groups, $element->{'attrs'}{'name'};
     }
 
-    my @periods = sort @period_arr;
+    my $period_hash =
+      api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
+    my @periods;
+    foreach my $element ( $period_hash->{'results'} ) {
+        push @periods, $element->{'attrs'}{'name'};
+    }
+    print "Periods: ";
+    print Dumper @periods;
+    print "Groups: ";
+    print Dumper @groups;
 
     my $contacts_page =
       '<div class="reportSelectTitle" align="center">Contacts</div>';
@@ -1503,9 +1506,9 @@ sub contacts {
             $contacts_page .= $q->p("Enter contact name:");
             $contacts_page .= $q->textfield( 'contact', '', 50, 80 );
             $contacts_page .= $q->p(
-"Enter phone number (in international form without plus-sign, i.e. 46721475583):"
+"Enter phone number (in international form without plus-sign, i.e. 46701234567):"
             );
-            $contacts_page .= $q->textfield( 'pager', '', 50, 80 );
+            $contacts_page .= $q->textfield( 'pager', '', 20, 50 );
             $contacts_page .= $q->p('Enter email address:');
             $contacts_page .= $q->textarea( 'email', '', 20, 50 );
             $contacts_page .= $q->p('Select user groups:');
