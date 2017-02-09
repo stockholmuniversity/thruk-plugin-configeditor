@@ -432,12 +432,12 @@ sub display_multi_select {
     # Dont try with too many items, or it will fail
     if ( scalar @items > 300 ) {
         $html .=
-          '<a href=\'#\' id=\'select-300\'>Select first 300</a><br>' . "\n";
+          '<a href=\'#\' id=\'select-300' . $id . '\'>Select first 300</a><br>' . "\n";
     }
     else {
-        $html .= '<a href=\'#\' id=\'select-all\'>Select all</a><br>' . "\n";
+        $html .= '<a href=\'#\' id=\'select-all' . $id . '\'>Select all</a><br>' . "\n";
     }
-    $html .= '<a href=\'#\' id=\'deselect-all\'>Deselect all</a>' . "\n";
+    $html .= '<a href=\'#\' id=\'deselect-all' . $id . '\'>Deselect all</a>' . "\n";
     $html .= '<script type="text/javascript">' . "\n";
     $html .= ';(function($) {' . "\n";
     $html .= '$(\'#' . $id . '\').multiSelect({ ' . "\n";
@@ -446,7 +446,7 @@ sub display_multi_select {
     $html .= '});' . "\n";
 
     if ( scalar @items > 300 ) {
-        $html .= '$(\'#select-300\').click(function(){' . "\n";
+        $html .= '$(\'#select-300' . $id . '\').click(function(){' . "\n";
         $html .= '$(\'#' . $id . '\').multiSelect(\'select\', [';
         foreach my $i ( 0 .. 298 ) {
             $html .= "\'$items[$i]\', ";
@@ -457,12 +457,12 @@ sub display_multi_select {
         $html .= '});' . "\n";
     }
     else {
-        $html .= '$(\'#select-all\').click(function(){' . "\n";
+        $html .= '$(\'#select-all' . $id . '\').click(function(){' . "\n";
         $html .= '$(\'#' . $id . '\').multiSelect(\'select_all\');' . "\n";
         $html .= 'return false;' . "\n";
         $html .= '});' . "\n";
     }
-    $html .= '$(\'#deselect-all\').click(function(){' . "\n";
+    $html .= '$(\'#deselect-all' . $id . '\').click(function(){' . "\n";
     $html .= '$(\'#' . $id . '\').multiSelect(\'deselect_all\');' . "\n";
     $html .= 'return false;' . "\n";
     $html .= '});' . "\n";
