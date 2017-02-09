@@ -1523,7 +1523,7 @@ sub contacts {
             };
             $attributes = encode_json( \%attrs );
             $contacts_page .=
-              display_generic_confirmation( $c, $mode, "contacts", $attributes )
+              display_generic_confirmation( $c, $mode, $contact ,"contacts", $attributes )
 
               # This is the contact creation dialog
         }
