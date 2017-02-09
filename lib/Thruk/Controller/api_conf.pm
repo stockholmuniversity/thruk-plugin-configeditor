@@ -432,12 +432,18 @@ sub display_multi_select {
     # Dont try with too many items, or it will fail
     if ( scalar @items > 300 ) {
         $html .=
-          '<a href=\'#\' id=\'select-300' . $id . '\'>Select first 300</a><br>' . "\n";
+            '<a href=\'#\' id=\'select-300'
+          . $id
+          . '\'>Select first 300</a><br>' . "\n";
     }
     else {
-        $html .= '<a href=\'#\' id=\'select-all' . $id . '\'>Select all</a><br>' . "\n";
+        $html .=
+            '<a href=\'#\' id=\'select-all'
+          . $id
+          . '\'>Select all</a><br>' . "\n";
     }
-    $html .= '<a href=\'#\' id=\'deselect-all' . $id . '\'>Deselect all</a>' . "\n";
+    $html .=
+      '<a href=\'#\' id=\'deselect-all' . $id . '\'>Deselect all</a>' . "\n";
     $html .= '<script type="text/javascript">' . "\n";
     $html .= ';(function($) {' . "\n";
     $html .= '$(\'#' . $id . '\').multiSelect({ ' . "\n";
@@ -1462,7 +1468,14 @@ sub contacts {
     my $confirm    = $params->{'confirm'};
     my $contact    = $params->{'contact'};
     my $mode       = $params->{'mode'};
-
+    my @states     = ( "OK", "Warning", "Critical", "Unknown" );
+    my @types      = (
+        "Problem",       "Acknowledgement",
+        "Recovery",      "Custom",
+        "FlappingStart", "FlappingEnd",
+        "DowntimeStart", "DowntimeEnd",
+        "DowntimeRemoved"
+    );
     my $group_hash =
       api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
 
@@ -1501,6 +1514,8 @@ sub contacts {
             );
             $contacts_page .= $q->p("Enter contact name:");
             $contacts_page .= $q->textfield( 'contact', '', 50, 80 );
+            $contacts_page .= $q->p("Enter contact display name:");
+            $contacts_page .= $q->textfield( 'display_name', '', 50, 80 );
             $contacts_page .= $q->p(
 "Enter phone number (in international form without plus-sign, i.e. 46701234567):"
             );
@@ -1525,8 +1540,25 @@ sub contacts {
             }
             $contacts_page .= "</select>\n";
             $contacts_page .= display_multi_select( "period-select", @periods );
+
+            $contacts_page .=
+              "<select name='group' id='state-select' multiple='multiple'>\n";
+            for my $state (@states) {
+                $contacts_page .= "<option value=\"$state\">$state</option>\n";
+            }
+            $contacts_page .= "</select>\n";
+            $contacts_page .= display_multi_select( "state-select", @states );
+
+            $contacts_page .=
+              "<select name='group' id='type-select' multiple='multiple'>\n";
+            for my $type (@types) {
+                $contacts_page .= "<option value=\"$type\">$type</option>\n";
+            }
+            $contacts_page .= "</select>\n";
+            $contacts_page .= display_multi_select( "type-select", @types );
+
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
-            $contacts_page .= $q->hidden( 'mode', "create" );
+            $contacts_page .= $q->hidden( 'mode',      "create" );
             $contacts_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
