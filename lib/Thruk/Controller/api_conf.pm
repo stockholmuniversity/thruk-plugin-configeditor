@@ -261,7 +261,7 @@ This function returns the create/delete dialog
 
 =over
 
-=item * 
+=item *
 
 page_type 
 
@@ -297,6 +297,55 @@ sub display_create_delete_modify_dialog {
     );
     $page .= $q->end_form;
     return $page;
+}
+
+=head2 display_delete_confirmation
+
+This function returns the delete confirmation
+
+=head3 Parameters
+
+=over
+
+=item *
+
+@array - to delete
+
+=item *
+
+name
+
+=item *
+
+page_type
+
+=back
+
+=cut
+
+sub display_delete_confirmation {
+    my $q = CGI->new;
+    my ( @arr, $name, $page_type ) = @_;
+
+    my $str  = csv_from_arr(@arr);
+    my $html = $q->p( 'Are you sure you want to delete ' . $str . '?<br/>' );
+    $html .= $q->start_form(
+        -method => $METHOD,
+        -action => "api_conf.cgi"
+    );
+    foreach my $elem (@arr) {
+        $html .= $q->hidden( $name, $elem );
+    }
+    $html .= $q->hidden( 'page_type', $page_type );
+    $html .= $q->hidden( 'mode',      "delete" );
+    $html .=
+      $q->checkbox( 'cascading', 0, 'true', 'Use cascading delete - WARNING' );
+    $html .= $q->submit(
+        -name  => 'confirm',
+        -value => 'Confirm'
+    );
+    $html .= $q->end_form;
+
 }
 
 =head2 display_generic_confirmation
@@ -336,7 +385,7 @@ sub display_generic_confirmation {
         $generic_form .= $q->checkbox( 'cascading', 0, 'true',
             'Use cascading delete - WARNING' );
     }
-    elsif ( $attributes ) {
+    elsif ($attributes) {
         $generic_form .= $q->hidden( 'attributes', $attributes );
     }
     $generic_form .= $q->submit(
@@ -768,25 +817,8 @@ sub hosts {
 
         # This case is first dialog
         if ( not defined($confirm) and $host =~ m/\..*\./ ) {
-            my $hoststr = csv_from_arr(@hosts);
             $host_page .=
-              $q->p( 'Are you sure you want to delete ' . $hoststr . '?<br/>' );
-            $host_page .= $q->start_form(
-                -method => $METHOD,
-                -action => "api_conf.cgi"
-            );
-            foreach my $hst (@hosts) {
-                $host_page .= $q->hidden( 'host', $hst );
-            }
-            $host_page .= $q->hidden( 'page_type', "hosts" );
-            $host_page .= $q->hidden( 'mode',      "delete" );
-            $host_page .= $q->checkbox( 'cascading', 0, 'true',
-                'Use cascading delete - WARNING' );
-            $host_page .= $q->submit(
-                -name  => 'confirm',
-                -value => 'Confirm'
-            );
-            $host_page .= $q->end_form;
+              display_delete_confirmation( @hosts, 'host', 'hosts' );
         }
 
         # This case is delete request
@@ -1465,9 +1497,23 @@ sub contacts {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $attributes   = $params->{'attributes'};
-    my $confirm      = $params->{'confirm'};
-    my $contact      = $params->{'contact'};
+    my $attributes = $params->{'attributes'};
+    my $confirm    = $params->{'confirm'};
+
+    my @contacts = ();
+    my $contact  = '';
+    if ( ref $params->{'contact'} eq 'ARRAY' ) {
+        foreach my $cnt ( values $params->{'contact'} ) {
+            push @contacts, $cnt;
+        }
+        $contact = $contacts[0];
+    }
+    else {
+        $contact = $params->{'contact'};
+        push @contacts, $contact;
+    }
+
+    my $cascading    = $params->{'cascading'};
     my $display_name = $params->{'display_name'};
     my $email        = $params->{'email'};
     my $group_select = $params->{'groups'};
@@ -1497,7 +1543,7 @@ sub contacts {
             "DowntimeRemoved"
         );
         my $group_hash =
-            api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
+          api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
 
         my @groups;
         foreach my $element ( values $group_hash->{'results'} ) {
@@ -1505,7 +1551,7 @@ sub contacts {
         }
 
         my $period_hash =
-            api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
+          api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
         my @periods;
         foreach my $element ( values $period_hash->{'results'} ) {
             push @periods, $element->{'attrs'}{'name'};
@@ -1523,7 +1569,7 @@ sub contacts {
 
             # This is the contact creation confirmation
         }
-        elsif ($contact and $submit eq "Submit") {
+        elsif ( $contact and $submit eq "Submit" ) {
             my %tmp = (
                 'display_name' => $display_name,
                 'email'        => $email,
@@ -1574,7 +1620,6 @@ sub contacts {
             }
             $contacts_page .= "</select>\n";
 
-           #$contacts_page .= display_multi_select( "period-select", @periods );
             $contacts_page .= $q->p('Select states:');
             $contacts_page .=
               "<select name='states' id='state-select' multiple='multiple'>\n";
@@ -1604,15 +1649,29 @@ sub contacts {
 
     }
     elsif ( $mode eq "delete" ) {
-        if($contact) {
-
-        } else {
+        if ( $contact and $confirm eq "Confirm" ) {
+            my $cascade = '';
+            if ( $cascading eq "true" ) {
+                $cascade = '?cascade=1';
+            }
+            foreach my $cnt (@contacts) {
+                my @arr = api_call( $c->stash->{'confdir'},
+                    "DELETE", "objects/users/$cnt$cascade" );
+                $contacts_page .= display_api_response(@arr);
+            }
+            $contacts_page .= display_back_button( $mode, 'contacts' );
+        }
+        elsif ($contact) {
+            $contacts_page .=
+              display_delete_confirmation( @contacts, 'contact', 'contacts' );
+        }
+        else {
             $contacts_page .= $q->start_form(
                 -method => $METHOD,
                 -action => "api_conf.cgi"
             );
             $contacts_page .=
-                "<select name='host' id='host-select' multiple='multiple'>\n";
+"<select name='contact' id='contact-select' multiple='multiple'>\n";
             for my $co (@contact_arr) {
                 $contacts_page .= "<option value=\"$co\">$co</option>\n";
             }
@@ -1624,7 +1683,8 @@ sub contacts {
                 -value => 'Submit'
             );
             $contacts_page .= $q->end_form;
-            $contacts_page .= display_multi_select( 'host-select', @contact_arr );
+            $contacts_page .=
+              display_multi_select( 'contact-select', @contact_arr );
         }
 
     }
