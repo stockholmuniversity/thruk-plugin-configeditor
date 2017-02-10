@@ -242,10 +242,14 @@ sub display_command_selection {
         -action => "api_conf.cgi"
     );
     $command_form .= '<select name="command">';
+    my @names;
     foreach my $hash ( sort values $c->stash->{commands} ) {
-        my $name = $hash->{name};
+        push @names, $hash->{name};
+    }
+    foreach my $temp (sort @names) {
+        my $name = $temp;
         $name =~ s/check_//g;
-        $command_form .= "<option value=\"$name\">$hash->{name}</option>";
+        $command_form .= "<option value=\"$name\">$temp</option>";
     }
     $command_form .= '</select">';
     $command_form .= $q->hidden( 'page_type', "commands" );
@@ -1938,7 +1942,6 @@ sub commands {
             $command_page .= $q->end_form;
         }
 
-        # This is create/delete dialog
     }
     elsif ( $mode eq "modify" ) {
 
