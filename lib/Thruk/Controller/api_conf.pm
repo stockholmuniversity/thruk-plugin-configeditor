@@ -1470,12 +1470,12 @@ sub contacts {
     my $contact       = $params->{'contact'};
     my $display_name  = $params->{'display_name'};
     my $email         = $params->{'email'};
-    my @group_select  = $params->{'group-select'};
+    my @group_select  = $params->{'groups'};
     my $mode          = $params->{'mode'};
     my $pager         = $params->{'pager'};
-    my @period_select = $params->{'period-select'};
-    my @state_select  = $params->{'state-select'};
-    my @type_select   = $params->{'type-select'};
+    my $period = $params->{'period'};
+    my @state_select  = $params->{'states'};
+    my @type_select   = $params->{'types'};
 
     my @states = ( "OK", "Warning", "Critical", "Unknown" );
     my @types = (
@@ -1554,7 +1554,7 @@ sub contacts {
             $contacts_page .= $q->textfield( 'email', '', 50, 80 );
             $contacts_page .= $q->p('Select user groups:');
             $contacts_page .=
-              "<select name='group' id='group-select' multiple='multiple'>\n";
+              "<select name='groups' id='group-select' multiple='multiple'>\n";
 
             for my $group (@groups) {
                 $contacts_page .= "<option value=\"$group\">$group</option>\n";
@@ -1563,16 +1563,16 @@ sub contacts {
             $contacts_page .= display_multi_select( "group-select", @groups );
             $contacts_page .= $q->p('Select timeperiods:');
             $contacts_page .=
-              "<select name='group' id='period-select' multiple='multiple'>\n";
+              "<select name='period' id='period-select'>\n";
             for my $period (@periods) {
                 $contacts_page .=
                   "<option value=\"$period\">$period</option>\n";
             }
             $contacts_page .= "</select>\n";
-            $contacts_page .= display_multi_select( "period-select", @periods );
+            #$contacts_page .= display_multi_select( "period-select", @periods );
             $contacts_page .= $q->p('Select states:');
             $contacts_page .=
-              "<select name='group' id='state-select' multiple='multiple'>\n";
+              "<select name='states' id='state-select' multiple='multiple'>\n";
             for my $state (@states) {
                 $contacts_page .= "<option value=\"$state\">$state</option>\n";
             }
@@ -1580,7 +1580,7 @@ sub contacts {
             $contacts_page .= display_multi_select( "state-select", @states );
             $contacts_page .= $q->p('Select types:');
             $contacts_page .=
-              "<select name='group' id='type-select' multiple='multiple'>\n";
+              "<select name='types' id='type-select' multiple='multiple'>\n";
             for my $type (@types) {
                 $contacts_page .= "<option value=\"$type\">$type</option>\n";
             }
