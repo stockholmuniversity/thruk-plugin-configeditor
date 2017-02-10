@@ -321,7 +321,7 @@ sub display_generic_confirmation {
     $type =~ s/s$//;
     my $generic_form;
     $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
-    if ( $attributes ) {
+    if ($attributes) {
         $generic_form .= $q->p("Attributes are: <br/>$attributes<br/>");
     }
     $generic_form .= $q->start_form(
@@ -1507,6 +1507,13 @@ sub contacts {
 
         # This is the contact confirmation api call
         if ( $contact and $attributes and $confirm eq "Confirm" ) {
+            my $payload = uri_unescape($attributes);
+            my @arr     = api_call(
+                $c->stash->{'confdir'},   "PUT",
+                "objects/users/$contact", $payload
+            );
+            $contacts_page .= display_api_response( @arr, $payload );
+            $contacts_page .= display_back_button( $mode, 'contacts' );
 
             # This is the contact creation confirmation
         }
@@ -1516,16 +1523,17 @@ sub contacts {
                 'display_name' => $display_name,
                 'pager'        => $pager,
                 'email'        => $email,
-                'groups'       => \@groups,
-                'period'       => \@periods,
-                'types'        => \@types,
-                'states'       => \@states
+                'groups'       => \@group_select,
+                'period'       => \@period_select,
+                'types'        => \@type_select,
+                'states'       => \@state_select
             );
-            my %attrs = ('attrs' => \%tmp);
+            my %attrs = ( 'attrs' => \%tmp );
             $attributes = to_json( \%attrs );
 
             $contacts_page .=
-              display_generic_confirmation( $c, $mode, $contact ,"contacts", $attributes )
+              display_generic_confirmation( $c, $mode, $contact, "contacts",
+                $attributes )
 
               # This is the contact creation dialog
         }
