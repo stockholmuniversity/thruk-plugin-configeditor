@@ -868,8 +868,9 @@ sub hosts {
             $host_page .= display_multi_select( 'host-select', @host_arr );
         }
 
-        # This is create mode
     }
+
+    # This is create mode
     elsif ( $mode eq "create" ) {
 
         # This case is confirm dialog
@@ -906,8 +907,9 @@ sub hosts {
             );
             $host_page .= $q->end_form;
 
-            # This case is the  actual creation
         }
+
+        # This case is the  actual creation
         elsif ( $host =~ m/\..*\./
             and ( is_ipv4($ip) or is_ipv6($ip6) )
             and $confirm eq "Confirm"
@@ -940,8 +942,9 @@ sub hosts {
             $host_page .= display_api_response( @arr, $payload );
             $host_page .= display_back_button( $mode, 'hosts' );
 
-            # This is the main host creation dialog
         }
+
+        # This is the main host creation dialog
         else {
             my %zones =
               %{ api_call( $c->stash->{'confdir'}, "GET", "objects/zones" ) };
@@ -1101,8 +1104,9 @@ sub host_groups {
             );
             $hostgroup_page .= $q->end_form;
 
-           # If we have both hostgroup and confirm, i.e. we  create via api call
         }
+
+        # If we have both hostgroup and confirm, i.e. we  create via api call
         elsif ( $hostgroup =~ m/.+/ and $confirm eq "Confirm" ) {
             my $payload = '{ "attrs": {"display_name":"' . $displayname . '"';
 
@@ -1122,8 +1126,9 @@ sub host_groups {
             $hostgroup_page .= display_api_response( @arr, $payload );
             $hostgroup_page .= display_back_button( $mode, 'hostgroups' );
 
-            # This is the create dialog
         }
+
+        # This is the create dialog
         else {
             $hostgroup_page .= $q->start_form(
                 -method => $METHOD,
@@ -1166,8 +1171,9 @@ sub host_groups {
             );
             $hostgroup_page .= $q->end_form;
 
-            # If we have both hostgroup and confirm, i.e. we delete via api call
         }
+
+        # If we have both hostgroup and confirm, i.e. we delete via api call
         elsif ( $hostgroup =~ m/.+/ and $confirm eq "Confirm" ) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
@@ -1178,8 +1184,9 @@ sub host_groups {
             $hostgroup_page .= display_api_response(@arr);
             $hostgroup_page .= display_back_button( $mode, 'hostgroups' );
 
-            # Fall back on a drop down list
         }
+
+        # Fall back on a drop down list
         else {
             $hostgroup_page .= $q->start_form(
                 -method => $METHOD,
@@ -1201,9 +1208,6 @@ sub host_groups {
             $hostgroup_page .= $q->end_form;
         }
 
-        #	} elsif ($mode eq "modify") {
-        #		$hostgroup_page .= "Modification";
-        #		$hostgroup_page .= Dumper $c->stash->{hostgroups};
     }
     else {
         $hostgroup_page .= display_create_delete_modify_dialog("hostgroups");
@@ -1285,8 +1289,9 @@ sub services {
         {
             $service_page .= display_service_selection( $c, $mode, $host );
 
-            # This case is confirmation dialog for delete mode
         }
+
+        # This case is confirmation dialog for delete mode
         elsif ( $host =~ m/\..*\./
             and $confirm ne "Confirm"
             and $servicename =~ m/.+/ )
@@ -1294,8 +1299,9 @@ sub services {
             $service_page .=
               display_service_confirmation( $c, $mode, $host, $servicename );
 
-            # This case is actual deletion via api_call
         }
+
+        # This case is actual deletion via api_call
         elsif ( $host =~ m/\..*\./
             and $confirm eq "Confirm"
             and $servicename =~ m/.+/ )
@@ -1305,15 +1311,17 @@ sub services {
             $service_page .= display_api_response(@arr);
             $service_page .= display_back_button( $mode, 'services' );
 
-            # Host selection dialog i.e. the main dialog for service deletion
         }
+
+        # Host selection dialog i.e. the main dialog for service deletion
         else {
             $service_page .=
               display_single_host_selection( $c, $mode, "services" );
         }
 
-        # Creation mode
     }
+
+    # Creation mode
     elsif ( $mode eq "create" ) {
 
         # This is the confirm dialog
@@ -1352,8 +1360,9 @@ sub services {
             );
             $service_page .= $q->end_form;
 
-            # This is the actual creation via api_call
         }
+
+        # This is the actual creation via api_call
         elsif ( $host =~ m/\..*\./
             and $check =~ m/.+/
             and $displayname =~ m/.+/
@@ -1382,8 +1391,9 @@ sub services {
             }
             $service_page .= display_back_button( $mode, 'services' );
 
-            # This is the main dialog for service creation
         }
+
+        # This is the main dialog for service creation
         else {
 
             # Get hosts
@@ -1432,8 +1442,9 @@ sub services {
             $service_page .= $q->end_form;
         }
 
-       # This is the first selection page i.e. create/delete dialog for services
     }
+
+    # This is the modification section
     elsif ( $mode eq "modify" ) {
 
         # This is the editor
@@ -1654,6 +1665,8 @@ sub contacts {
 
     }
     elsif ( $mode eq "delete" ) {
+
+        # This is api call
         if ( $contact and $confirm eq "Confirm" ) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
@@ -1666,10 +1679,14 @@ sub contacts {
             }
             $contacts_page .= display_back_button( $mode, 'contacts' );
         }
+
+        # This is confirmation
         elsif ($contact) {
             $contacts_page .=
               display_delete_confirmation( 'contact', 'contacts', @contacts );
         }
+
+        # This is selection
         else {
             $contacts_page .= $q->p("Select contact(s) to delete:");
             $contacts_page .= $q->start_form(
@@ -1695,14 +1712,28 @@ sub contacts {
 
     }
     elsif ( $mode eq "modify" ) {
+
+        # This is api call
         if ($contact and $attributes and $confirm eq "Confirm") {
 
+            # Do api magic here
+            my $payload = uri_unescape($attributes);
+            my @arr = api_call(
+                $c->stash->{'confdir'}, "POST",
+                "objects/users/$contact", $payload
+            );
+            $contacts_page .= display_api_response( @arr, $payload );
+            $contacts_page .= display_back_button( $mode, 'contacts' );
         }
+
+        # This is confirmation
         elsif ($contact and $attributes and $submit eq "Submit") {
             $contacts_page .=
                 display_generic_confirmation( $c, $mode, $contact, "contacts",
                     $attributes );
         }
+
+        # This is editor
         elsif ($contact) {
             my %hidden = (
                 "page_type" => "contacts",
@@ -1712,6 +1743,8 @@ sub contacts {
             $contacts_page .=
                 display_modify_textbox( $c, \%hidden, $endpoint, @contact_keys );
         }
+
+        # This is selection
         else {
             $contacts_page .= $q->p("Select contact to edit:");
             $contacts_page .= $q->start_form(
