@@ -237,7 +237,7 @@ sub display_command_selection {
         -action => "api_conf.cgi"
     );
     $command_form .= '<select name="command">';
-    foreach my $hash ( values $c->stash->{commands} ) {
+    foreach my $hash ( sort values $c->stash->{commands} ) {
         my $name = $hash->{name};
         $name =~ s/check_//g;
         $command_form .= "<option value=\"$name\">$hash->{name}</option>";
@@ -1478,33 +1478,38 @@ sub contacts {
     my $state_select = $params->{'states'};
     my $type_select  = $params->{'types'};
 
-    my @states = ( "OK", "Warning", "Critical", "Unknown" );
-    my @types = (
-        "Problem",       "Acknowledgement",
-        "Recovery",      "Custom",
-        "FlappingStart", "FlappingEnd",
-        "DowntimeStart", "DowntimeEnd",
-        "DowntimeRemoved"
-    );
-    my $group_hash =
-      api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
-
-    my @groups;
-    foreach my $element ( values $group_hash->{'results'} ) {
-        push @groups, $element->{'attrs'}{'name'};
+    my @temp_arr;
+    for my $hashref ( values $c->{'db'}->get_contacts() ) {
+        push @temp_arr, $hashref->{'name'};
     }
-
-    my $period_hash =
-      api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
-    my @periods;
-    foreach my $element ( values $period_hash->{'results'} ) {
-        push @periods, $element->{'attrs'}{'name'};
-    }
+    my @contact_arr = sort @temp_arr;
 
     my $contacts_page =
       '<div class="reportSelectTitle" align="center">Contacts</div>';
 
     if ( $mode eq "create" ) {
+        my @states = ( "OK", "Warning", "Critical", "Unknown" );
+        my @types = (
+            "Problem",       "Acknowledgement",
+            "Recovery",      "Custom",
+            "FlappingStart", "FlappingEnd",
+            "DowntimeStart", "DowntimeEnd",
+            "DowntimeRemoved"
+        );
+        my $group_hash =
+            api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
+
+        my @groups;
+        foreach my $element ( values $group_hash->{'results'} ) {
+            push @groups, $element->{'attrs'}{'name'};
+        }
+
+        my $period_hash =
+            api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
+        my @periods;
+        foreach my $element ( values $period_hash->{'results'} ) {
+            push @periods, $element->{'attrs'}{'name'};
+        }
 
         # This is the contact confirmation api call
         if ( $contact and $attributes and $confirm eq "Confirm" ) {
@@ -1599,6 +1604,28 @@ sub contacts {
 
     }
     elsif ( $mode eq "delete" ) {
+        if($contact) {
+
+        } else {
+            $contacts_page .= $q->start_form(
+                -method => $METHOD,
+                -action => "api_conf.cgi"
+            );
+            $contacts_page .=
+                "<select name='host' id='host-select' multiple='multiple'>\n";
+            for my $co (@contact_arr) {
+                $contacts_page .= "<option value=\"$co\">$co</option>\n";
+            }
+            $contacts_page .= "</select>\n";
+            $contacts_page .= $q->hidden( 'page_type', "contacts" );
+            $contacts_page .= $q->hidden( 'mode', "delete" );
+            $contacts_page .= $q->submit(
+                -name  => 'submit',
+                -value => 'Submit'
+            );
+            $contacts_page .= $q->end_form;
+            $contacts_page .= display_multi_select( 'host-select', @contact_arr );
+        }
 
     }
     elsif ( $mode eq "modify" ) {
