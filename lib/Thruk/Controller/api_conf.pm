@@ -37,9 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
+my $METHOD = "GET";
 
-my $METHOD       = "POST";
+#my $METHOD       = "POST";
 my @service_keys = (
     "vars",          "action_url",
     "check_command", "check_interval",
@@ -336,7 +336,7 @@ sub display_generic_confirmation {
         $generic_form .= $q->checkbox( 'cascading', 0, 'true',
             'Use cascading delete - WARNING' );
     }
-    elsif ( $mode eq "modify" and $attributes ) {
+    elsif ( $attributes ) {
         $generic_form .= $q->hidden( 'attributes', $attributes );
     }
     $generic_form .= $q->submit(
@@ -1470,12 +1470,13 @@ sub contacts {
     my $contact      = $params->{'contact'};
     my $display_name = $params->{'display_name'};
     my $email        = $params->{'email'};
-    my @group_select = $params->{'groups'};
+    my $group_select = $params->{'groups'};
     my $mode         = $params->{'mode'};
     my $pager        = $params->{'pager'};
     my $period       = $params->{'period'};
-    my @state_select = $params->{'states'};
-    my @type_select  = $params->{'types'};
+    my $submit       = $params->{'submit'};
+    my $state_select = $params->{'states'};
+    my $type_select  = $params->{'types'};
 
     my @states = ( "OK", "Warning", "Critical", "Unknown" );
     my @types = (
@@ -1517,16 +1518,15 @@ sub contacts {
 
             # This is the contact creation confirmation
         }
-        elsif ($contact) {
+        elsif ($contact and $submit eq "Submit") {
             my %tmp = (
                 'display_name' => $display_name,
                 'email'        => $email,
-                'groups'       => \@group_select,
-                'name'         => $contact,
+                'groups'       => $group_select,
                 'pager'        => $pager,
                 'period'       => $period,
-                'states'       => \@state_select,
-                'types'        => \@type_select
+                'states'       => $state_select,
+                'types'        => $type_select
             );
             my %attrs = ( 'attrs' => \%tmp );
             $attributes = to_json( \%attrs );
