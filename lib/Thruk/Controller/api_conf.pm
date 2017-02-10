@@ -309,15 +309,15 @@ This function returns the delete confirmation
 
 =item *
 
-@array - to delete
-
-=item *
-
 name
 
 =item *
 
 page_type
+
+=item *
+
+@array - to delete
 
 =back
 
@@ -325,7 +325,7 @@ page_type
 
 sub display_delete_confirmation {
     my $q = CGI->new;
-    my ( @arr, $name, $page_type ) = @_;
+    my ( $name, $page_type, @arr ) = @_;
 
     my $str  = csv_from_arr(@arr);
     my $html = $q->p( 'Are you sure you want to delete ' . $str . '?<br/>' );
@@ -818,7 +818,7 @@ sub hosts {
         # This case is first dialog
         if ( not defined($confirm) and $host =~ m/\..*\./ ) {
             $host_page .=
-              display_delete_confirmation( @hosts, 'host', 'hosts' );
+              display_delete_confirmation( 'host', 'hosts', @hosts );
         }
 
         # This case is delete request
@@ -1663,7 +1663,7 @@ sub contacts {
         }
         elsif ($contact) {
             $contacts_page .=
-              display_delete_confirmation( @contacts, 'contact', 'contacts' );
+              display_delete_confirmation( 'contact', 'contacts', @contacts );
         }
         else {
             $contacts_page .= $q->start_form(
