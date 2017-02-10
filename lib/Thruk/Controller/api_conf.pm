@@ -1465,17 +1465,17 @@ sub contacts {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $attributes    = $params->{'attributes'};
-    my $confirm       = $params->{'confirm'};
-    my $contact       = $params->{'contact'};
-    my $display_name  = $params->{'display_name'};
-    my $email         = $params->{'email'};
-    my @group_select  = $params->{'groups'};
-    my $mode          = $params->{'mode'};
-    my $pager         = $params->{'pager'};
-    my $period = $params->{'period'};
-    my @state_select  = $params->{'states'};
-    my @type_select   = $params->{'types'};
+    my $attributes   = $params->{'attributes'};
+    my $confirm      = $params->{'confirm'};
+    my $contact      = $params->{'contact'};
+    my $display_name = $params->{'display_name'};
+    my $email        = $params->{'email'};
+    my @group_select = $params->{'groups'};
+    my $mode         = $params->{'mode'};
+    my $pager        = $params->{'pager'};
+    my $period       = $params->{'period'};
+    my @state_select = $params->{'states'};
+    my @type_select  = $params->{'types'};
 
     my @states = ( "OK", "Warning", "Critical", "Unknown" );
     my @types = (
@@ -1519,14 +1519,14 @@ sub contacts {
         }
         elsif ($contact) {
             my %tmp = (
-                'name'         => $contact,
                 'display_name' => $display_name,
-                'pager'        => $pager,
                 'email'        => $email,
                 'groups'       => \@group_select,
-                'period'       => \@period_select,
-                'types'        => \@type_select,
-                'states'       => \@state_select
+                'name'         => $contact,
+                'pager'        => $pager,
+                'period'       => $period,
+                'states'       => \@state_select,
+                'types'        => \@type_select
             );
             my %attrs = ( 'attrs' => \%tmp );
             $attributes = to_json( \%attrs );
@@ -1562,14 +1562,14 @@ sub contacts {
             $contacts_page .= "</select>\n";
             $contacts_page .= display_multi_select( "group-select", @groups );
             $contacts_page .= $q->p('Select timeperiods:');
-            $contacts_page .=
-              "<select name='period' id='period-select'>\n";
+            $contacts_page .= "<select name='period' id='period-select'>\n";
             for my $period (@periods) {
                 $contacts_page .=
                   "<option value=\"$period\">$period</option>\n";
             }
             $contacts_page .= "</select>\n";
-            #$contacts_page .= display_multi_select( "period-select", @periods );
+
+           #$contacts_page .= display_multi_select( "period-select", @periods );
             $contacts_page .= $q->p('Select states:');
             $contacts_page .=
               "<select name='states' id='state-select' multiple='multiple'>\n";
