@@ -49,6 +49,11 @@ my @service_keys = (
 );
 my @command_keys = ( "arguments", "command", "vars" );
 
+my @contact_keys = (
+    "display_name", "email", "enable_notifications", "pager",
+    "states", "period", "vars"
+);
+
 my @host_keys = (
     "address6",       "address",   "display_name", "event_command",
     "action_url",     "notes_url", "vars",         "icon_image",
@@ -1693,10 +1698,19 @@ sub contacts {
         if ($contact and $attributes and $confirm eq "Confirm") {
 
         }
-        elsif ($contact) {
+        elsif ($contact and $attributes and $submit eq "Submit") {
             $contacts_page .=
                 display_generic_confirmation( $c, $contact, "contacts",
                     $attributes );
+        }
+        elsif ($contact) {
+            my %hidden = (
+                "page_type" => "contacts",
+                "contact"   => $contact
+            );
+            my $endpoint = "objects/contacts/$contact";
+            $host_page .=
+                display_modify_textbox( $c, \%hidden, $endpoint, @contact_keys );
         }
         else {
             $contacts_page .= $q->p("Select contact to edit:");
