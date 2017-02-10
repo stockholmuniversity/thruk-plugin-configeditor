@@ -1666,6 +1666,7 @@ sub contacts {
               display_delete_confirmation( 'contact', 'contacts', @contacts );
         }
         else {
+            $contacts_page .= $q->p("Select contact(s) to delete:");
             $contacts_page .= $q->start_form(
                 -method => $METHOD,
                 -action => "api_conf.cgi"
@@ -1687,8 +1688,34 @@ sub contacts {
               display_multi_select( 'contact-select', @contact_arr );
         }
 
+
     }
     elsif ( $mode eq "modify" ) {
+        if ($contact and $attributes and $confirm eq "Confirm") {
+
+        } elsif ($contact)
+        $contacts_page .= display_generic_confirmation( $c, $contact, "contacts",
+            $attributes );
+    } else {
+        $contacts_page .= $q->p("Select contact to edit:");
+        $contacts_page .= $q->start_form(
+            -method => $METHOD,
+            -action => "api_conf.cgi"
+        );
+        $contacts_page .=
+            "<select name='contact' id='contact-select'>\n";
+        for my $co (@contact_arr) {
+            $contacts_page .= "<option value=\"$co\">$co</option>\n";
+        }
+        $contacts_page .= "</select>\n";
+        $contacts_page .= $q->hidden( 'page_type', "contacts" );
+        $contacts_page .= $q->hidden( 'mode', "modify" );
+        $contacts_page .= $q->submit(
+            -name  => 'submit',
+            -value => 'Submit'
+        );
+        $contacts_page .= $q->end_form;
+    }
 
     }
     else {
