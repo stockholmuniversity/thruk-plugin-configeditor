@@ -1700,7 +1700,7 @@ sub contacts {
         }
         elsif ($contact and $attributes and $submit eq "Submit") {
             $contacts_page .=
-                display_generic_confirmation( $c, $contact, "contacts",
+                display_generic_confirmation( $c, $mode, $contact, "contacts",
                     $attributes );
         }
         elsif ($contact) {
@@ -1708,8 +1708,8 @@ sub contacts {
                 "page_type" => "contacts",
                 "contact"   => $contact
             );
-            my $endpoint = "objects/contacts/$contact";
-            $host_page .=
+            my $endpoint = "objects/users/$contact";
+            $contacts_page .=
                 display_modify_textbox( $c, \%hidden, $endpoint, @contact_keys );
         }
         else {
