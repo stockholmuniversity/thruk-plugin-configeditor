@@ -58,8 +58,7 @@ my @hostgroup_keys = ();
 my @hostescalation_keys = ();
 my @hostdependency_keys = ();
 my @servicedependency_keys = ();
-my @serviceescalation_keys
-();
+my @serviceescalation_keys = ();
 my @service_keys = (
     "vars",          "action_url",
     "check_command", "check_interval",
@@ -727,10 +726,11 @@ sub display_single_host_selection {
 sub display_download_button {
     my ( $c, $endpoint, $page_type ) = @_;
     my $json = get_json( $c, $endpoint, get_keys( $page_type, "true" ) );
-
-    my $html = '<script type="text/javascript">function download(text) {
+    my $html = '<button type="button" id="dwlbutton" value="download" >Export object</button>';
+    $html .= '<script type="text/javascript">function download() {
   var element = document.createElement("a");
-  element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
+  var text = ' . $json . ';
+  element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(text, "", 2)));
   element.setAttribute("download", "object.json");
 
   element.style.display = "none";
@@ -739,12 +739,10 @@ sub display_download_button {
   element.click();
 
   document.body.removeChild(element);
-}</script>';
+}
+document.getElementById ("dwlbutton").addEventListener ("click", download, false);
+</script>';
 
-    $html .= '<form onsubmit="download(this["text"].value)" method="post">';
-    $html .= '<input type="hidden" name="text" value=\''.$json.'\'>';
-    $html .= '<input type="submit" value="Export object">';
-    $html .= '</form>';
 
     return $html;
 
@@ -1177,7 +1175,7 @@ sub hosts {
             );
             my $endpoint = "objects/hosts/$host";
             $host_page .=
-                display_modify_textbox( $c, \%hidden, $endpoint, $page_type );
+                display_modify_textbox( $c, \%hidden, $endpoint, "hosts" );
 
         }
 
@@ -1621,7 +1619,7 @@ sub services {
             );
             $service_page .=
               display_modify_textbox( $c, \%hidden,
-                  "objects/services/$host!$servicename", $page_type );
+                  "objects/services/$host!$servicename", "services" );
         }
         elsif ($host) {
             $service_page .= display_service_selection( $c, $mode, $host );
@@ -1887,7 +1885,7 @@ sub contacts {
             );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
-                display_modify_textbox( $c, \%hidden, $endpoint, $page_type );
+                display_modify_textbox( $c, \%hidden, $endpoint, "contacts" );
         }
 
         # This is selection
@@ -2120,7 +2118,7 @@ sub commands {
             my $endpoint = "objects/checkcommands/$command";
 
             $command_page =
-                display_modify_textbox( $c, \%hidden, $endpoint, $page_type );
+                display_modify_textbox( $c, \%hidden, $endpoint, "commands" );
         }
         else {
             $command_page = display_command_selection( $c, $mode );
