@@ -726,7 +726,7 @@ sub display_single_host_selection {
 sub display_download_button {
     my ( $c, $endpoint, $page_type ) = @_;
     my $json = get_json( $c, $endpoint, get_keys( $page_type, "true" ) );
-    my $html = '<button type="button" id="dwlbutton" value="download" >Export object</button>';
+    my $html = '<button type="button" id="dwlbutton" >Export object</button>';
     $html .= '<script type="text/javascript">function download() {
   var element = document.createElement("a");
   var text = ' . $json . ';
