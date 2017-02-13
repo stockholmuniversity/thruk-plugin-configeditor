@@ -38,8 +38,28 @@ use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
 #my $METHOD = "GET";
-my $METHOD       = "POST";
+my $METHOD = "POST";
 
+my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
+
+my @contact_keys = (
+    "display_name", "email", "enable_notifications", "pager",
+    "states", "period", "vars"
+);
+
+my @contactgroup_keys = ();
+my @host_keys = (
+    "address6", "address", "check_command", "display_name",
+    "event_command", "action_url", "notes_url", "vars",
+    "icon_image", "icon_image_alt", "check_interval"
+);
+
+my @hostgroup_keys = ();
+my @hostescalation_keys = ();
+my @hostdependency_keys = ();
+my @servicedependency_keys = ();
+my @serviceescalation_keys
+();
 my @service_keys = (
     "vars",          "action_url",
     "check_command", "check_interval",
@@ -47,18 +67,46 @@ my @service_keys = (
     "event_command", "max_check_attempts",
     "retry_interval"
 );
-my @command_keys = ( "arguments", "command", "vars" );
+my @servicegroup_keys = ();
+my @timeperiod_keys = ();
 
-my @contact_keys = (
-    "display_name", "email", "enable_notifications", "pager",
-    "states", "period", "vars"
-);
+my @command_dl_keys = @command_keys;
+my @contact_dl_keys = @contact_keys;
+my @contactgroup_dl_keys = @contactgroup_keys;
+my @host_dl_keys = @host_keys;
+my @hostdependency_dl_keys = @hostdependency_keys;
+my @hostescalation_dl_keys = @hostescalation_keys;
+my @hostgroup_dl_keys = @hostgroup_keys;
+my @service_dl_keys = @service_keys;
+my @servicedependency_dl_keys = @servicedependency_keys;
+my @serviceescalation_dl_keys = @serviceescalation_keys;
+my @servicegroup_dl_keys = @servicegroup_keys;
+my @timeperiod_dl_keys = @timeperiod_keys;
 
-my @host_keys = (
-    "address6",       "address",   "display_name", "event_command",
-    "action_url",     "notes_url", "vars",         "icon_image",
-    "icon_image_alt", "check_interval"
-);
+push @command_dl_keys, ( "templates", "paused", "zone" );
+push @contact_dl_keys, ( "groups", "templates", "paused", "zone" );
+push @host_dl_keys,
+    (
+        "active", "check_period",
+        "check_timeout", "enable_active_checks",
+        "enable_event_handler", "enable_flapping",
+        "enable_notifications", "enable_passive_checks",
+        "enable_perfdata", "groups",
+        "notes", "paused",
+        "retry_interval", "templates",
+        "zone"
+    );
+push @service_dl_keys,
+    (
+        "check_period", "check_timeout",
+        "enable_active_checks", "enable_event_handler",
+        "enable_flapping", "enable_notifications",
+        "enable_passive_checks", "enable_perfdata",
+        "groups", "icon_image",
+        "icon_image_alt", "notes",
+        "paused", "templates",
+        "zone"
+    );
 
 =head2 api_call
 
@@ -419,10 +467,10 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 =cut
 
 sub display_modify_textbox {
-    my ( $c, $hidden, $endpoint, @keys ) = @_;
+    my ( $c, $hidden, $endpoint, $page_type ) = @_;
     my $q = CGI->new;
+    my @keys = get_keys($page_type);
 
-    #my $json_text = encode_entities(get_json( $c, $endpoint, @keys ));
     my $json_text = get_json( $c, $endpoint, @keys );
     my $rows = () = $json_text =~ /\n/g;
     my $cols = 0;
@@ -437,7 +485,6 @@ sub display_modify_textbox {
 
     # Pretty print
     $json_text =~ s/ /&nbsp;/g;
-    print "Printing json: " . $json_text;
     my $textbox;
     $textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
     $textbox .= $q->start_form(
@@ -460,6 +507,7 @@ sub display_modify_textbox {
         -value => 'Submit'
     );
     $textbox .= $q->end_form;
+    $textbox .= display_download_button( $c, $endpoint, $page_type );
     return decode_entities($textbox);
 }
 
@@ -676,6 +724,32 @@ sub display_single_host_selection {
     return $service_form;
 }
 
+sub display_download_button {
+    my ( $c, $endpoint, $page_type ) = @_;
+    my $json = get_json( $c, $endpoint, get_keys( $page_type, "true" ) );
+
+    my $html = '<script type="text/javascript">function download(text) {
+  var element = document.createElement("a");
+  element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
+  element.setAttribute("download", "object.json");
+
+  element.style.display = "none";
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}</script>';
+
+    $html .= '<form onsubmit="download(this["text"].value)" method="post">';
+    $html .= '<input type="hidden" name="text" value=\''.$json.'\'>';
+    $html .= '<input type="submit" value="Export object">';
+    $html .= '</form>';
+
+    return $html;
+
+}
+
 =head2 get_json
 This function gets the editable json of a configuration object
 =head3 Parameters
@@ -697,6 +771,75 @@ sub get_json {
     my $json = JSON->new;
     $json->pretty->canonical(1);
     return $json->pretty->encode( \%to_json );
+}
+
+sub get_keys {
+    my ( $page_type, $dl ) = @_;
+    my @keys;
+    my @dl_keys;
+    if ($page_type eq "commands") {
+        @keys = @command_keys;
+        @dl_keys = @command_dl_keys;
+    }
+    elsif ($page_type eq "contactgroups") {
+        @keys = @contactgroup_keys;
+        @dl_keys = @contactgroup_dl_keys;
+    }
+    elsif ($page_type eq "contacts") {
+        @keys = @contact_keys;
+        @dl_keys = @contact_dl_keys;
+    }
+    elsif ($page_type eq "hostdependencies") {
+        @keys = @hostdependency_keys;
+        @dl_keys = @hostdependency_dl_keys;
+    }
+    elsif ($page_type eq "hostescalations") {
+        @keys = @hostescalation_keys;
+        @dl_keys = @hostescalation_dl_keys;
+
+    }
+    elsif ($page_type eq "hostgroups") {
+        @keys = @hostgroup_keys;
+        @dl_keys = @hostgroup_dl_keys;
+
+    }
+    elsif ($page_type eq "hosts") {
+        @keys = @host_keys;
+        @dl_keys = @host_dl_keys;
+
+    }
+    elsif ($page_type eq "servicedependencies") {
+
+        @keys = @servicedependency_keys;
+        @dl_keys = @servicedependency_dl_keys;
+    }
+    elsif ($page_type eq "serviceescalations") {
+
+        @keys = @serviceescalation_keys;
+        @dl_keys = @serviceescalation_dl_keys;
+    }
+    elsif ($page_type eq "servicegroups") {
+
+        @keys = @servicegroup_keys;
+        @dl_keys = @servicegroup_dl_keys;
+    }
+    elsif ($page_type eq "services") {
+
+        @keys = @service_keys;
+        @dl_keys = @service_dl_keys;
+    }
+
+    elsif ($page_type eq "timeperiods") {
+        @keys = @timeperiod_keys;
+        @dl_keys = @timeperiod_dl_keys;
+
+    }
+    if ($dl) {
+        return @dl_keys;
+    }
+    else {
+        return @keys;
+    }
 }
 
 =head2 selector
@@ -1034,7 +1177,7 @@ sub hosts {
             );
             my $endpoint = "objects/hosts/$host";
             $host_page .=
-              display_modify_textbox( $c, \%hidden, $endpoint, @host_keys );
+                display_modify_textbox( $c, \%hidden, $endpoint, $page_type );
 
         }
 
@@ -1478,8 +1621,7 @@ sub services {
             );
             $service_page .=
               display_modify_textbox( $c, \%hidden,
-                "objects/services/$host!$servicename",
-                @service_keys );
+                  "objects/services/$host!$servicename", $page_type );
         }
         elsif ($host) {
             $service_page .= display_service_selection( $c, $mode, $host );
@@ -1745,7 +1887,7 @@ sub contacts {
             );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
-                display_modify_textbox( $c, \%hidden, $endpoint, @contact_keys );
+                display_modify_textbox( $c, \%hidden, $endpoint, $page_type );
         }
 
         # This is selection
@@ -1978,7 +2120,7 @@ sub commands {
             my $endpoint = "objects/checkcommands/$command";
 
             $command_page =
-              display_modify_textbox( $c, \%hidden, $endpoint, @command_keys );
+                display_modify_textbox( $c, \%hidden, $endpoint, $page_type );
         }
         else {
             $command_page = display_command_selection( $c, $mode );
