@@ -420,8 +420,10 @@ sub display_generic_confirmation {
     my ( $c, $mode, $name, $page_type, $attributes ) = @_;
     my $type = $page_type;
     $type =~ s/s$//;
+    my $nice_name = $name;
+    $nace_name =~ s/_/ /g;
     my $generic_form;
-    $generic_form .= $q->p("Are you sure you want to $mode $name?<br/>");
+    $generic_form .= $q->p("Are you sure you want to $mode $nice_name?<br/>");
     if ($attributes) {
         $generic_form .= $q->p("Attributes are: <br/>$attributes<br/>");
     }
@@ -1939,7 +1941,7 @@ sub contact_groups {
 
             $attributes = to_json( \%attrs );
             $contactgroups_page .=
-                display_generic_confirmation( $c, $mode, "contact group",
+                display_generic_confirmation( $c, $mode, "contact_group",
                     "contactgroups", $attributes );
 
         }
