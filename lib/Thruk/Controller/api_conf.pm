@@ -1903,11 +1903,55 @@ TODO: Implement this
 sub contact_groups {
 
     my ($c) = @_;
+
+    my $q = CGI->new;
+
     my $params = $c->req->parameters;
+
+    my $attributes = $params->{'attributes'};
+    my $confirm = $params->{'confirm'};
+    my $contact_group = $params->{'contact_group'};
+    my $display_name = $params->{'display_name'};
     my $mode = $params->{'mode'};
+    my $submit = $params->{'submit'};
+
+    my @temp_arr;
+    for my $hashref (values $c->{'db'}->get_contactgroups()) {
+        push @temp_arr, $hashref->{'name'};
+    }
+    my @contactgroups_arr = sort @temp_arr;
+
     my $contactgroups_page =
         '<div class="reportSelectTitle" align="center">Contact Groups</div>';
+
     if ($mode eq "create") {
+        if ($contact_group and $attributes and $confirm eq "Confirm") {
+
+        }
+        elsif ($contact_group and $attributes and $submit eq "Submit") {
+
+        }
+        elsif ($contact_group) {
+            $contactgroups_page .= $q->start_form(
+                -method => $METHOD,
+                -action => "api_conf.cgi"
+            );
+            $contactgroups_page .= $q->p("Enter contact group name:");
+            $contactgroups_page .= $q->textfield( 'contact_group', '', 50, 80 );
+            $contactgroups_page .= $q->p("Enter contact group display name:");
+            $contactgroups_page .= $q->textfield( 'display_name', '', 50, 80 );
+            $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
+            $contactgroups_page .= $q->hidden( 'mode', "create" );
+            $contactgroups_page .= '<br/>';
+            $contactgroups_page .= $q->submit(
+                -name  => 'submit',
+                -value => 'Submit'
+            );
+            $contactgroups_page .= $q->end_form;
+        }
+        else {
+
+        }
 
     }
     elsif ($mode eq "delete") {
