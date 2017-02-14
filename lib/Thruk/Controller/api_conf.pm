@@ -1913,7 +1913,7 @@ sub contact_groups {
 
     my $attributes = $params->{'attributes'};
     my $confirm = $params->{'confirm'};
-    my $contactgroup = $params->{'contact_group'};
+    my $contactgroup = $params->{'contactgroup'};
     my $display_name = $params->{'display_name'};
     my $mode = $params->{'mode'};
     my $submit = $params->{'submit'};
