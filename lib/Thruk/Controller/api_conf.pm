@@ -421,9 +421,10 @@ sub display_generic_confirmation {
     my $type = $page_type;
     $type =~ s/s$//;
     my $nice_name = $name;
-    $nace_name =~ s/_/ /g;
+    $nice_name =~ s/_/ /g;
     my $generic_form;
     $generic_form .= $q->p("Are you sure you want to $mode $nice_name?<br/>");
+
     if ($attributes) {
         $generic_form .= $q->p("Attributes are: <br/>$attributes<br/>");
     }
@@ -1912,7 +1913,7 @@ sub contact_groups {
 
     my $attributes = $params->{'attributes'};
     my $confirm = $params->{'confirm'};
-    my $contact_group = $params->{'contact_group'};
+    my $contactgroup = $params->{'contact_group'};
     my $display_name = $params->{'display_name'};
     my $mode = $params->{'mode'};
     my $submit = $params->{'submit'};
@@ -1929,19 +1930,19 @@ sub contact_groups {
     if ($mode eq "create") {
 
         # This is api call
-        if ($contact_group and $attributes and $confirm eq "Confirm") {
+        if ($contactgroup and $attributes and $confirm eq "Confirm") {
 
         }
 
         # This is confirmation
-        elsif ($contact_group) {
+        elsif ($contactgroup) {
             my %tmp = ( 'display_name' => $display_name, );
 
             my %attrs = ( 'attrs' => \%tmp );
 
             $attributes = to_json( \%attrs );
             $contactgroups_page .=
-                display_generic_confirmation( $c, $mode, "contact_group",
+                display_generic_confirmation( $c, $mode, $contactgroup,
                     "contactgroups", $attributes );
 
         }
@@ -1953,7 +1954,7 @@ sub contact_groups {
                 -action => "api_conf.cgi"
             );
             $contactgroups_page .= $q->p("Enter contact group name:");
-            $contactgroups_page .= $q->textfield( 'contact_group', '', 50, 80 );
+            $contactgroups_page .= $q->textfield( 'contactgroup', '', 50, 80 );
             $contactgroups_page .= $q->p("Enter contact group display name:");
             $contactgroups_page .= $q->textfield( 'display_name', '', 50, 80 );
             $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
