@@ -37,8 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
-my $METHOD = "POST";
+my $METHOD = "GET";
+
+#my $METHOD = "POST";
 
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
@@ -47,7 +48,7 @@ my @contact_keys = (
     "states", "period", "vars"
 );
 
-my @contactgroup_keys = ();
+my @contactgroup_keys = ( "display_name", "vars" );
 my @host_keys = (
     "address6", "address", "check_command", "display_name",
     "event_command", "action_url", "notes_url", "vars",
@@ -84,6 +85,7 @@ my @timeperiod_dl_keys = @timeperiod_keys;
 
 push @command_dl_keys, ( "templates", "paused", "zone" );
 push @contact_dl_keys, ( "groups", "templates", "paused", "zone" );
+push @contactgroup_dl_keys, ( "groups", "templates", "paused", "zone" );
 push @host_dl_keys,
     (
         "active", "check_period",
@@ -328,10 +330,6 @@ page_type
 sub display_create_delete_modify_dialog {
     my ($page_type) = @_;
 
-    # Show modify option for only these pagetypes
-    #	my @display_modify_arr = ("hostgroups");
-    my @display_modify_arr = ( "commands", "contacts", "hosts", "services" );
-
     # A cgi object to help with some html creation
     my $q    = CGI->new;
     my $page = $q->p('What do you want to do?');
@@ -342,9 +340,7 @@ sub display_create_delete_modify_dialog {
     $page .= '<select name="mode">';
     $page .= "<option value=\"create\">Create</option>";
     $page .= "<option value=\"delete\">Delete</option>";
-    if ( grep { $_ eq $page_type } @display_modify_arr ) {
-        $page .= "<option value=\"modify\">Modify</option>";
-    }
+    $page .= "<option value=\"modify\">Modify</option>";
     $page .= '</select">';
     $page .= $q->hidden( 'page_type', "$page_type" );
     $page .= $q->submit(
@@ -707,12 +703,8 @@ sub display_single_host_selection {
         -method => $METHOD,
         -action => "api_conf.cgi"
     );
-    $service_form .= '<select name="host">';
-    foreach my $service_host ( sort keys %services ) {
-        $service_form .=
-          "<option value=\"$service_host\">$service_host</option>";
-    }
-    $service_form .= '</select">';
+    $service_form .=
+        display_select( "host", "host-select", "", sort keys %services );
     $service_form .= $q->hidden( 'page_type', $page_type );
     $service_form .= $q->hidden( 'mode', $mode );
     $service_form .= $q->submit(
@@ -721,6 +713,23 @@ sub display_single_host_selection {
     );
     $service_form .= $q->end_form;
     return $service_form;
+}
+
+sub display_select {
+    my ( $name, $id, $multiple, @arr ) = @_;
+    my $mult = "";
+    my @items = sort @arr;
+    if ($multiple) {
+        $mult = "multiple='multiple'";
+    }
+    my $select .= "<select name='$name' id='$id' $mult>\n";
+    for my $elem (@items) {
+        $select .= "<option value=\"$elem\">$elem</option>\n";
+    }
+    $select .= "</select>\n";
+
+    return $select;
+
 }
 
 sub display_download_button {
@@ -742,7 +751,6 @@ sub display_download_button {
 }
 document.getElementById ("dwlbutton").addEventListener ("click", download, false);
 </script>';
-
 
     return $html;
 
@@ -853,21 +861,19 @@ sub selector {
 
     # These are the different kinds of objects we can manipulate
     my %pagetypes = (
-        'hosts' => 'Hosts',
+        'contacts'      => 'Contacts',
+        'contactgroups' => 'Contact Groups',
+        'commands'      => 'Commands',
+        'hosts'         => 'Hosts',
+        'services'      => 'Services',
 
     #	'hostdependencies' => 'Host Dependencies',
     #	'hostescalations' => 'Host Escalations',
     #	'hostgroups' => 'Host Groups', # Create and delete is implemented for this
-        'services' => 'Services',
-
         #	'servicegroups' => 'Service Groups',
         #	'servicedependencies' => 'Service Dependencies',
         #	'serviceescalations' => 'Service Escalations',
-        'contacts' => 'Contacts',
-
-        #	'contactgroups' => 'Contact Groups',
         #	'timeperiods' => 'Timeperiods',
-        'commands' => 'Commands',
     );
 
     # This is where you land if you are not in a specific page_type allready
@@ -997,12 +1003,8 @@ sub hosts {
                 -method => $METHOD,
                 -action => "api_conf.cgi"
             );
-            $host_page .=
-              "<select name='host' id='host-select' multiple='multiple'>\n";
-            for my $ho (@host_arr) {
-                $host_page .= "<option value=\"$ho\">$ho</option>\n";
-            }
-            $host_page .= "</select>\n";
+            $host_page =
+                display_select( "host", "host-select", "true", @host_arr );
             $host_page .= $q->hidden( 'page_type', "hosts" );
             $host_page .= $q->hidden( 'mode', "delete" );
             $host_page .= $q->submit(
@@ -1765,38 +1767,19 @@ sub contacts {
             $contacts_page .= $q->textfield( 'email', '', 50, 80 );
             $contacts_page .= $q->p('Select user groups:');
             $contacts_page .=
-              "<select name='groups' id='group-select' multiple='multiple'>\n";
-
-            for my $group (@groups) {
-                $contacts_page .= "<option value=\"$group\">$group</option>\n";
-            }
-            $contacts_page .= "</select>\n";
+                display_select( "groups", "group-select", "true", @groups );
             $contacts_page .= display_multi_select( "group-select", @groups );
             $contacts_page .= $q->p('Select timeperiods:');
-            $contacts_page .= "<select name='period' id='period-select'>\n";
-            for my $period (@periods) {
-                $contacts_page .=
-                  "<option value=\"$period\">$period</option>\n";
-            }
-            $contacts_page .= "</select>\n";
-
+            $contacts_page .=
+                display_select( "period", "period-select", "", @periods );
             $contacts_page .= $q->p('Select states:');
             $contacts_page .=
-              "<select name='states' id='state-select' multiple='multiple'>\n";
-            for my $state (@states) {
-                $contacts_page .= "<option value=\"$state\">$state</option>\n";
-            }
-            $contacts_page .= "</select>\n";
+                display_select( "states", "state-select", "true", @states );
             $contacts_page .= display_multi_select( "state-select", @states );
             $contacts_page .= $q->p('Select types:');
             $contacts_page .=
-              "<select name='types' id='type-select' multiple='multiple'>\n";
-            for my $type (@types) {
-                $contacts_page .= "<option value=\"$type\">$type</option>\n";
-            }
-            $contacts_page .= "</select>\n";
+                display_select( "types", "type-select", "true", @types );
             $contacts_page .= display_multi_select( "type-select", @types );
-
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
             $contacts_page .= $q->hidden( 'mode',      "create" );
             $contacts_page .= '<br/>';
@@ -1838,11 +1821,8 @@ sub contacts {
                 -action => "api_conf.cgi"
             );
             $contacts_page .=
-"<select name='contact' id='contact-select' multiple='multiple'>\n";
-            for my $co (@contact_arr) {
-                $contacts_page .= "<option value=\"$co\">$co</option>\n";
-            }
-            $contacts_page .= "</select>\n";
+                display_select( "contact", "contact-select", "true",
+                    @contact_arr );
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
             $contacts_page .= $q->hidden( 'mode', "delete" );
             $contacts_page .= $q->submit(
@@ -1895,11 +1875,8 @@ sub contacts {
                 -method => $METHOD,
                 -action => "api_conf.cgi"
             );
-            $contacts_page .= "<select name='contact' id='contact-select'>\n";
-            for my $co (@contact_arr) {
-                $contacts_page .= "<option value=\"$co\">$co</option>\n";
-            }
-            $contacts_page .= "</select>\n";
+            $contacts_page .=
+                display_select( "contact", "contact-select", "", @contact_arr );
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
             $contacts_page .= $q->hidden( 'mode', "modify" );
             $contacts_page .= $q->submit(
@@ -1924,7 +1901,27 @@ TODO: Implement this
 =cut
 
 sub contact_groups {
-    return "Contact Groups Placeholder";
+
+    my ($c) = @_;
+    my $params = $c->req->parameters;
+    my $mode = $params->{'mode'};
+    my $contactgroups_page =
+        '<div class="reportSelectTitle" align="center">Contact Groups</div>';
+    if ($mode eq "create") {
+
+    }
+    elsif ($mode eq "delete") {
+
+    }
+    elsif ($mode eq "modify") {
+
+    }
+    else {
+        $contactgroups_page .=
+            display_create_delete_modify_dialog("contactgroups");
+    }
+
+    return $contactgroups_page;
 }
 
 =head2 timeperiods
