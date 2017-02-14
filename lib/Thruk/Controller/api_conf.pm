@@ -1925,22 +1925,25 @@ sub contact_groups {
         '<div class="reportSelectTitle" align="center">Contact Groups</div>';
 
     if ($mode eq "create") {
+
         # This is api call
         if ($contact_group and $attributes and $confirm eq "Confirm") {
 
         }
+
         # This is confirmation
         elsif ($contact_group) {
-            my %tmp = (
-                'display_name' => $display_name,
-            );
+            my %tmp = ( 'display_name' => $display_name, );
 
             my %attrs = ( 'attrs' => \%tmp );
 
             $attributes = to_json( \%attrs );
-            $contactgroups_page .= display_generic_confirmation($c, $mode, "contact group", $attributes)
+            $contactgroups_page .=
+                display_generic_confirmation( $c, $mode, "contact group",
+                    "contactgroups", $attributes );
 
         }
+
         # This is creation dialog
         else {
             $contactgroups_page .= $q->start_form(
