@@ -1925,15 +1925,15 @@ sub contact_groups {
         '<div class="reportSelectTitle" align="center">Contact Groups</div>';
 
     if ($mode eq "create") {
+        # This is api call
         if ($contact_group and $attributes and $confirm eq "Confirm") {
 
         }
-        elsif ($contact_group and $attributes and $submit eq "Submit") {
-
-        }
+        # This is confirmation
         elsif ($contact_group) {
 
         }
+        # This is creation dialog
         else {
             $contactgroups_page .= $q->start_form(
                 -method => $METHOD,
