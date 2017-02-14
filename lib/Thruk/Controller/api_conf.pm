@@ -1931,6 +1931,14 @@ sub contact_groups {
         }
         # This is confirmation
         elsif ($contact_group) {
+            my %tmp = (
+                'display_name' => $display_name,
+            );
+
+            my %attrs = ( 'attrs' => \%tmp );
+
+            $attributes = to_json( \%attrs );
+            $contactgroups_page .= display_generic_confirmation($c, $mode, "contact group", $attributes)
 
         }
         # This is creation dialog
