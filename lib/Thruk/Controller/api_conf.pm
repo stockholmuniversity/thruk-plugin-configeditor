@@ -1932,6 +1932,9 @@ sub contact_groups {
 
         }
         elsif ($contact_group) {
+
+        }
+        else {
             $contactgroups_page .= $q->start_form(
                 -method => $METHOD,
                 -action => "api_conf.cgi"
@@ -1948,8 +1951,6 @@ sub contact_groups {
                 -value => 'Submit'
             );
             $contactgroups_page .= $q->end_form;
-        }
-        else {
 
         }
 
