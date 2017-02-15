@@ -2000,6 +2000,49 @@ sub contact_groups {
     }
     elsif ($mode eq "delete") {
 
+        # This is api call
+        if ($contactgroup and $confirm eq "Confirm") {
+            my $cascade = '';
+            if ($cascading eq "true") {
+                $cascade = '?cascade=1';
+            }
+            foreach my $grp (@groups) {
+                my @arr = api_call( $c->stash->{'confdir'},
+                    "DELETE", "objects/usergroups/$grp$cascade" );
+                $contactgroups_page .= display_api_response(@arr);
+            }
+            $contactgroups_page .=
+                display_back_button( $mode, 'contactgroups' );
+        }
+
+        # This is confirmation
+        elsif ($contactgroup) {
+            $contactgroups_page .=
+                display_delete_confirmation( 'contactgroup', 'contactgroups',
+                    @groups );
+        }
+
+        # This is selection
+        else {
+            $contactgroups_page .= $q->p("Select contactgroup(s) to delete:");
+            $contactgroups_page .= $q->start_form(
+                -method => $METHOD,
+                -action => "api_conf.cgi"
+            );
+            $contactgroups_page .=
+                display_select( "groups", "contactgroupt-select", "true",
+                    @contactgroup_arr );
+            $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
+            $contactgroups_page .= $q->hidden( 'mode', "delete" );
+            $contactgroups_page .= $q->submit(
+                -name  => 'submit',
+                -value => 'Submit'
+            );
+            $contactgroups_page .= $q->end_form;
+            $contactgroups_page .=
+                display_multi_select( 'contact-select', @contactgroupt_arr );
+        }
+
     }
     elsif ($mode eq "modify") {
 
