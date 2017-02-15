@@ -1950,7 +1950,7 @@ sub contact_groups {
         # This is confirmation
         elsif ($contactgroup) {
             my %tmp = ( 'display_name' => $display_name,
-                'groups'               => @groups);
+                'groups'               => \@groups);
 
             my %attrs = ( 'attrs' => \%tmp );
 
