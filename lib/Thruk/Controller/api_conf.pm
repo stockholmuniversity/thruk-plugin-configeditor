@@ -1918,6 +1918,19 @@ sub contact_groups {
     my $mode = $params->{'mode'};
     my $submit = $params->{'submit'};
 
+    my @groups = ();
+    my $group = '';
+    if (ref $params->{'groups'} eq 'ARRAY') {
+        foreach my $grp (values $params->{'groups'}) {
+            push @groups, $grp;
+        }
+        $group = $groups[0];
+    }
+    else {
+        $group = $params->{'groups'};
+        push @groups, $group;
+    }
+
     my @temp_arr;
     for my $hashref (values $c->{'db'}->get_contactgroups()) {
         push @temp_arr, $hashref->{'name'};
@@ -1936,7 +1949,8 @@ sub contact_groups {
 
         # This is confirmation
         elsif ($contactgroup) {
-            my %tmp = ( 'display_name' => $display_name, );
+            my %tmp = ( 'display_name' => $display_name,
+                'groups'               => @groups);
 
             my %attrs = ( 'attrs' => \%tmp );
 
@@ -1957,6 +1971,8 @@ sub contact_groups {
             $contactgroups_page .= $q->textfield( 'contactgroup', '', 50, 80 );
             $contactgroups_page .= $q->p("Enter contact group display name:");
             $contactgroups_page .= $q->textfield( 'display_name', '', 50, 80 );
+            $contactgroups_page .= $q->p("Enter groups for the group (optional):");
+            $contactgroups_page .= display_select("groups", "group-select", "true", @contactgroups_arr);
             $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
             $contactgroups_page .= $q->hidden( 'mode', "create" );
             $contactgroups_page .= '<br/>';
@@ -1965,6 +1981,7 @@ sub contact_groups {
                 -value => 'Submit'
             );
             $contactgroups_page .= $q->end_form;
+            $contactgroups_page .= display_multi_select("group-select", @contactgroups_arr);
 
         }
 
