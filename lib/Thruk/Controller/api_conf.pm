@@ -2049,7 +2049,54 @@ sub contact_groups {
 
     }
     elsif ($mode eq "modify") {
+        # This is api call
+        if ($contactgroup and $attributes and $confirm eq "Confirm") {
 
+            # Do api magic here
+            my $payload = uri_unescape($attributes);
+            my @arr = api_call(
+                $c->stash->{'confdir'}, "POST",
+                "objects/users/$contactgroup", $payload
+            );
+            $contactgroups_page .= display_api_response( @arr, $payload );
+            $contactgroups_page .= display_back_button( $mode, 'contactgroups' );
+        }
+
+        # This is confirmation
+        elsif ($contactgroup and $attributes and $submit eq "Submit") {
+            $contactgroups_page .=
+                display_generic_confirmation( $c, $mode, $contactgroup, "contactgroups",
+                    $attributes );
+        }
+
+        # This is editor
+        elsif ($contactgroup) {
+            my %hidden = (
+                "page_type"    => "contactgroups",
+                "contactgroup" => $contactgroup
+            );
+            my $endpoint = "objects/users/$contactgroup";
+            $contactgroups_page .=
+                display_modify_textbox( $c, \%hidden, $endpoint, "contactgroups" );
+        }
+
+        # This is selection
+        else {
+            $contactgroups_page .= $q->p("Select contact group to edit:");
+            $contactgroups_page .= $q->start_form(
+                -method => $METHOD,
+                -action => "api_conf.cgi"
+            );
+            $contactgroups_page .=
+                display_select( "contactgroup", "contactgroup-select", "", @contactgroup_arr );
+            $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
+            $contactgroups_page .= $q->hidden( 'mode', "modify" );
+            $contactgroups_page .= $q->submit(
+                -name  => 'submit',
+                -value => 'Submit'
+            );
+            $contactgroups_page .= $q->end_form;
+        }
     }
     else {
         $contactgroups_page .=
