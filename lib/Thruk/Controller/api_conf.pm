@@ -1912,6 +1912,7 @@ sub contact_groups {
     my $params = $c->req->parameters;
 
     my $attributes = $params->{'attributes'};
+    my $cascading = $params->{'cascading'};
     my $confirm = $params->{'confirm'};
     my $contactgroup = $params->{'contactgroup'};
     my $display_name = $params->{'display_name'};
@@ -1955,14 +1956,17 @@ sub contact_groups {
 
         # This is confirmation
         elsif ($contactgroup) {
-            my %tmp = (
-                'display_name' => $display_name,
-                'groups'       => \@groups
-            );
-
-            my %attrs = ( 'attrs' => \%tmp );
-
-            $attributes = to_json( \%attrs );
+            $attributes = '{ "attrs": { "display_name": "' . $display_name . '"';
+            unless( $group) {
+                $attributes .= '}}';
+            } else {
+                $attributes .= ', "groups": [';
+                foreach my $grp (@groups) {
+                    $attributes .= '"' . $grp . '", '
+                }
+                $attributes =~ s/, $//;
+                $attributes .= ']}}';
+            }
             $contactgroups_page .=
                 display_generic_confirmation( $c, $mode, $contactgroup,
                     "contactgroups", $attributes );
@@ -2001,7 +2005,7 @@ sub contact_groups {
     elsif ($mode eq "delete") {
 
         # This is api call
-        if ($contactgroup and $confirm eq "Confirm") {
+        if ($group and $confirm eq "Confirm") {
             my $cascade = '';
             if ($cascading eq "true") {
                 $cascade = '?cascade=1';
@@ -2016,9 +2020,9 @@ sub contact_groups {
         }
 
         # This is confirmation
-        elsif ($contactgroup) {
+        elsif ( $group ) {
             $contactgroups_page .=
-                display_delete_confirmation( 'contactgroup', 'contactgroups',
+                display_delete_confirmation( 'groups', 'contactgroups',
                     @groups );
         }
 
@@ -2030,8 +2034,8 @@ sub contact_groups {
                 -action => "api_conf.cgi"
             );
             $contactgroups_page .=
-                display_select( "groups", "contactgroupt-select", "true",
-                    @contactgroup_arr );
+                display_select( "groups", "group-select", "true",
+                    @contactgroups_arr );
             $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
             $contactgroups_page .= $q->hidden( 'mode', "delete" );
             $contactgroups_page .= $q->submit(
@@ -2040,7 +2044,7 @@ sub contact_groups {
             );
             $contactgroups_page .= $q->end_form;
             $contactgroups_page .=
-                display_multi_select( 'contact-select', @contactgroupt_arr );
+                display_multi_select( 'group-select', @contactgroups_arr );
         }
 
     }
