@@ -83,9 +83,9 @@ my @serviceescalation_dl_keys = @serviceescalation_keys;
 my @servicegroup_dl_keys = @servicegroup_keys;
 my @timeperiod_dl_keys = @timeperiod_keys;
 
-push @command_dl_keys, ( "templates", "paused", "zone" );
-push @contact_dl_keys, ( "groups", "templates", "paused", "zone" );
-push @contactgroup_dl_keys, ( "groups", "templates", "paused", "zone" );
+push @command_dl_keys, ( "templates", "zone" );
+push @contact_dl_keys, ( "groups", "templates", "zone" );
+push @contactgroup_dl_keys, ( "groups", "templates", "zone" );
 push @host_dl_keys,
     (
         "active", "check_period",
@@ -93,9 +93,8 @@ push @host_dl_keys,
         "enable_event_handler", "enable_flapping",
         "enable_notifications", "enable_passive_checks",
         "enable_perfdata", "groups",
-        "notes", "paused",
-        "retry_interval", "templates",
-        "zone"
+        "notes", "retry_interval", 
+        "templates", "zone"
     );
 push @service_dl_keys,
     (
@@ -105,8 +104,7 @@ push @service_dl_keys,
         "enable_passive_checks", "enable_perfdata",
         "groups", "icon_image",
         "icon_image_alt", "notes",
-        "paused", "templates",
-        "zone"
+        "templates", "zone"
     );
 
 =head2 api_call
@@ -2056,7 +2054,7 @@ sub contact_groups {
             my $payload = uri_unescape($attributes);
             my @arr = api_call(
                 $c->stash->{'confdir'}, "POST",
-                "objects/users/$contactgroup", $payload
+                "objects/usergroups/$contactgroup", $payload
             );
             $contactgroups_page .= display_api_response( @arr, $payload );
             $contactgroups_page .= display_back_button( $mode, 'contactgroups' );
@@ -2075,7 +2073,7 @@ sub contact_groups {
                 "page_type"    => "contactgroups",
                 "contactgroup" => $contactgroup
             );
-            my $endpoint = "objects/users/$contactgroup";
+            my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
                 display_modify_textbox( $c, \%hidden, $endpoint, "contactgroups" );
         }
@@ -2088,7 +2086,7 @@ sub contact_groups {
                 -action => "api_conf.cgi"
             );
             $contactgroups_page .=
-                display_select( "contactgroup", "contactgroup-select", "", @contactgroup_arr );
+                display_select( "contactgroup", "contactgroup-select", "", @contactgroups_arr );
             $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
             $contactgroups_page .= $q->hidden( 'mode', "modify" );
             $contactgroups_page .= $q->submit(
