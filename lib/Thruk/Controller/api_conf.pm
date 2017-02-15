@@ -93,7 +93,7 @@ push @host_dl_keys,
         "enable_event_handler", "enable_flapping",
         "enable_notifications", "enable_passive_checks",
         "enable_perfdata", "groups",
-        "notes", "retry_interval", 
+        "notes", "retry_interval",
         "templates", "zone"
     );
 push @service_dl_keys,
@@ -1954,13 +1954,15 @@ sub contact_groups {
 
         # This is confirmation
         elsif ($contactgroup) {
-            $attributes = '{ "attrs": { "display_name": "' . $display_name . '"';
-            unless( $group) {
+            $attributes =
+                '{ "attrs": { "display_name": "'.$display_name.'"';
+            unless ($group) {
                 $attributes .= '}}';
-            } else {
+            }
+            else {
                 $attributes .= ', "groups": [';
                 foreach my $grp (@groups) {
-                    $attributes .= '"' . $grp . '", '
+                    $attributes .= '"'.$grp.'", ';
                 }
                 $attributes =~ s/, $//;
                 $attributes .= ']}}';
@@ -2018,10 +2020,9 @@ sub contact_groups {
         }
 
         # This is confirmation
-        elsif ( $group ) {
+        elsif ($group) {
             $contactgroups_page .=
-                display_delete_confirmation( 'groups', 'contactgroups',
-                    @groups );
+                display_delete_confirmation( 'groups', 'contactgroups', @groups );
         }
 
         # This is selection
@@ -2047,6 +2048,7 @@ sub contact_groups {
 
     }
     elsif ($mode eq "modify") {
+
         # This is api call
         if ($contactgroup and $attributes and $confirm eq "Confirm") {
 
@@ -2057,14 +2059,15 @@ sub contact_groups {
                 "objects/usergroups/$contactgroup", $payload
             );
             $contactgroups_page .= display_api_response( @arr, $payload );
-            $contactgroups_page .= display_back_button( $mode, 'contactgroups' );
+            $contactgroups_page .=
+                display_back_button( $mode, 'contactgroups' );
         }
 
         # This is confirmation
         elsif ($contactgroup and $attributes and $submit eq "Submit") {
             $contactgroups_page .=
-                display_generic_confirmation( $c, $mode, $contactgroup, "contactgroups",
-                    $attributes );
+                display_generic_confirmation( $c, $mode, $contactgroup,
+                    "contactgroups", $attributes );
         }
 
         # This is editor
@@ -2075,7 +2078,8 @@ sub contact_groups {
             );
             my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
-                display_modify_textbox( $c, \%hidden, $endpoint, "contactgroups" );
+                display_modify_textbox( $c, \%hidden, $endpoint,
+                    "contactgroups" );
         }
 
         # This is selection
@@ -2086,7 +2090,8 @@ sub contact_groups {
                 -action => "api_conf.cgi"
             );
             $contactgroups_page .=
-                display_select( "contactgroup", "contactgroup-select", "", @contactgroups_arr );
+                display_select( "contactgroup", "contactgroup-select", "",
+                    @contactgroups_arr );
             $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
             $contactgroups_page .= $q->hidden( 'mode', "modify" );
             $contactgroups_page .= $q->submit(
