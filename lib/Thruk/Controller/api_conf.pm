@@ -88,7 +88,7 @@ push @contact_dl_keys, ( "groups", "templates", "zone" );
 push @contactgroup_dl_keys, ( "groups", "templates", "zone" );
 push @host_dl_keys,
     (
-        "active", "check_period",
+        "check_period",
         "check_timeout", "enable_active_checks",
         "enable_event_handler", "enable_flapping",
         "enable_notifications", "enable_passive_checks",
