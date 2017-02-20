@@ -1004,7 +1004,7 @@ sub hosts {
                 -method => $METHOD,
                 -action => "api_conf.cgi"
             );
-            $host_page =.
+            $host_page .=
                 display_select( "host", "host-select", "true", @host_arr );
             $host_page .= $q->hidden( 'page_type', "hosts" );
             $host_page .= $q->hidden( 'mode', "delete" );
