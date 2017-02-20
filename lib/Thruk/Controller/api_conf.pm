@@ -37,9 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
+my $METHOD = "GET";
 
-my $METHOD = "POST";
+#my $METHOD = "POST";
 
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
@@ -1004,7 +1004,7 @@ sub hosts {
                 -method => $METHOD,
                 -action => "api_conf.cgi"
             );
-            $host_page =
+            $host_page =.
                 display_select( "host", "host-select", "true", @host_arr );
             $host_page .= $q->hidden( 'page_type', "hosts" );
             $host_page .= $q->hidden( 'mode', "delete" );
