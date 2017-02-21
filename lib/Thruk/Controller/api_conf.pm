@@ -88,13 +88,13 @@ push @contact_dl_keys, ( "groups", "templates", "zone" );
 push @contactgroup_dl_keys, ( "groups", "templates", "zone" );
 push @host_dl_keys,
     (
-        "check_period",
-        "check_timeout", "enable_active_checks",
-        "enable_event_handler", "enable_flapping",
-        "enable_notifications", "enable_passive_checks",
-        "enable_perfdata", "groups",
-        "notes", "retry_interval",
-        "templates", "zone"
+        "check_period", "check_timeout",
+        "enable_active_checks", "enable_event_handler",
+        "enable_flapping", "enable_notifications",
+        "enable_passive_checks", "enable_perfdata",
+        "groups", "notes",
+        "retry_interval", "templates",
+        "zone"
     );
 push @service_dl_keys,
     (
@@ -617,6 +617,10 @@ sub display_service_confirmation {
         $service_form .= $q->hidden( 'attributes', $attributes );
     }
     $service_form .= $q->hidden( 'servicename', $servicename );
+    if ($mode eq "delete") {
+        $service_form .= $q->checkbox( 'cascading', 0, 'true',
+            'Use cascading delete - WARNING' );
+    }
     $service_form .= $q->submit(
         -name  => 'confirm',
         -value => 'Confirm'
@@ -1408,6 +1412,7 @@ sub services {
         push @hosts, $host;
     }
     my $attributes  = $params->{'attributes'};
+    my $cascading = $params->{'cascading'};
     my $check       = $params->{'check'};
     my $confirm     = $params->{'confirm'};
     my $displayname = $params->{'displayname'};
@@ -1454,8 +1459,12 @@ sub services {
             and $confirm eq "Confirm"
             and $servicename =~ m/.+/ )
         {
+            my $cascade = '';
+            if ($cascading eq "true") {
+                $cascade = '?cascade=1';
+            }
             my @arr = api_call( $c->stash->{'confdir'},
-                "DELETE", "objects/services/$host!$servicename" );
+                "DELETE", "objects/services/$host!$servicename$cascade" );
             $service_page .= display_api_response(@arr);
             $service_page .= display_back_button( $mode, 'services' );
 
