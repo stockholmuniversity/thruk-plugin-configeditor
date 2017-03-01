@@ -1696,6 +1696,22 @@ sub contacts {
     my $state_select = $params->{'states'};
     my $type_select  = $params->{'types'};
 
+    unless ( ref $params->{'groups'} eq 'ARRAY' ) {
+	my @arrr = ();
+	$arrr[0] = $params->{'groups'}; 
+        $group_select = \@arrr;
+    }
+    unless ( ref $params->{'states'} eq 'ARRAY' ) {
+	my @arrrr = ();
+	$arrrr[0] = $params->{'states'}; 
+        $state_select = \@arrrr;
+    }
+    unless ( ref $params->{'types'} eq 'ARRAY' ) {
+	my @arrrrr = ();
+	$arrrrr[0] = $params->{'types'}; 
+        $type_select = \@arrrrr;
+    }
+
     my @temp_arr;
     for my $hashref ( values $c->{'db'}->get_contacts() ) {
         push @temp_arr, $hashref->{'name'};
