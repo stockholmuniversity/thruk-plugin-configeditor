@@ -1568,7 +1568,7 @@ sub services {
               '<select name="host" id="host-select" multiple="multiple"">';
             for my $ho (@host_arr) {
                 my $selected = '';
-                if ( $host =~ m/$ho/ ) {
+                if ($host eq $ho) {
                     $selected = 'selected="selected" ';
                 }
                 $service_page .= "<option value=\"$ho\" $selected>$ho</option>";
@@ -1577,7 +1577,7 @@ sub services {
             $service_page .= display_multi_select( "host-select", @host_arr );
             $service_page .= $q->p('Select check command:');
             $service_page .= '<select name="check">';
-            foreach my $hash ( values $c->stash->{commands} ) {
+            foreach my $hash (sort values $c->stash->{commands}) {
                 my $name = $hash->{name};
                 $name =~ s/check_//g;
                 $service_page .=
@@ -1697,18 +1697,18 @@ sub contacts {
     my $type_select  = $params->{'types'};
 
     unless ( ref $params->{'groups'} eq 'ARRAY' ) {
-	my @arrr = ();
-	$arrr[0] = $params->{'groups'}; 
+        my @arrr = ();
+        $arrr[0] = $params->{'groups'};
         $group_select = \@arrr;
     }
     unless ( ref $params->{'states'} eq 'ARRAY' ) {
-	my @arrrr = ();
-	$arrrr[0] = $params->{'states'}; 
+        my @arrrr = ();
+        $arrrr[0] = $params->{'states'};
         $state_select = \@arrrr;
     }
     unless ( ref $params->{'types'} eq 'ARRAY' ) {
-	my @arrrrr = ();
-	$arrrrr[0] = $params->{'types'}; 
+        my @arrrrr = ();
+        $arrrrr[0] = $params->{'types'};
         $type_select = \@arrrrr;
     }
 
