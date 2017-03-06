@@ -398,6 +398,57 @@ sub display_delete_confirmation {
 
 }
 
+sub display_edit_textbox {
+    my ( $hidden, $page_type ) = @_;
+    my $q = CGI->new;
+    my @keys = get_keys($page_type, "true");
+
+    my %to_json;
+    foreach my $key (sort @keys) {
+        $to_json{"attrs"}{$key} = "";
+    }
+    my $json = JSON->new;
+    $json->pretty->canonical(1);
+
+    my $json_text = $json->pretty->encode( \%to_json );
+    my $rows = () = $json_text =~ /\n/g;
+    my $cols = 0;
+    open my $fh, '<', \$json_text or die $!;
+    while (<$fh>) {
+        my $len = length($_);
+        if ($len > $cols) {
+            $cols = $len;
+        }
+    }
+    close $fh or die $!;
+
+    # Pretty print
+    $json_text =~ s/ /&nbsp;/g;
+    my $textbox;
+    $textbox .= $q->p("Object editor");
+    $textbox .= $q->start_form(
+        -method => $METHOD,
+        -action => "api_conf.cgi"
+    );
+    foreach my $key (keys $hidden) {
+        $textbox .= $q->hidden( $key, $hidden->{"$key"} );
+    }
+    $textbox .= $q->hidden( 'mode', "create" );
+    $textbox .= $q->textarea(
+        -name    => "attributes",
+        -default => $json_text,
+        -rows    => $rows,
+        -columns => $cols
+    );
+    $textbox .= "<br/>";
+    $textbox .= $q->submit(
+        -name  => "submit",
+        -value => 'Submit'
+    );
+    $textbox .= $q->end_form;
+    return decode_entities($textbox);
+}
+
 =head2 display_generic_confirmation
 This function gets a confirmation dialog
 =head3 Parameters
@@ -2266,27 +2317,11 @@ sub commands {
             # This is main command creation dialog
         }
         else {
-            $command_page .= $q->start_form(
-                -method => $METHOD,
-                -action => "api_conf.cgi"
+            my %hidden = (
+                "page_type" => "commands",
+                "command"   => $command
             );
-            $command_page .= $q->p(
-"Enter command name (\"check_\" will be prepended automaticaly):"
-            );
-            $command_page .= $q->textfield( 'command', '', 50, 80 );
-            $command_page .= $q->p("Enter commandline to be executed:");
-            $command_page .= $q->textfield( 'commandline', '', 50, 80 );
-            $command_page .= $q->p(
-'Enter arguments (an optional json string e.g. {"--some_long_arg": { "value": "$a_macro$" }, "-s": {"value": "$another_macro$" }} ):'
-            );
-            $command_page .= $q->textarea( 'arguments', '', 20, 50 );
-            $command_page .= $q->hidden( 'page_type', "commands" );
-            $command_page .= $q->hidden( 'mode',      "create" );
-            $command_page .= $q->submit(
-                -name  => 'submit',
-                -value => 'Submit'
-            );
-            $command_page .= $q->end_form;
+            $command_page .= display_edit_textbox(\%hidden, "commands");
         }
 
     }
