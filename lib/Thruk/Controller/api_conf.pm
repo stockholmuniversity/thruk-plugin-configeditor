@@ -821,24 +821,34 @@ sub get_defaults {
 
     if ($page_type eq "commands") {
         $to_json{"attrs"}{"arguments"} = {
-        "--wps_id"      =>  {"order" => -2, "value" => '$wps_id$' },
-        "--wrapper_cmd" => {
-            "order" => - 1,
-            "value" => "/local/icinga2/PluginDir/check_su_example"
-        },
-        "-H"            => { "value" => "host.name"},
-        "-C"            => { "value" => "%%PASSWORD%%" },
-        "-w"            => { "value" => 2 },
-        "-c"            => { "value" => 3 }
-    }; 
-        $to_json{"attrs"}{"command"} = ["/local/wps/libexec/wrapper_su_wps"];
+            "--wps_id"      => { "order" => - 2, "value" => '$wps_id$' },
+            "--wrapper_cmd" => {
+                "order" => - 1,
+                "value" => "/local/icinga2/PluginDir/check_su_example"
+            },
+            "-H"            => { "value" => "host.name" },
+            "-C"            => { "value" => "%%PASSWORD%%" },
+            "-w"            => { "value" => 2 },
+            "-c"            => { "value" => 3 }
+        };
+        $to_json{"attrs"}{"command"} = [ "/local/wps/libexec/wrapper_su_wps" ];
         $to_json{"attrs"}{"templates"} = "plugin-check-command";
+        $to_json{"attrs"}{"enable_notifications"} =
+            bless( do { \( my $o = 1 ) }, 'JSON::XS::Boolean' );
 
     }
     elsif ($page_type eq "contactgroups") {
+        $to_json{"attrs"}{"display_name"} = "Example name";
 
     }
     elsif ($page_type eq "contacts") {
+        $to_json{"attrs"}{"display_name"} = "Example Name";
+        $to_json{"attrs"}{"email"} = 'example.name@su.se';
+        $to_json{"attrs"}{"pager"} = "4612345678";
+        $to_json{"attrs"}{"enable_notifications"} =
+            bless( do { \( my $o = 1 ) }, 'JSON::XS::Boolean' );
+        $to_json{"attrs"}{"groups"} = [ "Example group1", "Example groups2" ];
+        $to_json{"attrs"}{"period"} = "24/7";
 
     }
     elsif ($page_type eq "hostdependencies") {
