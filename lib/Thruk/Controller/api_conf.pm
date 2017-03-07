@@ -414,11 +414,28 @@ sub display_edit_textbox {
     close $fh or die $!;
 
     # We want some extra space for the editor window
-    $cols = $cols + 100;
+    $cols = $cols + 50;
 
     # Pretty print
     $json_text =~ s/ /&nbsp;/g;
-    my $textbox;
+    my $textbox = '<script type="text/javascript">
+function isJSON(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
+function validateJSON()
+{
+  if (! isJSON(document.getElementById("JSONText").value)))
+  {
+     alert("Invalid JSON! Please fix.");
+  }
+}
+</script>';
     $textbox .= $q->p("Object editor");
     $textbox .= $q->start_form(
         -method => $METHOD,
@@ -432,12 +449,14 @@ sub display_edit_textbox {
         -name    => "attributes",
         -default => $json_text,
         -rows    => $rows,
-        -columns => $cols
+        -columns => $cols,
+        -id      => "JSONText"
     );
     $textbox .= "<br/>";
     $textbox .= $q->submit(
-        -name  => "submit",
-        -value => 'Submit'
+        -name     => "submit",
+        -value    => 'Submit',
+        -onSubmit => 'validateJSON()'
     );
     $textbox .= $q->end_form;
     return decode_entities($textbox);
@@ -810,7 +829,7 @@ sub get_defaults {
 
     my ($page_type) = @_;
 
-    my @keys = get_keys( $page_type, "true" );
+    my @keys = get_keys($page_type);
 
     my %to_json;
 
@@ -833,9 +852,6 @@ sub get_defaults {
         };
         $to_json{"attrs"}{"command"} = [ "/local/wps/libexec/wrapper_su_wps" ];
         $to_json{"attrs"}{"templates"} = "plugin-check-command";
-        $to_json{"attrs"}{"enable_notifications"} =
-            bless( do { \( my $o = 1 ) }, 'JSON::XS::Boolean' );
-
     }
     elsif ($page_type eq "contactgroups") {
         $to_json{"attrs"}{"display_name"} = "Example name";
@@ -848,7 +864,8 @@ sub get_defaults {
         $to_json{"attrs"}{"enable_notifications"} =
             bless( do { \( my $o = 1 ) }, 'JSON::XS::Boolean' );
         $to_json{"attrs"}{"groups"} = [ "Example group1", "Example groups2" ];
-        $to_json{"attrs"}{"period"} = "24/7";
+        $to_json{"attrs"}{"period"} = "24x7";
+        $to_json{"attrs"}{"states"} = [ "CRITICAL", "UNKNOWN" ];
 
     }
     elsif ($page_type eq "hostdependencies") {
@@ -861,6 +878,22 @@ sub get_defaults {
 
     }
     elsif ($page_type eq "hosts") {
+        $to_json{"attrs"}{"address"} = "127.0.0.1";
+        $to_json{"attrs"}{"check_command"} = "hostalive";
+        $to_json{"attrs"}{"check_interval"} = 60;
+        $to_json{"attrs"}{"check_period"} = "24x7";
+        $to_json{"attrs"}{"display_name"} = "example-prod-srv01.it.su.se";
+        $to_json{"attrs"}{"icon_image"} = "base/linux40.png";
+        $to_json{"attrs"}{"icon_image_alt"} = "Linux";
+        $to_json{"attrs"}{"templates"} = [ "linux-host" ];
+        $to_json{"attrs"}{"vars"} = {
+            "graphite_prefix" => "server",
+            "os"              => "linux",
+            "ticket_queue"    => "linfra"
+        };
+        $to_json{"attrs"}{"zone"} = "master";
+        $to_json{"attrs"}{"groups"} = [ "hdbe", "surveillance" ];
+        $to_json{"attrs"}{"retry_interval"} = 30;
 
     }
     elsif ($page_type eq "servicedependencies") {
@@ -873,12 +906,18 @@ sub get_defaults {
 
     }
     elsif ($page_type eq "services") {
+        $to_json{"attrs"}{"check_command"} = "su_example";
+        $to_json{"attrs"}{"check_interval"} = 300;
+        $to_json{"attrs"}{"check_period"} = "24x7";
+        $to_json{"attrs"}{"display_name"} = "Example Name";
 
     }
     elsif ($page_type eq "timeperiods") {
 
     }
-    $to_json{"attrs"}{"vars"} = {};
+    unless ($to_json{"attrs"}{"vars"}) {
+        $to_json{"attrs"}{"vars"} = { };
+    }
     my $json = JSON->new;
     $json->pretty->canonical(1);
 
