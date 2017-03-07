@@ -813,23 +813,25 @@ sub get_defaults {
     my @keys = get_keys( $page_type, "true" );
 
     my %to_json;
+    my %arguments = (
+        "--wps_id"      => ( "order" => - 2, "value" => '$wps_id$' ),
+        "--wrapper_cmd" => (
+            "order" => - 1,
+            "value" => "/local/icinga2/PluginDir/check_su_example"
+        ),
+        "-C"            => ( "value" => "%%PASSWORD%%" ),
+        "-H"            => ("host.name"),
+        "-w"            => ( "value" => 2 ),
+        "-c"            => ( "value" => 3 )
+    );
+    my @command = ("/local/wps/libexec/wrapper_su_wps");
     foreach my $key (sort @keys) {
         $to_json{"attrs"}{$key} = "";
     }
 
     if ($page_type eq "commands") {
-        $to_json{"attrs"}{"arguments"} = (
-            "--wps_id"      => ( "order" => - 2, "value" => '$wps_id$' ),
-            "--wrapper_cmd" => (
-                "order" => - 1,
-                "value" => "/local/icinga2/PluginDir/check_su_example"
-            ),
-            "-C"            => ( "value" => "%%PASSWORD%%" ),
-            "-H"            => ("host.name"),
-            "-w"            => ( "value" => 2 ),
-            "-c"            => ( "value" => 3 )
-        );
-        $to_json{"attrs"}{"command"} = ("/local/wps/libexec/wrapper_su_wps");
+        $to_json{"attrs"}{"arguments"} = \%arguments;
+        $to_json{"attrs"}{"command"} = \@command;
 
     }
     elsif ($page_type eq "contactgroups") {
