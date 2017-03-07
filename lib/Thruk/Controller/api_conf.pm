@@ -401,16 +401,7 @@ sub display_delete_confirmation {
 sub display_edit_textbox {
     my ( $hidden, $page_type ) = @_;
     my $q = CGI->new;
-    my @keys = get_keys($page_type, "true");
-
-    my %to_json;
-    foreach my $key (sort @keys) {
-        $to_json{"attrs"}{$key} = "";
-    }
-    my $json = JSON->new;
-    $json->pretty->canonical(1);
-
-    my $json_text = $json->pretty->encode( \%to_json );
+    my $json_text = get_defaults($page_type);
     my $rows = () = $json_text =~ /\n/g;
     my $cols = 0;
     open my $fh, '<', \$json_text or die $!;
@@ -421,6 +412,9 @@ sub display_edit_textbox {
         }
     }
     close $fh or die $!;
+
+    # We want some extra space for the editor window
+    $cols = $cols + 100;
 
     # Pretty print
     $json_text =~ s/ /&nbsp;/g;
@@ -810,6 +804,74 @@ document.getElementById ("dwlbutton").addEventListener ("click", download, false
 
     return $html;
 
+}
+
+sub get_defaults {
+
+    my ($page_type) = @_;
+
+    my @keys = get_keys( $page_type, "true" );
+
+    my %to_json;
+    foreach my $key (sort @keys) {
+        $to_json{"attrs"}{$key} = "";
+    }
+
+    if ($page_type eq "commands") {
+        $to_json{"attrs"}{"arguments"} = (
+            "--wps_id"      => ( "order" => - 2, "value" => '$wps_id$' ),
+            "--wrapper_cmd" => (
+                "order" => - 1,
+                "value" => "/local/icinga2/PluginDir/check_su_example"
+            ),
+            "-C"            => ( "value" => "%%PASSWORD%%" ),
+            "-H"            => ("host.name"),
+            "-w"            => ( "value" => 2 ),
+            "-c"            => ( "value" => 3 )
+        );
+        $to_json{"attrs"}{"command"} = ("/local/wps/libexec/wrapper_su_wps");
+
+    }
+    elsif ($page_type eq "contactgroups") {
+
+    }
+    elsif ($page_type eq "contacts") {
+
+    }
+    elsif ($page_type eq "hostdependencies") {
+
+    }
+    elsif ($page_type eq "hostescalations") {
+
+    }
+    elsif ($page_type eq "hostgroups") {
+
+    }
+    elsif ($page_type eq "hosts") {
+
+    }
+    elsif ($page_type eq "servicedependencies") {
+
+    }
+    elsif ($page_type eq "serviceescalations") {
+
+    }
+    elsif ($page_type eq "servicegroups") {
+
+    }
+    elsif ($page_type eq "services") {
+
+    }
+    elsif ($page_type eq "timeperiods") {
+
+    }
+    $to_json{"attrs"}{"vars"} = ();
+    my $json = JSON->new;
+    $json->pretty->canonical(1);
+
+    my $json_text = $json->pretty->encode( \%to_json );
+
+    return $json_text;
 }
 
 =head2 get_json
@@ -2321,7 +2383,7 @@ sub commands {
                 "page_type" => "commands",
                 "command"   => $command
             );
-            $command_page .= display_edit_textbox(\%hidden, "commands");
+            $command_page .= display_edit_textbox( \%hidden, "commands" );
         }
 
     }
