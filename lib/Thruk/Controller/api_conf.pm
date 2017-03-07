@@ -37,9 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
+my $METHOD = "GET";
 
-my $METHOD = "POST";
+#my $METHOD = "POST";
 
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
@@ -813,25 +813,26 @@ sub get_defaults {
     my @keys = get_keys( $page_type, "true" );
 
     my %to_json;
-    my %arguments = (
-        "--wps_id"      => ( "order" => - 2, "value" => '$wps_id$' ),
-        "--wrapper_cmd" => (
-            "order" => - 1,
-            "value" => "/local/icinga2/PluginDir/check_su_example"
-        ),
-        "-C"            => ( "value" => "%%PASSWORD%%" ),
-        "-H"            => ("host.name"),
-        "-w"            => ( "value" => 2 ),
-        "-c"            => ( "value" => 3 )
-    );
-    my @command = ("/local/wps/libexec/wrapper_su_wps");
+
+    # Initialize to empty string for all, over write below
     foreach my $key (sort @keys) {
         $to_json{"attrs"}{$key} = "";
     }
 
     if ($page_type eq "commands") {
-        $to_json{"attrs"}{"arguments"} = \%arguments;
-        $to_json{"attrs"}{"command"} = \@command;
+        $to_json{"attrs"}{"arguments"} = {
+        "--wps_id"      =>  {"order" => -2, "value" => '$wps_id$' },
+        "--wrapper_cmd" => {
+            "order" => - 1,
+            "value" => "/local/icinga2/PluginDir/check_su_example"
+        },
+        "-H"            => { "value" => "host.name"},
+        "-C"            => { "value" => "%%PASSWORD%%" },
+        "-w"            => { "value" => 2 },
+        "-c"            => { "value" => 3 }
+    }; 
+        $to_json{"attrs"}{"command"} = ["/local/wps/libexec/wrapper_su_wps"];
+        $to_json{"attrs"}{"templates"} = "plugin-check-command";
 
     }
     elsif ($page_type eq "contactgroups") {
@@ -867,7 +868,7 @@ sub get_defaults {
     elsif ($page_type eq "timeperiods") {
 
     }
-    $to_json{"attrs"}{"vars"} = ();
+    $to_json{"attrs"}{"vars"} = {};
     my $json = JSON->new;
     $json->pretty->canonical(1);
 
