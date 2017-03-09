@@ -496,6 +496,7 @@ sub display_editor {
         $textbox .= $q->hidden( $key, $hidden->{"$key"} );
     }
     $textbox .= $q->hidden( 'mode', $mode );
+    $textbox .= $q->hidden( 'page_type', $page_type );
     $textbox .= $q->textarea(
         -name    => "attributes",
         -default => $json_text,
@@ -1336,10 +1337,7 @@ sub hosts {
 
         # This is where we edit
         elsif ($host) {
-            my %hidden = (
-                "page_type" => "hosts",
-                "host"      => $host
-            );
+            my %hidden = ( "host" => $host );
             my $endpoint = "objects/hosts/$host";
             $host_page .= display_editor( \%hidden, "hosts", $c, $endpoint );
 
@@ -1784,7 +1782,6 @@ sub services {
         }
         elsif ( $host and $servicename ) {
             my %hidden = (
-                "page_type"   => "services",
                 "host"        => $host,
                 "servicename" => $servicename
             );
@@ -2044,10 +2041,7 @@ sub contacts {
 
         # This is editor
         elsif ($contact) {
-            my %hidden = (
-                "page_type" => "contacts",
-                "contact"   => $contact
-            );
+            my %hidden = ( "contact" => $contact );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
                 display_editor( \%hidden, "contacts", $c, $endpoint );
@@ -2097,7 +2091,6 @@ sub contact_groups {
     my $cascading = $params->{'cascading'};
     my $confirm = $params->{'confirm'};
     my $contactgroup = $params->{'contactgroup'};
-    my $display_name = $params->{'display_name'};
     my $mode = $params->{'mode'};
     my $submit = $params->{'submit'};
 
@@ -2137,20 +2130,7 @@ sub contact_groups {
         }
 
         # This is confirmation
-        elsif ($contactgroup) {
-            $attributes =
-                '{ "attrs": { "display_name": "'.$display_name.'"';
-            unless ($group) {
-                $attributes .= '}}';
-            }
-            else {
-                $attributes .= ', "groups": [';
-                foreach my $grp (@groups) {
-                    $attributes .= '"'.$grp.'", ';
-                }
-                $attributes =~ s/, $//;
-                $attributes .= ']}}';
-            }
+        elsif ($contactgroup and $attributes) {
             $contactgroups_page .=
                 display_generic_confirmation( $c, $mode, $contactgroup,
                     "contactgroups", $attributes );
@@ -2159,30 +2139,8 @@ sub contact_groups {
 
         # This is creation dialog
         else {
-            $contactgroups_page .= $q->start_form(
-                -method => $METHOD,
-                -action => "api_conf.cgi"
-            );
-            $contactgroups_page .= $q->p("Enter contact group name:");
-            $contactgroups_page .= $q->textfield( 'contactgroup', '', 50, 80 );
-            $contactgroups_page .= $q->p("Enter contact group display name:");
-            $contactgroups_page .= $q->textfield( 'display_name', '', 50, 80 );
-            $contactgroups_page .=
-                $q->p("Enter groups for the group (optional):");
-            $contactgroups_page .=
-                display_select( "groups", "group-select", "true",
-                    @contactgroups_arr );
-            $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
-            $contactgroups_page .= $q->hidden( 'mode', "create" );
-            $contactgroups_page .= '<br/>';
-            $contactgroups_page .= $q->submit(
-                -name  => 'submit',
-                -value => 'Submit'
-            );
-            $contactgroups_page .= $q->end_form;
-            $contactgroups_page .=
-                display_multi_select( "group-select", @contactgroups_arr );
-
+            my %hidden = ( "contactgroup" => $contactgroup );
+            $contactgroups_page .= display_editor( \%hidden, "contactgroups" );
         }
 
     }
@@ -2256,10 +2214,7 @@ sub contact_groups {
 
         # This is editor
         elsif ($contactgroup) {
-            my %hidden = (
-                "page_type"    => "contactgroups",
-                "contactgroup" => $contactgroup
-            );
+            my %hidden = ( "contactgroup" => $contactgroup );
             my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
                 display_editor( \%hidden, "contactgroups", $c, $endpoint );
@@ -2380,10 +2335,7 @@ sub commands {
 
         # This is main command creation dialog
         else {
-            my %hidden = (
-                "page_type" => "commands",
-                "command"   => $command
-            );
+            my %hidden = ( "command" => $command );
             $command_page .= display_editor( \%hidden, "commands" );
         }
 
@@ -2415,10 +2367,7 @@ sub commands {
             # Do api call here
         }
         elsif ( $command and $submit eq "Submit" ) {
-            my %hidden = (
-                "page_type" => "commands",
-                "command"   => $command
-            );
+            my %hidden = ( "command" => $command );
 
             my $endpoint = "objects/checkcommands/$command";
 
