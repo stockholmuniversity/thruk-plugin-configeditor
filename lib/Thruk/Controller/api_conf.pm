@@ -835,9 +835,9 @@ sub get_defaults {
 
     my %to_json;
 
-    # Initialize to empty string for all, over write below
+    # Initialize to null for all, over write below
     foreach my $key (sort @keys) {
-        $to_json{"attrs"}{$key} = "";
+        $to_json{"attrs"}{$key} = undef;
     }
 
     if ($page_type eq "commands") {
@@ -847,7 +847,7 @@ sub get_defaults {
                 "order" => - 1,
                 "value" => "/local/icinga2/PluginDir/check_su_example"
             },
-            "-H"            => { "value" => "host.name" },
+            "-H"            => { "value" => '$host.name$' },
             "-C"            => { "value" => "%%PASSWORD%%" },
             "-w"            => { "value" => 2 },
             "-c"            => { "value" => 3 }
