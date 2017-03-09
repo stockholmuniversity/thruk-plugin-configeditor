@@ -489,6 +489,7 @@ sub display_editor {
     );
     if ($mode eq "create") {
         $textbox .= $q->p("Enter $name name:");
+        $textbox .= "<br/>";
         $textbox .= $q->textfield( $name, '', 50, 80 );
     }
     foreach my $key (keys $hidden) {
