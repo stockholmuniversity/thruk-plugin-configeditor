@@ -481,12 +481,14 @@ sub display_editor {
 	}
 </script>';
     $textbox .= $q->p($head);
-    $textbox .= $q->start_form(
-        -method   => $METHOD,
-        -action   => "api_conf.cgi",
-        -id       => "JSONForm",
-        -onSubmit => "return validateJSON()"
-    );
+    unless ($page_type eq "hosts" and $mode eq "create") {
+        $textbox .= $q->start_form(
+            -method   => $METHOD,
+            -action   => "api_conf.cgi",
+            -id       => "JSONForm",
+            -onSubmit => "return validateJSON()"
+        );
+    }
     if ($mode eq "create") {
         $textbox .= $q->p("Enter $name name:");
         $textbox .= $q->textfield( $name, '', 50, 80 );
@@ -507,11 +509,13 @@ sub display_editor {
         -id      => "JSONText"
     );
     $textbox .= "<br/>";
-    $textbox .= $q->submit(
-        -name  => "submit",
-        -value => 'Submit'
-    );
-    $textbox .= $q->end_form;
+    unless ($page_type eq "hosts" and $mode eq "create") {
+        $textbox .= $q->submit(
+            -name  => "submit",
+            -value => 'Submit'
+        );
+        $textbox .= $q->end_form;
+    }
     if ($mode eq "modify") {
         $textbox .= display_download_button( $c, $endpoint, $page_type );
     }
@@ -1540,23 +1544,29 @@ sub services {
     # Creation mode
     elsif ( $mode eq "create" ) {
 
+        # This is the actual creation via api_call
+        if ($host and $attributes and $confirm eq "Confirm") {
+            my $payload = uri_unescape($attributes);
+            foreach my $hst (@hosts) {
+                my @arr = api_call( $c->stash->{'confdir'},
+                    "PUT", "objects/services/$hst!$servicename", $payload );
+                $service_page .= display_api_response( @arr, $payload );
+            }
+            $service_page .= display_back_button( $mode, 'services' );
+
+        }
+
         # This is the confirm dialog
-        if (    $host =~ m/\..*\./
-            and $check =~ m/.+/
-            and $displayname =~ m/.+/
-            and $servicename =~ m/.+/
-            and $confirm ne "Confirm" )
-        {
+        elsif ($host and $attributes) {
             my $hoststr = csv_from_arr(@hosts);
             $service_page .=
                 '<p>Are you sure you want to add the service '
-              . $servicename
-              . ' to the host(s): '
-              . $hoststr;
-            if ( $attributes =~ m/.+/ ) {
-                $service_page .= ' with attributes: ' . $attributes;
-            }
-            $service_page .= '?</p><br/>';
+                    . $servicename
+                    .' with attributes: '
+                    .$attributes
+                    . ' to the host(s): '
+                    .$hoststr
+                    .'?</p><br/>';
             $service_page .= $q->start_form(
                 -method => $METHOD,
                 -action => "api_conf.cgi"
@@ -1565,8 +1575,6 @@ sub services {
                 $service_page .= $q->hidden( 'host', $hst );
             }
             $service_page .= $q->hidden( 'attributes',  $attributes );
-            $service_page .= $q->hidden( 'check',       $check );
-            $service_page .= $q->hidden( 'displayname', $displayname );
             $service_page .= $q->hidden( 'mode',        "create" );
             $service_page .= $q->hidden( 'page_type',   "services" );
             $service_page .= $q->hidden( 'servicename', $servicename );
@@ -1575,37 +1583,6 @@ sub services {
                 -value => 'Confirm'
             );
             $service_page .= $q->end_form;
-
-        }
-
-        # This is the actual creation via api_call
-        elsif ( $host =~ m/\..*\./
-            and $check =~ m/.+/
-            and $displayname =~ m/.+/
-            and $servicename =~ m/.+/
-            and $confirm eq "Confirm" )
-        {
-            my $payload =
-                '{  "attrs": { "check_command": "'
-              . $check
-              . '", "display_name": "'
-              . $displayname
-              . '", "check_interval": 1,"retry_interval": 1';
-
-            # attributes are otional so we can only add them if they exist
-            if ( $attributes =~ m/.+/ ) {
-                for my $commas ( split( ',', $attributes ) ) {
-                    my @colon = split( ':', $commas );
-                    $payload .= ", \"$colon[0]\": \"$colon[1]\"";
-                }
-            }
-            $payload .= ' } }';
-            foreach my $hst (@hosts) {
-                my @arr = api_call( $c->stash->{'confdir'},
-                    "PUT", "objects/services/$hst!$servicename", $payload );
-                $service_page .= display_api_response( @arr, $payload );
-            }
-            $service_page .= display_back_button( $mode, 'services' );
 
         }
 
@@ -1618,13 +1595,15 @@ sub services {
                 push @temp_arr, $hashref->{name};
             }
             my @host_arr = sort @temp_arr;
-            $service_page .= $q->p('Select host to modify:');
+            $service_page .= $q->p('Select host(s) to modify:');
             $service_page .= $q->start_form(
-                -method => $METHOD,
-                -action => "api_conf.cgi"
+                -method   => $METHOD,
+                -action   => "api_conf.cgi",
+                -id       => "JSONForm",
+                -onSubmit => "return validateJSON()"
             );
             $service_page .=
-              '<select name="host" id="host-select" multiple="multiple"">';
+                '<select name="host" id="host-select" multiple="multiple"">';
             for my $ho (@host_arr) {
                 my $selected = '';
                 if ($host eq $ho) {
@@ -1634,23 +1613,7 @@ sub services {
             }
             $service_page .= '</select><br>';
             $service_page .= display_multi_select( "host-select", @host_arr );
-            $service_page .= $q->p('Select check command:');
-            $service_page .= '<select name="check">';
-            foreach my $hash (sort values $c->stash->{commands}) {
-                my $name = $hash->{name};
-                $name =~ s/check_//g;
-                $service_page .=
-                  "<option value=\"$name\">$hash->{name}</option>";
-            }
-            $service_page .= '</select>';
-            $service_page .= $q->p("Enter service displayname:");
-            $service_page .= $q->textfield( 'displayname', '', 50, 80 );
-            $service_page .= $q->p("Enter servicename:");
-            $service_page .= $q->textfield( 'servicename', '', 50, 80 );
-            $service_page .= $q->p("Enter additional attributes (optional):");
-            $service_page .= $q->textfield( 'attributes', '', 50, 80 );
-            $service_page .= $q->hidden( 'page_type', "services" );
-            $service_page .= $q->hidden( 'mode',      "create" );
+            $service_page .= display_editor("services");
             $service_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
