@@ -863,7 +863,7 @@ sub get_defaults {
             bless( do { \( my $o = 1 ) }, 'JSON::XS::Boolean' );
         $to_json{"attrs"}{"groups"} = [ "Example group1", "Example groups2" ];
         $to_json{"attrs"}{"period"} = "24x7";
-        $to_json{"attrs"}{"states"} = [ "CRITICAL", "UNKNOWN" ];
+        $to_json{"attrs"}{"states"} = [ "Critical", "Unknown" ];
 
     }
     elsif ($page_type eq "hostdependencies") {
@@ -1188,68 +1188,9 @@ sub hosts {
     # This is create mode
     elsif ( $mode eq "create" ) {
 
-        # This case is confirm dialog
-        if (    $host =~ m/\..*\./
-            and ( is_ipv4($ip) or is_ipv6($ip) )
-            and $confirm ne "Confirm" )
-        {
-            $host_page .=
-              $q->p('Are you sure you want to create '
-                  . $host
-                  . ' with ip address: '
-                  . $ip
-                  . ' and (optional) ipv6 address: '
-                  . $ip6
-                  . ' and checkcommand: '
-                  . $command
-                  . '?<br/>' );
-            $host_page .= $q->start_form(
-                -method => $METHOD,
-                -action => "api_conf.cgi"
-            );
-            $host_page .= $q->hidden( 'host',      $host );
-            $host_page .= $q->hidden( 'page_type', "hosts" );
-            $host_page .= $q->hidden( 'mode',      "create" );
-            $host_page .= $q->hidden( 'ip',        $ip );
-            $host_page .= $q->hidden( 'ip6',       $ip6 );
-            $host_page .= $q->hidden( 'zone',      $zone );
-            $host_page .= $q->hidden( 'command',   $command );
-            $host_page .= $q->hidden( 'templates', $templates );
-            $host_page .= $q->hidden( 'os',        $os );
-            $host_page .= $q->submit(
-                -name  => 'confirm',
-                -value => 'Confirm'
-            );
-            $host_page .= $q->end_form;
-
-        }
-
         # This case is the  actual creation
-        elsif ( $host =~ m/\..*\./
-            and ( is_ipv4($ip) or is_ipv6($ip6) )
-            and $confirm eq "Confirm"
-            and $os =~ m/.+/
-            and $zone )
-        {
-            my $payload = '{ ';
-            if ( $templates =~ m/.+/ ) {
-                $payload .= '"templates": [';
-                for my $template ( split( ',', $templates ) ) {
-                    $payload .= '"' . $template . '", ';
-                }
-                $payload =~ s/, $/],/;
-            }
-            $payload .=
-                '"attrs": { "zone": "'
-              . $zone
-              . '", "address": "'
-              . $ip
-              . '", "address6": "'
-              . $ip6
-              . '", "check_command": "'
-              . $command
-              . '", "vars.os" : "'
-              . $os . '" } }';
+        if ($host and $attributes and $confirm eq "confirm") {
+            my $payload = uri_unescape($attributes);
             my @arr = api_call(
                 $c->stash->{'confdir'}, "PUT",
                 "objects/hosts/$host",  $payload
@@ -1259,58 +1200,17 @@ sub hosts {
 
         }
 
+        # This case is confirm dialog
+        elsif ($host and $attributes) {
+            $host_page .=
+                display_generic_confirmation( $c, $mode, $host, "hosts",
+                    $attributes );
+
+        }
+
         # This is the main host creation dialog
         else {
-            my %zones =
-              %{ api_call( $c->stash->{'confdir'}, "GET", "objects/zones" ) };
-            $host_page .= $q->start_form(
-                -method => $METHOD,
-                -action => "api_conf.cgi"
-            );
-
-            $host_page .= $q->p("Enter hostname:");
-            $host_page .= $q->textfield( 'host', '', 50, 80 );
-            $host_page .= $q->p("Enter ip address:");
-            $host_page .= $q->textfield( 'ip', '', 50, 80 );
-            $host_page .= $q->p("Enter ipv6 address:");
-            $host_page .= $q->textfield( 'ip6', '', 50, 80 );
-            $host_page .=
-              $q->p("Enter templates, optional comma separated list:");
-            $host_page .= $q->textfield( 'templates', '', 50, 80 );
-            $host_page .= $q->p("Enter zone:");
-            $host_page .= '<select name="zone">';
-
-            # Loop through the zones
-            for my $zone ( values $zones{results} ) {
-                $host_page .=
-                  "<option value=\"$zone->{name}\">$zone->{name}</option>";
-            }
-            $host_page .= '</select>';
-            $host_page .= $q->p("Enter host check command:");
-            $host_page .= '<select name="command">';
-
-            # We select check_hostalive as default command if it exists
-            # TODO: Move default checkcommand to conf file?
-            foreach my $hash ( values $c->stash->{commands} ) {
-                my $selected = '';
-                if ( $hash->{name} eq "check_hostalive" ) {
-                    $selected = 'selected="selected" ';
-                }
-                my $name = $hash->{name};
-                $name =~ s/check_//g;
-                $host_page .=
-                  "<option value=\"$name\" $selected>$hash->{name}</option>";
-            }
-            $host_page .= '</select>';
-            $host_page .= $q->p("Enter OS:");
-            $host_page .= $q->textfield( 'os', '', 50, 80 );
-            $host_page .= $q->hidden( 'page_type', "hosts" );
-            $host_page .= $q->hidden( 'mode',      "create" );
-            $host_page .= $q->submit(
-                -name  => 'submit',
-                -value => 'Submit'
-            );
-            $host_page .= $q->end_form;
+            $host_page .= display_editor("hosts");
         }
     }
     elsif ( $mode eq "modify" ) {
