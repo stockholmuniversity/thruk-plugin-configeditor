@@ -481,7 +481,7 @@ sub display_editor {
 	}
 </script>';
     $textbox .= $q->p($head);
-    unless ($page_type eq "hosts" and $mode eq "create") {
+    unless ($page_type eq "services" and $mode eq "create") {
         $textbox .= $q->start_form(
             -method   => $METHOD,
             -action   => "api_conf.cgi",
@@ -509,7 +509,7 @@ sub display_editor {
         -id      => "JSONText"
     );
     $textbox .= "<br/>";
-    unless ($page_type eq "hosts" and $mode eq "create") {
+    unless ($page_type eq "services" and $mode eq "create") {
         $textbox .= $q->submit(
             -name  => "submit",
             -value => 'Submit'
