@@ -2308,11 +2308,9 @@ sub commands {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $arguments   = $params->{'arguments'};
     my $attributes  = $params->{'attributes'};
     my $cascading   = $params->{'cascading'};
     my $command     = $params->{'command'};
-    my $commandline = $params->{'commandline'};
     my $confirm     = $params->{'confirm'};
     my $mode        = $params->{'mode'};
     my $submit      = $params->{'submit'};
@@ -2328,8 +2326,9 @@ sub commands {
             $command_page .=
               display_generic_confirmation( $c, $mode, $command, "commands" );
 
-            # This is the actual deletion via api call
         }
+
+        # This is the actual deletion via api call
         elsif ( $confirm eq "Confirm" and $command =~ m/.+/ ) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
@@ -2340,30 +2339,22 @@ sub commands {
             $command_page .= display_api_response(@arr);
             $command_page .= display_back_button( $mode, 'commands' );
 
-            # This is the main dialog for command deletion
         }
+
+        # This is the main dialog for command deletion
         else {
             $command_page .= display_command_selection( $c, $mode );
         }
 
-        # Creation dialog
     }
+
+    # Creation dialog
     elsif ( $mode eq "create" ) {
 
         # This is actual creation via api call
-        if (    $confirm eq "Confirm"
-            and $commandline =~ m/.+/
-            and $command =~ m/.+/ )
-        {
-            my $payload =
-'{ "templates": [ "plugin-check-command" ], "attrs": { "command": [ "'
-              . $commandline . '" ]';
+        if ($confirm eq "Confirm" and $attributes and $command) {
+            my $payload = uri_unescape($attributes);
 
-            # Arguments are optional so we only add them if they exist
-            if ( $arguments =~ m/.+/ and is_valid_json $arguments ) {
-                $payload .= ', "arguments": ' . $arguments;
-            }
-            $payload .= ' } }';
             my @arr = api_call(
                 $c->stash->{'confdir'},           "PUT",
                 "objects/checkcommands/$command", $payload
@@ -2371,52 +2362,17 @@ sub commands {
             $command_page .= display_api_response( @arr, $payload );
             $command_page .= display_back_button( $mode, 'commands' );
 
-            # This is confirmation dialog for command creation
         }
-        elsif ( $submit eq "Submit"
-            and $command =~ m/.+/
-            and $commandline =~ m/.+/ )
-        {
-            my $mess =
-                'Are you sure you want to create '
-              . $command
-              . ' with commandline: '
-              . $commandline;
-            $mess .=
-              $arguments =~ m/.+/ ? " and arguments: $arguments?<br>" : "?<br>";
-            my $all_is_well = 1;
-            unless ( is_valid_json $arguments or $arguments eq "" ) {
-                $command_page .= "<p>You supplied faulty json.</p>";
-                $all_is_well = 0;
-            }
-            unless ( basename($commandline) =~ m/^check_/ ) {
-                $command_page .=
-"<p>Basename of your commandline must start with check_, e.g.: /usr/local/bin/check_test. Please try again.</p>";
-                $all_is_well = 0;
-            }
-            if ($all_is_well) {
-                $command_page .= $q->p($mess);
-                $command_page .= $q->start_form(
-                    -method => $METHOD,
-                    -action => "api_conf.cgi"
-                );
-                $command_page .= $q->hidden( 'page_type',   "commands" );
-                $command_page .= $q->hidden( 'command',     $command );
-                $command_page .= $q->hidden( 'arguments',   $arguments );
-                $command_page .= $q->hidden( 'commandline', $commandline );
-                $command_page .= $q->hidden( 'mode',        "create" );
-                $command_page .= $q->submit(
-                    -name  => 'confirm',
-                    -value => 'Confirm'
-                );
-                $command_page .= $q->end_form;
-            }
-            else {
-                $command_page .= display_back_button( $mode, 'commands' );
-            }
 
-            # This is main command creation dialog
+        # This is confirmation dialog for command creation
+        elsif ($submit eq "Submit" and $command and $attributes) {
+            $command_page .=
+                display_generic_confirmation( $c, $mode, $command, "commands",
+                    $attributes );
+
         }
+
+        # This is main command creation dialog
         else {
             my %hidden = (
                 "page_type" => "commands",
