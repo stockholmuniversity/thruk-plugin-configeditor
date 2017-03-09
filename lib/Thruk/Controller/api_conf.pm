@@ -414,7 +414,7 @@ endpoint (e.g. objects/services/<hostname>!<servicename>)
 =cut
 
 sub display_editor {
-    my ( $hidden, $page_type, $c, $endpoint, ) = @_;
+    my ( $page_type, $hidden, $c, $endpoint, ) = @_;
     my $q = CGI->new;
     my $name = $page_type;
     $name =~ s/s$//;
@@ -492,8 +492,10 @@ sub display_editor {
         $textbox .= $q->textfield( $name, '', 50, 80 );
         $textbox .= $q->p("Editor:");
     }
-    foreach my $key (keys $hidden) {
-        $textbox .= $q->hidden( $key, $hidden->{"$key"} );
+    if ($hidden) {
+        foreach my $key (keys $hidden) {
+            $textbox .= $q->hidden( $key, $hidden->{"$key"} );
+        }
     }
     $textbox .= $q->hidden( 'mode', $mode );
     $textbox .= $q->hidden( 'page_type', $page_type );
@@ -1339,7 +1341,7 @@ sub hosts {
         elsif ($host) {
             my %hidden = ( "host" => $host );
             my $endpoint = "objects/hosts/$host";
-            $host_page .= display_editor( \%hidden, "hosts", $c, $endpoint );
+            $host_page .= display_editor( "hosts", \%hidden, $c, $endpoint );
 
         }
 
@@ -1786,7 +1788,7 @@ sub services {
                 "servicename" => $servicename
             );
             $service_page .=
-                display_editor( \%hidden, "services", $c,
+                display_editor( "services", \%hidden, $c,
                     "objects/services/$host!$servicename" );
         }
         elsif ($host) {
@@ -1878,14 +1880,6 @@ sub contacts {
       '<div class="reportSelectTitle" align="center">Contacts</div>';
 
     if ( $mode eq "create" ) {
-        my @states = ( "OK", "Warning", "Critical", "Unknown" );
-        my @types = (
-            "Problem",       "Acknowledgement",
-            "Recovery",      "Custom",
-            "FlappingStart", "FlappingEnd",
-            "DowntimeStart", "DowntimeEnd",
-            "DowntimeRemoved"
-        );
         my $group_hash =
           api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
 
@@ -1914,18 +1908,6 @@ sub contacts {
             # This is the contact creation confirmation
         }
         elsif ( $contact and $submit eq "Submit" ) {
-            my %tmp = (
-                'display_name' => $display_name,
-                'email'        => $email,
-                'groups'       => $group_select,
-                'pager'        => $pager,
-                'period'       => $period,
-                'states'       => $state_select,
-                'types'        => $type_select
-            );
-            my %attrs = ( 'attrs' => \%tmp );
-            $attributes = to_json( \%attrs );
-
             $contacts_page .=
               display_generic_confirmation( $c, $mode, $contact, "contacts",
                 $attributes )
@@ -1933,43 +1915,7 @@ sub contacts {
               # This is the contact creation dialog
         }
         else {
-            $contacts_page .= $q->start_form(
-                -method => $METHOD,
-                -action => "api_conf.cgi"
-            );
-            $contacts_page .= $q->p("Enter contact name:");
-            $contacts_page .= $q->textfield( 'contact', '', 50, 80 );
-            $contacts_page .= $q->p("Enter contact display name:");
-            $contacts_page .= $q->textfield( 'display_name', '', 50, 80 );
-            $contacts_page .= $q->p(
-"Enter phone number (in international form without plus-sign, i.e. 46701234567):"
-            );
-            $contacts_page .= $q->textfield( 'pager', '', 50, 80 );
-            $contacts_page .= $q->p('Enter email address:');
-            $contacts_page .= $q->textfield( 'email', '', 50, 80 );
-            $contacts_page .= $q->p('Select user groups:');
-            $contacts_page .=
-                display_select( "groups", "group-select", "true", @groups );
-            $contacts_page .= display_multi_select( "group-select", @groups );
-            $contacts_page .= $q->p('Select timeperiods:');
-            $contacts_page .=
-                display_select( "period", "period-select", "", @periods );
-            $contacts_page .= $q->p('Select states:');
-            $contacts_page .=
-                display_select( "states", "state-select", "true", @states );
-            $contacts_page .= display_multi_select( "state-select", @states );
-            $contacts_page .= $q->p('Select types:');
-            $contacts_page .=
-                display_select( "types", "type-select", "true", @types );
-            $contacts_page .= display_multi_select( "type-select", @types );
-            $contacts_page .= $q->hidden( 'page_type', "contacts" );
-            $contacts_page .= $q->hidden( 'mode',      "create" );
-            $contacts_page .= '<br/>';
-            $contacts_page .= $q->submit(
-                -name  => 'submit',
-                -value => 'Submit'
-            );
-            $contacts_page .= $q->end_form;
+            $contacts_page .= display_editor("contacts");
         }
 
     }
@@ -2044,7 +1990,7 @@ sub contacts {
             my %hidden = ( "contact" => $contact );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
-                display_editor( \%hidden, "contacts", $c, $endpoint );
+                display_editor( "contacts", \%hidden, $c, $endpoint );
         }
 
         # This is selection
@@ -2139,8 +2085,7 @@ sub contact_groups {
 
         # This is creation dialog
         else {
-            my %hidden = ( "contactgroup" => $contactgroup );
-            $contactgroups_page .= display_editor( \%hidden, "contactgroups" );
+            $contactgroups_page .= display_editor("contactgroups");
         }
 
     }
@@ -2217,7 +2162,7 @@ sub contact_groups {
             my %hidden = ( "contactgroup" => $contactgroup );
             my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
-                display_editor( \%hidden, "contactgroups", $c, $endpoint );
+                display_editor( "contactgroups", \%hidden, $c, $endpoint );
         }
 
         # This is selection
@@ -2335,8 +2280,7 @@ sub commands {
 
         # This is main command creation dialog
         else {
-            my %hidden = ( "command" => $command );
-            $command_page .= display_editor( \%hidden, "commands" );
+            $command_page .= display_editor("commands");
         }
 
     }
@@ -2372,7 +2316,7 @@ sub commands {
             my $endpoint = "objects/checkcommands/$command";
 
             $command_page =
-                display_editor( \%hidden, "commands", $c, $endpoint );
+                display_editor( "commands", \%hidden, $c, $endpoint );
         }
         else {
             $command_page = display_command_selection( $c, $mode );
