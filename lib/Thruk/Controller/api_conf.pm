@@ -682,7 +682,7 @@ sub display_service_confirmation {
     if ($attributes) {
         $service_form .= $q->hidden( 'attributes', $attributes );
     }
-    $service_form .= $q->hidden( 'servicename', $servicename );
+    $service_form .= $q->hidden( 'service', $servicename );
     if ($mode eq "delete") {
         $service_form .= $q->checkbox( 'cascading', 0, 'true',
             'Use cascading delete - WARNING' );
@@ -725,7 +725,7 @@ sub display_service_selection {
         -method => $METHOD,
         -action => "api_conf.cgi"
     );
-    $service_form .= '<select name="servicename">';
+    $service_form .= '<select name="service">';
 
     # Loop all services asscoiated with the host
     foreach my $service ( sort keys $services{$host} ) {
@@ -1476,11 +1476,9 @@ sub services {
     }
     my $attributes  = $params->{'attributes'};
     my $cascading = $params->{'cascading'};
-    my $check       = $params->{'check'};
     my $confirm     = $params->{'confirm'};
-    my $displayname = $params->{'displayname'};
     my $mode        = $params->{'mode'};
-    my $servicename = $params->{'servicename'};
+    my $servicename = $params->{'service'};
     my $submit      = $params->{'submit'};
 
     my $service_page =
@@ -1577,7 +1575,7 @@ sub services {
             $service_page .= $q->hidden( 'attributes',  $attributes );
             $service_page .= $q->hidden( 'mode',        "create" );
             $service_page .= $q->hidden( 'page_type',   "services" );
-            $service_page .= $q->hidden( 'servicename', $servicename );
+            $service_page .= $q->hidden( 'service', $servicename );
             $service_page .= $q->submit(
                 -name  => 'confirm',
                 -value => 'Confirm'
@@ -1647,8 +1645,8 @@ sub services {
         }
         elsif ( $host and $servicename ) {
             my %hidden = (
-                "host"        => $host,
-                "servicename" => $servicename
+                "host"    => $host,
+                "service" => $servicename
             );
             $service_page .=
                 display_editor( "services", \%hidden, $c,
