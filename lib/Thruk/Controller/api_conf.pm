@@ -846,7 +846,7 @@ sub get_defaults {
             "-c"            => { "value" => 3 }
         };
         $to_json{"attrs"}{"command"} = [ "/local/wps/libexec/wrapper_su_wps" ];
-        $to_json{"attrs"}{"templates"} = "plugin-check-command";
+        $to_json{"attrs"}{"templates"} = [ "plugin-check-command" ];
     }
     elsif ($page_type eq "contactgroups") {
         $to_json{"attrs"}{"display_name"} = "Example name";
