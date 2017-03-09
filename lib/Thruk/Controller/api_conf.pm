@@ -429,7 +429,7 @@ sub display_editor {
         $head .= " for endpoint: <b>$endpoint</b>";
     }
     else {
-        my $json_text = get_defaults($page_type);
+        $json_text = get_defaults($page_type);
     }
 
     my $rows = () = $json_text =~ /\n/g;
@@ -451,7 +451,34 @@ sub display_editor {
 
     # Pretty print
     $json_text =~ s/ /&nbsp;/g;
-    my $textbox = display_edit_validation();
+    my $textbox = '<script type="text/javascript">
+	function popitup(str) {
+		newwindow=window.open("","JSON Error","height=400,width=400");
+		if (window.focus) {
+			newwindow.focus()
+		}
+		newwindow.document.write("<html><body>" + str + "</body></html>")
+		return false;
+	}
+	function validateJSON() {
+          var success = true;
+          var error = "";
+	  var str = document.getElementById("JSONText").value;
+	  str = str.replace(/\u00A0/g, " ");
+	  try {
+            JSON.parse(str);
+	  } catch (e) {
+            error = e;
+            success = false;
+          }
+	  if ( success) {
+	     return true;
+	  } else { 
+	     popitup("Invalid JSON! Please fix. " + error + ". Visit a <a href=\"http://jsonlint.com/?json=" + encodeURIComponent(str) + "\" target=\"_blank\" onclick=\"window.close()\">JSON validator</a> if you need help.");
+	     return false;
+	  }
+	}
+</script>';
     $textbox .= $q->p($head);
     $textbox .= $q->start_form(
         -method   => $METHOD,
