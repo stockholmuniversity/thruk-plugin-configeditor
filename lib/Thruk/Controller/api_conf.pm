@@ -419,27 +419,43 @@ sub display_edit_textbox {
     # Pretty print
     $json_text =~ s/ /&nbsp;/g;
     my $textbox = '<script type="text/javascript">
-function isJSON(str) {
-    try {
-        JSON.parse(str);
-    } catch (e) {
-        return false;
-    }
-    return true;
-}
+	function popitup(str) {
+		newwindow=window.open("","JSON Error","height=400,width=400");
+		if (window.focus) {
+			newwindow.focus()
+		}
+		newwindow.document.write("<html><body>" + str + "</body></html>")
+		return false;
+	}
 
-function validateJSON()
-{
-  if (! isJSON(document.getElementById("JSONText").value)))
-  {
-     alert("Invalid JSON! Please fix.");
-  }
-}
+	function validateJSON() {
+          var success = true;
+          var error = "";
+
+	  var str = document.getElementById("JSONText").value;
+	  str = str.replace(/\u00A0/g, " ");
+
+	  try {
+            JSON.parse(str);
+	  } catch (e) {
+            error = e;
+            success = false;
+          }
+
+	  if ( success) {
+	     return true;
+	  } else { 
+	     popitup("Invalid JSON! Please fix. " + error + ". Visit a <a href=\"http://jsonlint.com/?json=" + encodeURIComponent(str) + "\" target=\"_blank\" onclick=\"window.close()\">JSON validator</a> if you need help.");
+	     return false;
+	  }
+	}
 </script>';
     $textbox .= $q->p("Object editor");
     $textbox .= $q->start_form(
         -method => $METHOD,
-        -action => "api_conf.cgi"
+        -action => "api_conf.cgi",
+        -id => "JSONForm",
+        -onSubmit => "return validateJSON()"
     );
     foreach my $key (keys $hidden) {
         $textbox .= $q->hidden( $key, $hidden->{"$key"} );
@@ -453,11 +469,7 @@ function validateJSON()
         -id      => "JSONText"
     );
     $textbox .= "<br/>";
-    $textbox .= $q->submit(
-        -name     => "submit",
-        -value    => 'Submit',
-        -onSubmit => 'validateJSON()'
-    );
+    $textbox .= $q->submit("name" => "Submit", "value" => "submit");
     $textbox .= $q->end_form;
     return decode_entities($textbox);
 }
