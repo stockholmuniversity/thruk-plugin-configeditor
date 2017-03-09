@@ -1189,7 +1189,7 @@ sub hosts {
     elsif ( $mode eq "create" ) {
 
         # This case is the  actual creation
-        if ($host and $attributes and $confirm eq "confirm") {
+        if ($host and $attributes and $confirm eq "Confirm") {
             my $payload = uri_unescape($attributes);
             my @arr = api_call(
                 $c->stash->{'confdir'}, "PUT",
