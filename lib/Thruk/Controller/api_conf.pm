@@ -398,10 +398,40 @@ sub display_delete_confirmation {
 
 }
 
-sub display_edit_textbox {
-    my ( $hidden, $page_type ) = @_;
+=head2 display_editor
+This function gets the editable json of a configuration object
+=head3 Parameters
+=over
+=item *
+hidden - a hashref with key/values you want to display ass hidden form elements
+=item *
+page_type (services, hosts, etc)
+=item *
+a context
+=item *
+endpoint (e.g. objects/services/<hostname>!<servicename>)
+=back
+=cut
+
+sub display_editor {
+    my ( $hidden, $page_type, $c, $endpoint, ) = @_;
     my $q = CGI->new;
-    my $json_text = get_defaults($page_type);
+
+    my $mode = "create";
+    if ($c) {
+        $mode = "modify";
+    }
+    my $json_text = '';
+    my $head = 'Object editor';
+    if ($mode eq "modify") {
+        my @keys = get_keys($page_type);
+        $json_text = get_json( $c, $endpoint, @keys );
+        $head .= " for endpoint: <b>$endpoint</b>";
+    }
+    else {
+        my $json_text = get_defaults($page_type);
+    }
+
     my $rows = () = $json_text =~ /\n/g;
     my $cols = 0;
     open my $fh, '<', \$json_text or die $!;
@@ -413,54 +443,26 @@ sub display_edit_textbox {
     }
     close $fh or die $!;
 
-    # We want some extra space for the editor window
-    $cols = $cols + 50;
+    if ($mode eq "create") {
+
+        # We want some extra space for the editor window
+        $cols = $cols + 50;
+    }
 
     # Pretty print
     $json_text =~ s/ /&nbsp;/g;
-    my $textbox = '<script type="text/javascript">
-	function popitup(str) {
-		newwindow=window.open("","JSON Error","height=400,width=400");
-		if (window.focus) {
-			newwindow.focus()
-		}
-		newwindow.document.write("<html><body>" + str + "</body></html>")
-		return false;
-	}
-
-	function validateJSON() {
-          var success = true;
-          var error = "";
-
-	  var str = document.getElementById("JSONText").value;
-	  str = str.replace(/\u00A0/g, " ");
-
-	  try {
-            JSON.parse(str);
-	  } catch (e) {
-            error = e;
-            success = false;
-          }
-
-	  if ( success) {
-	     return true;
-	  } else { 
-	     popitup("Invalid JSON! Please fix. " + error + ". Visit a <a href=\"http://jsonlint.com/?json=" + encodeURIComponent(str) + "\" target=\"_blank\" onclick=\"window.close()\">JSON validator</a> if you need help.");
-	     return false;
-	  }
-	}
-</script>';
-    $textbox .= $q->p("Object editor");
+    my $textbox = display_edit_validation();
+    $textbox .= $q->p($head);
     $textbox .= $q->start_form(
-        -method => $METHOD,
-        -action => "api_conf.cgi",
-        -id => "JSONForm",
+        -method   => $METHOD,
+        -action   => "api_conf.cgi",
+        -id       => "JSONForm",
         -onSubmit => "return validateJSON()"
     );
     foreach my $key (keys $hidden) {
         $textbox .= $q->hidden( $key, $hidden->{"$key"} );
     }
-    $textbox .= $q->hidden( 'mode', "create" );
+    $textbox .= $q->hidden( 'mode', $mode );
     $textbox .= $q->textarea(
         -name    => "attributes",
         -default => $json_text,
@@ -469,8 +471,14 @@ sub display_edit_textbox {
         -id      => "JSONText"
     );
     $textbox .= "<br/>";
-    $textbox .= $q->submit("name" => "Submit", "value" => "submit");
+    $textbox .= $q->submit(
+        -name  => "submit",
+        -value => 'Submit'
+    );
     $textbox .= $q->end_form;
+    if ($mode eq "modify") {
+        $textbox .= display_download_button( $c, $endpoint, $page_type );
+    }
     return decode_entities($textbox);
 }
 
@@ -523,64 +531,6 @@ sub display_generic_confirmation {
     );
     $generic_form .= $q->end_form;
     return $generic_form;
-}
-
-=head2 display_modify_textbox
-This function gets the editable json of a configuration object
-=head3 Parameters
-=over
-=item *
-page_type (services, hosts, etc)
-=item *
-endpoint (e.g. objects/services/<hostname>!<servicename>)
-=item *
-keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
-=back
-=cut
-
-sub display_modify_textbox {
-    my ( $c, $hidden, $endpoint, $page_type ) = @_;
-    my $q = CGI->new;
-    my @keys = get_keys($page_type);
-
-    my $json_text = get_json( $c, $endpoint, @keys );
-    my $rows = () = $json_text =~ /\n/g;
-    my $cols = 0;
-    open my $fh, '<', \$json_text or die $!;
-    while (<$fh>) {
-        my $len = length($_);
-        if ( $len > $cols ) {
-            $cols = $len;
-        }
-    }
-    close $fh or die $!;
-
-    # Pretty print
-    $json_text =~ s/ /&nbsp;/g;
-    my $textbox;
-    $textbox .= $q->p("Object editor for endpoint: <b>$endpoint</b><br/>");
-    $textbox .= $q->start_form(
-        -method => $METHOD,
-        -action => "api_conf.cgi"
-    );
-    foreach my $key ( keys $hidden ) {
-        $textbox .= $q->hidden( $key, $hidden->{"$key"} );
-    }
-    $textbox .= $q->hidden( 'mode', "modify" );
-    $textbox .= $q->textarea(
-        -name    => "attributes",
-        -default => $json_text,
-        -rows    => $rows,
-        -columns => $cols
-    );
-    $textbox .= "<br/>";
-    $textbox .= $q->submit(
-        -name  => "submit",
-        -value => 'Submit'
-    );
-    $textbox .= $q->end_form;
-    $textbox .= display_download_button( $c, $endpoint, $page_type );
-    return decode_entities($textbox);
 }
 
 =head2 display_multi_select
@@ -1358,8 +1308,7 @@ sub hosts {
                 "host"      => $host
             );
             my $endpoint = "objects/hosts/$host";
-            $host_page .=
-                display_modify_textbox( $c, \%hidden, $endpoint, "hosts" );
+            $host_page .= display_editor( \%hidden, "hosts", $c, $endpoint );
 
         }
 
@@ -1807,8 +1756,8 @@ sub services {
                 "servicename" => $servicename
             );
             $service_page .=
-              display_modify_textbox( $c, \%hidden,
-                  "objects/services/$host!$servicename", "services" );
+                display_editor( \%hidden, "services", $c,
+                    "objects/services/$host!$servicename" );
         }
         elsif ($host) {
             $service_page .= display_service_selection( $c, $mode, $host );
@@ -2068,7 +2017,7 @@ sub contacts {
             );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
-                display_modify_textbox( $c, \%hidden, $endpoint, "contacts" );
+                display_editor( \%hidden, "contacts", $c, $endpoint );
         }
 
         # This is selection
@@ -2280,8 +2229,7 @@ sub contact_groups {
             );
             my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
-                display_modify_textbox( $c, \%hidden, $endpoint,
-                    "contactgroups" );
+                display_editor( \%hidden, "contactgroups", $c, $endpoint );
         }
 
         # This is selection
@@ -2447,7 +2395,7 @@ sub commands {
                 "page_type" => "commands",
                 "command"   => $command
             );
-            $command_page .= display_edit_textbox( \%hidden, "commands" );
+            $command_page .= display_editor( \%hidden, "commands" );
         }
 
     }
@@ -2486,7 +2434,7 @@ sub commands {
             my $endpoint = "objects/checkcommands/$command";
 
             $command_page =
-                display_modify_textbox( $c, \%hidden, $endpoint, "commands" );
+                display_editor( \%hidden, "commands", $c, $endpoint );
         }
         else {
             $command_page = display_command_selection( $c, $mode );
