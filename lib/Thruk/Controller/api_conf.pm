@@ -416,7 +416,8 @@ endpoint (e.g. objects/services/<hostname>!<servicename>)
 sub display_editor {
     my ( $hidden, $page_type, $c, $endpoint, ) = @_;
     my $q = CGI->new;
-
+    my $name = $page_type;
+    $name =~ s/s$//;
     my $mode = "create";
     if ($c) {
         $mode = "modify";
@@ -486,6 +487,10 @@ sub display_editor {
         -id       => "JSONForm",
         -onSubmit => "return validateJSON()"
     );
+    if ($mode eq "create") {
+        $textbox .= $q->p("Enter $name name:");
+        $textbox .= $q->textfield( $name, '', 50, 80 );
+    }
     foreach my $key (keys $hidden) {
         $textbox .= $q->hidden( $key, $hidden->{"$key"} );
     }
@@ -2308,12 +2313,12 @@ sub commands {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $attributes  = $params->{'attributes'};
-    my $cascading   = $params->{'cascading'};
-    my $command     = $params->{'command'};
-    my $confirm     = $params->{'confirm'};
-    my $mode        = $params->{'mode'};
-    my $submit      = $params->{'submit'};
+    my $attributes = $params->{'attributes'};
+    my $cascading = $params->{'cascading'};
+    my $command = $params->{'command'};
+    my $confirm = $params->{'confirm'};
+    my $mode = $params->{'mode'};
+    my $submit = $params->{'submit'};
 
     my $command_page =
       '<div class="reportSelectTitle" align="center">Commands</div>';
