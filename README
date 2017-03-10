@@ -59,12 +59,12 @@ If you want to get access to plugin actions from the action menu you can add thi
            {\
                "icon": "/thruk/themes/{{theme}}/images/delete.png",\
                "label": "Delete Service",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=delete&host=$HOSTNAME$&servicename=$SERVICEDESC$"\
+               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=delete&host=$HOSTNAME$&service=$SERVICEDESC$"\
            },\
            {\
                "icon": "/thruk/themes/{{theme}}/images/edit.png",\
                "label": "Modify Service",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=modify&host=$HOSTNAME$&servicename=$SERVICEDESC$"\
+               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=modify&host=$HOSTNAME$&service=$SERVICEDESC$"\
            },\
        ]\
     }
