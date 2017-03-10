@@ -2423,7 +2423,7 @@ sub index {
     $c->stash->{'testmode'}       = 1;
     $c->stash->{'title'}          = 'Configuration Editor';
 
-    my $hostname = `hostname --fqdn`;
+    my $hostname = Thruk::Utils::IO::cmd(undef, "hostname --fqdn");
     chomp $hostname;
     $c->stash->{'hostname'} = $hostname;
 
