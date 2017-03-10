@@ -37,9 +37,9 @@ use Test::JSON;
 use URI::Escape;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-my $METHOD = "GET";
+#my $METHOD = "GET";
 
-#my $METHOD = "POST";
+my $METHOD = "POST";
 
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
@@ -647,20 +647,35 @@ sub display_multi_select {
 }
 
 =head2 display_service_confirmation
+
 This function gets a confirmation dialog
+
 =head3 Parameters
+
 =over
+
 =item *
+
 $c - a context
+
 =item *
+
 mode, create, delete or modify
+
 =item *
+
 host
+
 =item *
+
 servicename
+
 =item *
+
 attributes, i.e. the json to send to the api
+
 =back
+
 =cut
 
 sub display_service_confirmation {
@@ -695,16 +710,27 @@ sub display_service_confirmation {
 }
 
 =head2 display_service_selection
+
 This function gets the service selection
+
 =head3 Parameters
+
 =over
+
 =item *
+
 $c - a context
+
 =item *
+
 mode, create, delete or modify
+
 =item *
+
 host
+
 =back
+
 =cut
 
 sub display_service_selection {
@@ -744,16 +770,27 @@ sub display_service_selection {
 }
 
 =head2 display_single_host_selection
-This function gets a list of hosts where you can select one and one only 
+
+This function gets a list of hosts where you can select one and one only
+
 =head3 Parameters
+
 =over
+
 =item *
+
 $c - a context
+
 =item *
+
 mode, create, delete or modify
+
 =item *
+
 page_type, services, hosts etc
+
 =back
+
 =cut
 
 sub display_single_host_selection {
@@ -785,6 +822,30 @@ sub display_single_host_selection {
     $service_form .= $q->end_form;
     return $service_form;
 }
+
+=head2 display_select
+
+This function create a select object from an array
+
+=head3 Parameters
+
+=over
+
+=item *
+
+$name - the name for the select
+
+=item *
+
+id -
+
+=item *
+
+page_type, services, hosts etc
+
+=back
+
+=cut
 
 sub display_select {
     my ( $name, $id, $multiple, @arr ) = @_;
@@ -1559,10 +1620,10 @@ sub services {
             my $hoststr = csv_from_arr(@hosts);
             $service_page .=
                 '<p>Are you sure you want to add the service '
-                    . $servicename
+                    .$servicename
                     .' with attributes: '
                     .$attributes
-                    . ' to the host(s): '
+                    .' to the host(s): '
                     .$hoststr
                     .'?</p><br/>';
             $service_page .= $q->start_form(
@@ -1572,9 +1633,9 @@ sub services {
             foreach my $hst (@hosts) {
                 $service_page .= $q->hidden( 'host', $hst );
             }
-            $service_page .= $q->hidden( 'attributes',  $attributes );
-            $service_page .= $q->hidden( 'mode',        "create" );
-            $service_page .= $q->hidden( 'page_type',   "services" );
+            $service_page .= $q->hidden( 'attributes', $attributes );
+            $service_page .= $q->hidden( 'mode', "create" );
+            $service_page .= $q->hidden( 'page_type', "services" );
             $service_page .= $q->hidden( 'service', $servicename );
             $service_page .= $q->submit(
                 -name  => 'confirm',
@@ -2200,6 +2261,9 @@ sub body {
     my $body      = '';
     my $params    = $c->req->parameters;
     my $page_type = $params->{'page_type'};
+    unless ($page_type) {
+        $page_type = "";
+    }
     if ( $page_type eq "hosts" ) {
         $body = hosts $c;
     }
