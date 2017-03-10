@@ -270,14 +270,23 @@ sub display_back_button {
 }
 
 =head2 display_command_selection
+
 This function gets the command selection
+
 =head3 Parameters
+
 =over
+
 =item *
+
 $c - a context
+
 =item *
+
 mode, create, delete or modify
+
 =back
+
 =cut
 
 sub display_command_selection {
@@ -523,18 +532,31 @@ sub display_editor {
 }
 
 =head2 display_generic_confirmation
+
 This function gets a confirmation dialog
+
 =head3 Parameters
+
 =over
+
 =item *
+
 $c - a context
+
 =item *
+
 mode, create, delete or modify
+
 =item *
+
 name
+
 =item *
+
 attributes, i.e. the json to send to the api
+
 =back
+
 =cut
 
 sub display_generic_confirmation {
@@ -656,10 +678,6 @@ This function gets a confirmation dialog
 
 =item *
 
-$c - a context
-
-=item *
-
 mode, create, delete or modify
 
 =item *
@@ -680,7 +698,7 @@ attributes, i.e. the json to send to the api
 
 sub display_service_confirmation {
     my $q = CGI->new;
-    my ( $c, $mode, $host, $servicename, $attributes ) = @_;
+    my ( $mode, $host, $servicename, $attributes ) = @_;
     my $service_form;
     $service_form .= $q->p(
         "Are you sure you want to $mode $servicename for host: $host?<br/>");
@@ -837,11 +855,11 @@ $name - the name for the select
 
 =item *
 
-id -
+$id - the html id of the select
 
 =item *
 
-page_type, services, hosts etc
+$multiple - true if you want to be able to select more than one item
 
 =back
 
@@ -864,15 +882,42 @@ sub display_select {
 
 }
 
+=head2 display_download_button
+
+This function create a download button for json files
+
+=head3 Parameters
+
+=over
+
+=item *
+
+$c - a context
+
+=item *
+
+$endpoint - endpoint (e.g. objects/hosts/<hostname>)
+
+=item *
+
+$page_type - hosts, services etc
+
+=back
+
+=cut
+
 sub display_download_button {
     my ( $c, $endpoint, $page_type ) = @_;
     my $json = get_json( $c, $endpoint, get_keys( $page_type, "true" ) );
+    my $filename = $endpoint;
+    $filename =~ s/\//_/g;
+    $filename .= ".json";
     my $html = '<button type="button" id="dwlbutton" >Export object</button>';
     $html .= '<script type="text/javascript">function download() {
   var element = document.createElement("a");
   var text = ' . $json . ';
   element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(text, "", 2)));
-  element.setAttribute("download", "object.json");
+  element.setAttribute("download", "'.$filename.'");
 
   element.style.display = "none";
   document.body.appendChild(element);
@@ -887,6 +932,22 @@ document.getElementById ("dwlbutton").addEventListener ("click", download, false
     return $html;
 
 }
+
+=head2 get_defaults
+
+This function gets default json for the editor
+
+=head3 Parameters
+
+=over
+
+=item *
+
+$page_type - hosts, services etc
+
+=back
+
+=cut
 
 sub get_defaults {
 
@@ -990,14 +1051,23 @@ sub get_defaults {
 }
 
 =head2 get_json
+
 This function gets the editable json of a configuration object
+
 =head3 Parameters
+
 =over
+
 =item *
+
 endpoint (e.g. objects/services/<hostname>!<servicename>)
+
 =item *
+
 keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
+
 =back
+
 =cut
 
 sub get_json {
@@ -1011,6 +1081,26 @@ sub get_json {
     $json->pretty->canonical(1);
     return $json->pretty->encode( \%to_json );
 }
+
+=head2 get_keys
+
+This function create a download button for json files
+
+=head3 Parameters
+
+=over
+
+=item *
+
+$page_type - hosts, services etc
+
+=item *
+
+$dl - is this meant for download/creation or modification
+
+=back
+
+=cut
 
 sub get_keys {
     my ( $page_type, $dl ) = @_;
@@ -1325,7 +1415,7 @@ sub hosts {
 
 =head2 host_groups
 
-TODO: Implement this
+TODO: Implement this, it is not done yet and not visible
 
 =cut
 
@@ -1572,7 +1662,7 @@ sub services {
             and $servicename =~ m/.+/ )
         {
             $service_page .=
-              display_service_confirmation( $c, $mode, $host, $servicename );
+                display_service_confirmation( $mode, $host, $servicename );
 
         }
 
@@ -1701,7 +1791,7 @@ sub services {
             and $submit eq "Submit" )
         {
             $service_page .=
-              display_service_confirmation( $c, $mode, $host, $servicename,
+                display_service_confirmation( $mode, $host, $servicename,
                 $attributes );
         }
         elsif ( $host and $servicename ) {
@@ -1739,7 +1829,7 @@ sub service_groups {
 
 =head2 contacts
 
-TODO: Implement this
+This is where we handle contacts/users
 
 =cut
 
@@ -1943,7 +2033,7 @@ sub contacts {
 
 =head2 contact_groups
 
-TODO: Implement this
+This is where we handle contact/user groups
 
 =cut
 
