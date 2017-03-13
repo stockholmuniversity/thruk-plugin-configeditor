@@ -1274,15 +1274,13 @@ sub hosts {
     }
     my $attributes = $params->{'attributes'};
     my $cascading  = $params->{'cascading'};
-    my $command    = $params->{'command'};
     my $confirm    = $params->{'confirm'};
-    my $ip         = $params->{'ip'};
-    my $ip6        = $params->{'ip6'};
     my $mode       = $params->{'mode'};
-    my $os         = $params->{'os'};
     my $submit     = $params->{'submit'};
-    my $templates  = $params->{'templates'};
-    my $zone       = $params->{'zone'};
+
+    unless ($mode) {
+        $mode = "";
+    }
 
     # Get hosts
     my @temp_arr;
@@ -1440,6 +1438,10 @@ sub host_groups {
     my $mode        = $params->{'mode'};
     my $templates   = $params->{'templates'};
 
+    unless ($mode) {
+        $mode = "";
+    }
+
     # Get hosts
     my @temp_arr;
     for my $hashref ( values $c->stash->{hosts} ) {
@@ -1588,6 +1590,9 @@ TODO: Implement this
 =cut
 
 sub host_escalations {
+    unless ($mode) {
+        $mode = "";
+    }
     return "Host Escalations Placeholder";
 }
 
@@ -1598,6 +1603,9 @@ TODO: Implement this
 =cut
 
 sub host_dependencies {
+    unless ($mode) {
+        $mode = "";
+    }
     return "Host Dependencies Placeholder";
 }
 
@@ -1631,6 +1639,10 @@ sub services {
     my $mode        = $params->{'mode'};
     my $servicename = $params->{'service'};
     my $submit      = $params->{'submit'};
+
+    unless ($mode) {
+        $mode = "";
+    }
 
     my $service_page =
       '<div class="reportSelectTitle" align="center">Services</div>';
@@ -1856,15 +1868,15 @@ sub contacts {
     }
 
     my $cascading    = $params->{'cascading'};
-    my $display_name = $params->{'display_name'};
-    my $email        = $params->{'email'};
     my $group_select = $params->{'groups'};
     my $mode         = $params->{'mode'};
-    my $pager        = $params->{'pager'};
-    my $period       = $params->{'period'};
     my $submit       = $params->{'submit'};
     my $state_select = $params->{'states'};
     my $type_select  = $params->{'types'};
+
+    unless ($mode) {
+        $mode = "";
+    }
 
     unless ( ref $params->{'groups'} eq 'ARRAY' ) {
         my @arrr = ();
@@ -2052,6 +2064,10 @@ sub contact_groups {
     my $mode = $params->{'mode'};
     my $submit = $params->{'submit'};
 
+    unless ($mode) {
+        $mode = "";
+    }
+
     my @groups = ();
     my $group = '';
     if (ref $params->{'groups'} eq 'ARRAY') {
@@ -2211,6 +2227,10 @@ TODO: Implement this
 =cut
 
 sub timeperiods {
+    unless ($mode) {
+        $mode = "";
+    }
+
     return "Timeperiods Placeholder";
 }
 
@@ -2221,8 +2241,7 @@ This is the page_type commands
 =cut
 
 sub commands {
-    my ($c)    = @_;
-    my $q      = CGI->new;
+    my ($c) = @_;
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
@@ -2232,6 +2251,10 @@ sub commands {
     my $confirm = $params->{'confirm'};
     my $mode = $params->{'mode'};
     my $submit = $params->{'submit'};
+
+    unless ($mode) {
+        $mode = "";
+    }
 
     my $command_page =
       '<div class="reportSelectTitle" align="center">Commands</div>';
@@ -2423,7 +2446,7 @@ sub index {
     $c->stash->{'testmode'}       = 1;
     $c->stash->{'title'}          = 'Configuration Editor';
 
-    my $hostname = Thruk::Utils::IO::cmd(undef, "hostname --fqdn");
+    my $hostname = Thruk::Utils::IO::cmd( undef, "hostname --fqdn" );
     chomp $hostname;
     $c->stash->{'hostname'} = $hostname;
 
