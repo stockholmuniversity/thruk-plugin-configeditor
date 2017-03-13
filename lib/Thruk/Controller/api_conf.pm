@@ -32,7 +32,6 @@ use JSON::XS qw(encode_json decode_json);
 use JSON;
 use LWP::Protocol::https;
 use LWP::UserAgent;
-use Net::SSLGlue::LWP;
 use Test::JSON;
 use URI::Escape;
 
@@ -299,7 +298,7 @@ sub display_command_selection {
     );
     $command_form .= '<select name="command">';
     my @names;
-    foreach my $hash ( sort values $c->stash->{commands} ) {
+    foreach my $hash ( sort values  @{ $c->stash->{commands} }  ) {
         push @names, $hash->{name};
     }
     foreach my $temp (sort @names) {
@@ -504,7 +503,7 @@ sub display_editor {
         $textbox .= $q->p("Editor:");
     }
     if ($hidden) {
-        foreach my $key (keys $hidden) {
+        foreach my $key (keys %{ $hidden }) {
             $textbox .= $q->hidden( $key, $hidden->{"$key"} );
         }
     }
@@ -759,7 +758,7 @@ sub display_service_selection {
     # Get services
     my %services = ();
     foreach my $hash ( $c->stash->{services} ) {
-        foreach my $service ( values $hash ) {
+        foreach my $service ( values @{ $hash } ) {
             $services{ $service->{host_name} }{ $service->{description} } =
               $service->{display_name};
         }
@@ -772,7 +771,7 @@ sub display_service_selection {
     $service_form .= '<select name="service">';
 
     # Loop all services asscoiated with the host
-    foreach my $service ( sort keys $services{$host} ) {
+    foreach my $service ( sort keys %{ $services{$host} } ) {
         $service_form .=
           "<option value=\"$service\">$services{$host}{$service}</option>";
     }
@@ -819,7 +818,7 @@ sub display_single_host_selection {
     # Get services
     my %services = ();
     foreach my $hash ( $c->stash->{services} ) {
-        foreach my $service ( values $hash ) {
+        foreach my $service ( values @{ $hash } ) {
             $services{ $service->{host_name} }{ $service->{description} } =
               $service->{display_name};
         }
@@ -1263,7 +1262,7 @@ sub hosts {
     my @hosts = ();
     my $host  = '';
     if ( ref $params->{'host'} eq 'ARRAY' ) {
-        foreach my $hst ( values $params->{'host'} ) {
+        foreach my $hst ( values @{ $params->{'host'} } ) {
             push @hosts, $hst;
         }
         $host = $hosts[0];
@@ -1284,7 +1283,7 @@ sub hosts {
 
     # Get hosts
     my @temp_arr;
-    for my $hashref ( values $c->stash->{hosts} ) {
+    for my $hashref ( values @{ $c->stash->{hosts} } ) {
         push @temp_arr, $hashref->{name};
     }
     my @host_arr = sort @temp_arr;
@@ -1444,7 +1443,7 @@ sub host_groups {
 
     # Get hosts
     my @temp_arr;
-    for my $hashref ( values $c->stash->{hosts} ) {
+    for my $hashref ( values @{ $c->stash->{hosts} } ) {
         push @temp_arr, $hashref->{name};
     }
     my @host_arr = sort @temp_arr;
@@ -1562,7 +1561,7 @@ sub host_groups {
             );
             $hostgroup_page .= $q->p("Enter hostgroupname:");
             $hostgroup_page .= '<select name="hostgroup">';
-            foreach my $hostgroup ( values $c->stash->{hostgroups} ) {
+            foreach my $hostgroup ( values @{ $c->stash->{hostgroups} }) {
                 $hostgroup_page .=
 "<option value=\"$hostgroup->{name}\">$hostgroup->{alias}</option>";
             }
@@ -1590,6 +1589,11 @@ TODO: Implement this
 =cut
 
 sub host_escalations {
+    my ($c) = @_;
+    my $params = $c->req->parameters;
+
+    # Capture parameters sent to page by user dialogs
+    my $mode = $params->{'mode'};
     unless ($mode) {
         $mode = "";
     }
@@ -1603,8 +1607,17 @@ TODO: Implement this
 =cut
 
 sub host_dependencies {
+    my ($c) = @_;
+    my $params = $c->req->parameters;
+
+    # Capture parameters sent to page by user dialogs
+    my $attributes = $params->{'attributes'};
+    my $cascading = $params->{'cascading'};
+    my $command = $params->{'command'};
+    my $confirm = $params->{'confirm'};
+    my $mode = $params->{'mode'};
     unless ($mode) {
-        $mode = "";
+        my $mode = "";
     }
     return "Host Dependencies Placeholder";
 }
@@ -1624,7 +1637,7 @@ sub services {
     my @hosts = ();
     my $host  = '';
     if ( ref $params->{'host'} eq 'ARRAY' ) {
-        foreach my $hst ( values $params->{'host'} ) {
+        foreach my $hst ( values @{ $params->{'host'} } ) {
             push @hosts, $hst;
         }
         $host = $hosts[0];
@@ -1650,7 +1663,7 @@ sub services {
     # Get services
     my %services = ();
     foreach my $hash ( $c->stash->{services} ) {
-        foreach my $service ( values $hash ) {
+        foreach my $service ( values @{ $hash } ) {
             $services{ $service->{host_name} }{ $service->{description} } =
               $service->{display_name};
         }
@@ -1752,7 +1765,7 @@ sub services {
 
             # Get hosts
             my @temp_arr;
-            for my $hashref ( values $c->stash->{hosts} ) {
+            for my $hashref ( values @{ $c->stash->{hosts} } ) {
                 push @temp_arr, $hashref->{name};
             }
             my @host_arr = sort @temp_arr;
@@ -1857,7 +1870,7 @@ sub contacts {
     my @contacts = ();
     my $contact  = '';
     if ( ref $params->{'contact'} eq 'ARRAY' ) {
-        foreach my $cnt ( values $params->{'contact'} ) {
+        foreach my $cnt ( values @{ $params->{'contact'} } ) {
             push @contacts, $cnt;
         }
         $contact = $contacts[0];
@@ -1868,34 +1881,15 @@ sub contacts {
     }
 
     my $cascading    = $params->{'cascading'};
-    my $group_select = $params->{'groups'};
     my $mode         = $params->{'mode'};
     my $submit       = $params->{'submit'};
-    my $state_select = $params->{'states'};
-    my $type_select  = $params->{'types'};
 
     unless ($mode) {
         $mode = "";
     }
 
-    unless ( ref $params->{'groups'} eq 'ARRAY' ) {
-        my @arrr = ();
-        $arrr[0] = $params->{'groups'};
-        $group_select = \@arrr;
-    }
-    unless ( ref $params->{'states'} eq 'ARRAY' ) {
-        my @arrrr = ();
-        $arrrr[0] = $params->{'states'};
-        $state_select = \@arrrr;
-    }
-    unless ( ref $params->{'types'} eq 'ARRAY' ) {
-        my @arrrrr = ();
-        $arrrrr[0] = $params->{'types'};
-        $type_select = \@arrrrr;
-    }
-
     my @temp_arr;
-    for my $hashref ( values $c->{'db'}->get_contacts() ) {
+    for my $hashref ( values @{ $c->{'db'}->get_contacts() } ) {
         push @temp_arr, $hashref->{'name'};
     }
     my @contact_arr = sort @temp_arr;
@@ -1904,21 +1898,6 @@ sub contacts {
       '<div class="reportSelectTitle" align="center">Contacts</div>';
 
     if ( $mode eq "create" ) {
-        my $group_hash =
-          api_call( $c->stash->{'confdir'}, "GET", "objects/usergroups" );
-
-        my @groups;
-        foreach my $element ( values $group_hash->{'results'} ) {
-            push @groups, $element->{'attrs'}{'name'};
-        }
-
-        my $period_hash =
-          api_call( $c->stash->{'confdir'}, "GET", "objects/timeperiods" );
-        my @periods;
-        foreach my $element ( values $period_hash->{'results'} ) {
-            push @periods, $element->{'attrs'}{'name'};
-        }
-
         # This is the contact confirmation api call
         if ( $contact and $attributes and $confirm eq "Confirm" ) {
             my $payload = uri_unescape($attributes);
@@ -2071,7 +2050,7 @@ sub contact_groups {
     my @groups = ();
     my $group = '';
     if (ref $params->{'groups'} eq 'ARRAY') {
-        foreach my $grp (values $params->{'groups'}) {
+        foreach my $grp (values @{ $params->{'groups'} }) {
             push @groups, $grp;
         }
         $group = $groups[0];
@@ -2082,7 +2061,7 @@ sub contact_groups {
     }
 
     my @temp_arr;
-    for my $hashref (values $c->{'db'}->get_contactgroups()) {
+    for my $hashref (values @{ $c->{'db'}->get_contactgroups() }) {
         push @temp_arr, $hashref->{'name'};
     }
     my @contactgroups_arr = sort @temp_arr;
@@ -2227,6 +2206,15 @@ TODO: Implement this
 =cut
 
 sub timeperiods {
+    my ($c) = @_;
+    my $params = $c->req->parameters;
+
+    # Capture parameters sent to page by user dialogs
+    my $attributes = $params->{'attributes'};
+    my $cascading = $params->{'cascading'};
+    my $command = $params->{'command'};
+    my $confirm = $params->{'confirm'};
+    my $mode = $params->{'mode'};
     unless ($mode) {
         $mode = "";
     }
@@ -2445,10 +2433,6 @@ sub index {
     $c->stash->{'template'}       = 'api_conf.tt';
     $c->stash->{'testmode'}       = 1;
     $c->stash->{'title'}          = 'Configuration Editor';
-
-    my $hostname = Thruk::Utils::IO::cmd( undef, "hostname --fqdn" );
-    chomp $hostname;
-    $c->stash->{'hostname'} = $hostname;
 
     # This is data we need to have handy
     $c->stash->{'services'} = $c->{'db'}->get_services(

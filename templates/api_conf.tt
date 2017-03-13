@@ -2,18 +2,9 @@
                       css=["plugins/conf/conf.css","plugins/conf/linedtextarea/jquery-linedtextarea.css", "javascript/jstree-3.0.9/themes/default/style.min.css", "plugins/configuration_editor/resources/lou-multi-select-a0f48de/css/multi-select.css", "plugins/configuration_editor/resources/override.css"]
                       js=["plugins/conf/conf.js", "javascript/jstree-3.0.9/jstree.min.js", "plugins/configuration_editor/resources/lou-multi-select-a0f48de/js/jquery.multi-select.js"]
 %]
-    <script type="text/javascript">
-	function infoBoxFunction() {
-		var infoBox = document.getElementsByClassName("infoBox");
-		infoBox[0].innerHTML = infoBox[0].innerHTML + 'Logged in on <span id="infoboxhostname">[% hostname %]</span><br>';
-	}
-    </script>
 [% PROCESS _message.tt %]
 [% PROCESS _overdiv.tt %]
 [% PROCESS _infobox.tt %]
-<script type="text/javascript">
-infoBoxFunction();
-</script>
 [% body %]
 </body>
 </html>
