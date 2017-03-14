@@ -6,27 +6,20 @@ This plugin is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 Dependencies for ubuntu 16.04 is: 
-libcgi-pm-perl libconfig-json-perl libdata-validate-ip-perl liblwp-protocol-https-perl libnet-sslglue-perl libtest-json-perl
+libcgi-pm-perl liblwp-protocol-https-perl libtest-json-perl
   
 Install instructions:
 cd plugins-available
 git clone https://github.com/stockholmuniversity/thruk-plugin-configeditor.git configuration_editor
 
-In order to work the plugin needs a config file in json format which is typicaly called:
-/etc/thruk/icinga-api-credentials.json
+In order for the plugin to work it needs a config file in /etc/thruk/thruk_local.d/, e.g. /etc/thruk/thruk_local.d/icinga2_api.conf with the following example content:
 
-Filename of the config file is hardcoded but the path is guessed from
-$c->stash->{usercontent_folder} by using dirname on the variable.  
-Content of this file should contain credentials and host/port information, e.g: 
-
-{
-   "user" : "myuser",
-   "password" : "secret",
-   "realm" : "Icinga 2",
-   "host" : "icinga.example.com",
-   "port" : "5665",
-   "path" : "v1",
-}
+icinga2_api_user = myuser
+icinga2_api_password = secret
+icinga2_api_realm = Icinga 2
+icinga2_api_host = icinga.example.com
+icinga2_api_port = 5665
+icinga2_api_path = v1
 
 If you want to get access to plugin actions from the action menu you can add this to thruk_local.conf:
 

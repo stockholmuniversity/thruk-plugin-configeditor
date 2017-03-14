@@ -23,7 +23,6 @@ BEGIN {
 use CGI;
 use Config::JSON;
 use Data::Dumper;
-use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use File::Basename qw( dirname basename );
 use HTML::Entities;
 use HTTP::Request::Common;
@@ -35,6 +34,9 @@ use LWP::UserAgent;
 use Test::JSON;
 use URI::Escape;
 
+# A cgi object to help with some html creation
+my $q = CGI->new;
+
 # This is the form method for dialogs, useful to change all for debug purposes
 #my $METHOD = "GET";
 
@@ -43,23 +45,23 @@ my $METHOD = "POST";
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
 my @contact_keys = (
-    "display_name", "email", "enable_notifications", "pager",
-    "states", "period", "vars"
+    "display_name", "email",  "enable_notifications", "pager",
+    "states",       "period", "vars"
 );
 
 my @contactgroup_keys = ( "display_name", "vars" );
 my @host_keys = (
-    "address6", "address", "check_command", "display_name",
-    "event_command", "action_url", "notes_url", "vars",
-    "icon_image", "icon_image_alt", "check_interval"
+    "address6",      "address",        "check_command", "display_name",
+    "event_command", "action_url",     "notes_url",     "vars",
+    "icon_image",    "icon_image_alt", "check_interval"
 );
 
-my @hostgroup_keys = ();
-my @hostescalation_keys = ();
-my @hostdependency_keys = ();
+my @hostgroup_keys         = ();
+my @hostescalation_keys    = ();
+my @hostdependency_keys    = ();
 my @servicedependency_keys = ();
 my @serviceescalation_keys = ();
-my @service_keys = (
+my @service_keys           = (
     "vars",          "action_url",
     "check_command", "check_interval",
     "display_name",  "notes_url",
@@ -67,44 +69,44 @@ my @service_keys = (
     "retry_interval"
 );
 my @servicegroup_keys = ();
-my @timeperiod_keys = ();
+my @timeperiod_keys   = ();
 
-my @command_dl_keys = @command_keys;
-my @contact_dl_keys = @contact_keys;
-my @contactgroup_dl_keys = @contactgroup_keys;
-my @host_dl_keys = @host_keys;
-my @hostdependency_dl_keys = @hostdependency_keys;
-my @hostescalation_dl_keys = @hostescalation_keys;
-my @hostgroup_dl_keys = @hostgroup_keys;
-my @service_dl_keys = @service_keys;
+my @command_dl_keys           = @command_keys;
+my @contact_dl_keys           = @contact_keys;
+my @contactgroup_dl_keys      = @contactgroup_keys;
+my @host_dl_keys              = @host_keys;
+my @hostdependency_dl_keys    = @hostdependency_keys;
+my @hostescalation_dl_keys    = @hostescalation_keys;
+my @hostgroup_dl_keys         = @hostgroup_keys;
+my @service_dl_keys           = @service_keys;
 my @servicedependency_dl_keys = @servicedependency_keys;
 my @serviceescalation_dl_keys = @serviceescalation_keys;
-my @servicegroup_dl_keys = @servicegroup_keys;
-my @timeperiod_dl_keys = @timeperiod_keys;
+my @servicegroup_dl_keys      = @servicegroup_keys;
+my @timeperiod_dl_keys        = @timeperiod_keys;
 
-push @command_dl_keys, ( "templates", "zone" );
-push @contact_dl_keys, ( "groups", "templates", "zone" );
-push @contactgroup_dl_keys, ( "groups", "templates", "zone" );
+push @command_dl_keys,      ( "templates", "zone" );
+push @contact_dl_keys,      ( "groups",    "templates", "zone" );
+push @contactgroup_dl_keys, ( "groups",    "templates", "zone" );
 push @host_dl_keys,
-    (
-        "check_period", "check_timeout",
-        "enable_active_checks", "enable_event_handler",
-        "enable_flapping", "enable_notifications",
-        "enable_passive_checks", "enable_perfdata",
-        "groups", "notes",
-        "retry_interval", "templates",
-        "zone"
-    );
+  (
+    "check_period",          "check_timeout",
+    "enable_active_checks",  "enable_event_handler",
+    "enable_flapping",       "enable_notifications",
+    "enable_passive_checks", "enable_perfdata",
+    "groups",                "notes",
+    "retry_interval",        "templates",
+    "zone"
+  );
 push @service_dl_keys,
-    (
-        "check_period", "check_timeout",
-        "enable_active_checks", "enable_event_handler",
-        "enable_flapping", "enable_notifications",
-        "enable_passive_checks", "enable_perfdata",
-        "groups", "icon_image",
-        "icon_image_alt", "notes",
-        "templates", "zone"
-    );
+  (
+    "check_period",          "check_timeout",
+    "enable_active_checks",  "enable_event_handler",
+    "enable_flapping",       "enable_notifications",
+    "enable_passive_checks", "enable_perfdata",
+    "groups",                "icon_image",
+    "icon_image_alt",        "notes",
+    "templates",             "zone"
+  );
 
 =head2 api_call
 
@@ -116,39 +118,36 @@ This function reads api config and makes api calls
 
 =item *
 
-confdir (typically  $c->stash->{'confdir'} )
+$c - a context
 
 =item *
 
-verb (GET, PUT, DELETE, POST)
+$verb (GET, PUT, DELETE, POST)
 
 =item *
 
-endpoint (e.g. objects/hosts/<hostname>)
+$endpoint (e.g. objects/hosts/<hostname>)
 
 =item *
 
-payload (optional, {  "attrs": { "check_command": "<command name>", "check_interval": 1,"retry_interval": 1 } })
+$payload (optional, {  "attrs": { "check_command": "<command name>", "check_interval": 1,"retry_interval": 1 } })
 
 =back
 
 =cut
 
 sub api_call {
-    my ( $confdir, $verb, $endpoint, $payload ) = @_;
+    my ( $c, $verb, $endpoint, $payload ) = @_;
 
-    # Read config file
-    my $config_file = "$confdir/icinga-api-credentials.json";
-    my $config      = Config::JSON->new($config_file);
-
-    # Setting up for api call
-    my $api_host     = $config->get('host');
-    my $api_password = $config->get('password');
-    my $api_path     = $config->get('path');
-    my $api_port     = $config->get('port');
-    my $api_realm    = $config->get('realm');
+    # Read config
+    my $api_host     = $c->config->{'icinga2_api_host'};
+    my $api_password = $c->config->{'icinga2_api_password'};
+    my $api_path     = $c->config->{'icinga2_api_path'};
+    my $api_port     = $c->config->{'icinga2_api_port'};
+    my $api_realm    = $c->config->{'icinga2_api_realm'};
     my $api_url      = "https://$api_host:$api_port/$api_path/$endpoint";
-    my $api_user     = $config->get('user');
+    my $api_user     = $c->config->{'icinga2_api_user'};
+
     my $ua = LWP::UserAgent->new( ssl_opts => { verify_hostname => 0 } );
     $ua->default_header( 'Accept' => 'application/json' );
     $ua->credentials( "$api_host:$api_port", $api_realm, $api_user,
@@ -162,6 +161,7 @@ sub api_call {
     }
     my $response = $ua->request($req);
     return decode_json $response->decoded_content;
+
 }
 
 =head2 csv_from_arr
@@ -216,8 +216,6 @@ sub display_api_response {
         $payload = $_[1];
     }
 
-    # A cgi object to help with some html creation
-    my $q      = CGI->new;
     my $result = $q->p("Result from API was:");
     $result .= $q->p( $arr[0]{results}[0]{status} );
     $result .= $q->p( $arr[0]{results}[0]{errors} );
@@ -252,7 +250,6 @@ sub display_back_button {
     my ($page_type) = @_;
 
     # A cgi object to help with some html creation
-    my $q    = CGI->new;
     my $page = $q->p('Go back?');
     $page .= $q->start_form(
         -method => $METHOD,
@@ -290,7 +287,6 @@ mode, create, delete or modify
 
 sub display_command_selection {
     my ( $c, $mode ) = @_;
-    my $q = CGI->new;
     my $command_form .= $q->p("Enter command to $mode");
     $command_form .= $q->start_form(
         -method => $METHOD,
@@ -298,10 +294,10 @@ sub display_command_selection {
     );
     $command_form .= '<select name="command">';
     my @names;
-    foreach my $hash ( sort values  @{ $c->stash->{commands} }  ) {
+    foreach my $hash ( sort values @{ $c->stash->{commands} } ) {
         push @names, $hash->{name};
     }
-    foreach my $temp (sort @names) {
+    foreach my $temp ( sort @names ) {
         my $name = $temp;
         $name =~ s/check_//g;
         $command_form .= "<option value=\"$name\">$temp</option>";
@@ -327,7 +323,7 @@ This function returns the create/delete dialog
 
 =item *
 
-page_type 
+$page_type 
 
 =back
 
@@ -337,7 +333,6 @@ sub display_create_delete_modify_dialog {
     my ($page_type) = @_;
 
     # A cgi object to help with some html creation
-    my $q    = CGI->new;
     my $page = $q->p('What do you want to do?');
     $page .= $q->start_form(
         -method => $METHOD,
@@ -367,11 +362,11 @@ This function returns the delete confirmation
 
 =item *
 
-name
+$name
 
 =item *
 
-page_type
+$page_type
 
 =item *
 
@@ -382,7 +377,6 @@ page_type
 =cut
 
 sub display_delete_confirmation {
-    my $q = CGI->new;
     my ( $name, $page_type, @arr ) = @_;
 
     my $str  = csv_from_arr(@arr);
@@ -423,7 +417,6 @@ endpoint (e.g. objects/services/<hostname>!<servicename>)
 
 sub display_editor {
     my ( $page_type, $hidden, $c, $endpoint, ) = @_;
-    my $q = CGI->new;
     my $name = $page_type;
     $name =~ s/s$//;
     my $mode = "create";
@@ -431,8 +424,8 @@ sub display_editor {
         $mode = "modify";
     }
     my $json_text = '';
-    my $head = 'Object editor';
-    if ($mode eq "modify") {
+    my $head      = 'Object editor';
+    if ( $mode eq "modify" ) {
         my @keys = get_keys($page_type);
         $json_text = get_json( $c, $endpoint, @keys );
         $head .= " for endpoint: <b>$endpoint</b>";
@@ -446,13 +439,13 @@ sub display_editor {
     open my $fh, '<', \$json_text or die $!;
     while (<$fh>) {
         my $len = length($_);
-        if ($len > $cols) {
+        if ( $len > $cols ) {
             $cols = $len;
         }
     }
     close $fh or die $!;
 
-    if ($mode eq "create") {
+    if ( $mode eq "create" ) {
 
         # We want some extra space for the editor window
         $cols = $cols + 50;
@@ -489,7 +482,7 @@ sub display_editor {
 	}
 </script>';
     $textbox .= $q->p($head);
-    unless ($page_type eq "services" and $mode eq "create") {
+    unless ( $page_type eq "services" and $mode eq "create" ) {
         $textbox .= $q->start_form(
             -method   => $METHOD,
             -action   => "api_conf.cgi",
@@ -497,17 +490,17 @@ sub display_editor {
             -onSubmit => "return validateJSON()"
         );
     }
-    if ($mode eq "create") {
+    if ( $mode eq "create" ) {
         $textbox .= $q->p("Enter $name name:");
         $textbox .= $q->textfield( $name, '', 50, 80 );
         $textbox .= $q->p("Editor:");
     }
     if ($hidden) {
-        foreach my $key (keys %{ $hidden }) {
+        foreach my $key ( keys %{$hidden} ) {
             $textbox .= $q->hidden( $key, $hidden->{"$key"} );
         }
     }
-    $textbox .= $q->hidden( 'mode', $mode );
+    $textbox .= $q->hidden( 'mode',      $mode );
     $textbox .= $q->hidden( 'page_type', $page_type );
     $textbox .= $q->textarea(
         -name    => "attributes",
@@ -517,14 +510,14 @@ sub display_editor {
         -id      => "JSONText"
     );
     $textbox .= "<br/>";
-    unless ($page_type eq "services" and $mode eq "create") {
+    unless ( $page_type eq "services" and $mode eq "create" ) {
         $textbox .= $q->submit(
             -name  => "submit",
             -value => 'Submit'
         );
         $textbox .= $q->end_form;
     }
-    if ($mode eq "modify") {
+    if ( $mode eq "modify" ) {
         $textbox .= display_download_button( $c, $endpoint, $page_type );
     }
     return decode_entities($textbox);
@@ -544,22 +537,21 @@ $c - a context
 
 =item *
 
-mode, create, delete or modify
+$mode, create, delete or modify
 
 =item *
 
-name
+$name
 
 =item *
 
-attributes, i.e. the json to send to the api
+$attributes, i.e. the json to send to the api
 
 =back
 
 =cut
 
 sub display_generic_confirmation {
-    my $q = CGI->new;
     my ( $c, $mode, $name, $page_type, $attributes ) = @_;
     my $type = $page_type;
     $type =~ s/s$//;
@@ -604,11 +596,11 @@ This function returns javascript for multi select
 
 =item *
 
-id for select
+$id for select
 
 =item *
 
-array of items
+@input - array of items
 
 =back
 
@@ -696,7 +688,6 @@ attributes, i.e. the json to send to the api
 =cut
 
 sub display_service_confirmation {
-    my $q = CGI->new;
     my ( $mode, $host, $servicename, $attributes ) = @_;
     my $service_form;
     $service_form .= $q->p(
@@ -715,7 +706,7 @@ sub display_service_confirmation {
         $service_form .= $q->hidden( 'attributes', $attributes );
     }
     $service_form .= $q->hidden( 'service', $servicename );
-    if ($mode eq "delete") {
+    if ( $mode eq "delete" ) {
         $service_form .= $q->checkbox( 'cascading', 0, 'true',
             'Use cascading delete - WARNING' );
     }
@@ -740,25 +731,24 @@ $c - a context
 
 =item *
 
-mode, create, delete or modify
+$mode, create, delete or modify
 
 =item *
 
-host
+$host
 
 =back
 
 =cut
 
 sub display_service_selection {
-    my $q = CGI->new;
     my ( $c, $mode, $host ) = @_;
     my $service_form;
 
     # Get services
     my %services = ();
     foreach my $hash ( $c->stash->{services} ) {
-        foreach my $service ( values @{ $hash } ) {
+        foreach my $service ( values @{$hash} ) {
             $services{ $service->{host_name} }{ $service->{description} } =
               $service->{display_name};
         }
@@ -800,25 +790,24 @@ $c - a context
 
 =item *
 
-mode, create, delete or modify
+$mode, create, delete or modify
 
 =item *
 
-page_type, services, hosts etc
+$page_type, services, hosts etc
 
 =back
 
 =cut
 
 sub display_single_host_selection {
-    my $q = CGI->new;
     my ( $c, $mode, $page_type ) = @_;
     my $service_form;
 
     # Get services
     my %services = ();
     foreach my $hash ( $c->stash->{services} ) {
-        foreach my $service ( values @{ $hash } ) {
+        foreach my $service ( values @{$hash} ) {
             $services{ $service->{host_name} }{ $service->{description} } =
               $service->{display_name};
         }
@@ -829,9 +818,9 @@ sub display_single_host_selection {
         -action => "api_conf.cgi"
     );
     $service_form .=
-        display_select( "host", "host-select", "", sort keys %services );
+      display_select( "host", "host-select", "", sort keys %services );
     $service_form .= $q->hidden( 'page_type', $page_type );
-    $service_form .= $q->hidden( 'mode', $mode );
+    $service_form .= $q->hidden( 'mode',      $mode );
     $service_form .= $q->submit(
         -name  => 'submit',
         -value => 'Submit'
@@ -866,7 +855,7 @@ $multiple - true if you want to be able to select more than one item
 
 sub display_select {
     my ( $name, $id, $multiple, @arr ) = @_;
-    my $mult = "";
+    my $mult  = "";
     my @items = sort @arr;
     if ($multiple) {
         $mult = "multiple='multiple'";
@@ -916,7 +905,7 @@ sub display_download_button {
   var element = document.createElement("a");
   var text = ' . $json . ';
   element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(text, "", 2)));
-  element.setAttribute("download", "'.$filename.'");
+  element.setAttribute("download", "' . $filename . '");
 
   element.style.display = "none";
   document.body.appendChild(element);
@@ -957,89 +946,89 @@ sub get_defaults {
     my %to_json;
 
     # Initialize to null for all, over write below
-    foreach my $key (sort @keys) {
+    foreach my $key ( sort @keys ) {
         $to_json{"attrs"}{$key} = undef;
     }
 
-    if ($page_type eq "commands") {
+    if ( $page_type eq "commands" ) {
         $to_json{"attrs"}{"arguments"} = {
-            "--wps_id"      => { "order" => - 2, "value" => '$wps_id$' },
+            "--wps_id"      => { "order" => -2, "value" => '$wps_id$' },
             "--wrapper_cmd" => {
-                "order" => - 1,
+                "order" => -1,
                 "value" => "/local/icinga2/PluginDir/check_su_example"
             },
-            "-H"            => { "value" => '$host.name$' },
-            "-C"            => { "value" => "%%PASSWORD%%" },
-            "-w"            => { "value" => 2 },
-            "-c"            => { "value" => 3 }
+            "-H" => { "value" => '$host.name$' },
+            "-C" => { "value" => "%%PASSWORD%%" },
+            "-w" => { "value" => 2 },
+            "-c" => { "value" => 3 }
         };
-        $to_json{"attrs"}{"command"} = [ "/local/wps/libexec/wrapper_su_wps" ];
-        $to_json{"attrs"}{"templates"} = [ "plugin-check-command" ];
+        $to_json{"attrs"}{"command"}   = ["/local/wps/libexec/wrapper_su_wps"];
+        $to_json{"attrs"}{"templates"} = ["plugin-check-command"];
     }
-    elsif ($page_type eq "contactgroups") {
+    elsif ( $page_type eq "contactgroups" ) {
         $to_json{"attrs"}{"display_name"} = "Example name";
 
     }
-    elsif ($page_type eq "contacts") {
+    elsif ( $page_type eq "contacts" ) {
         $to_json{"attrs"}{"display_name"} = "Example Name";
-        $to_json{"attrs"}{"email"} = 'example.name@su.se';
-        $to_json{"attrs"}{"pager"} = "4612345678";
+        $to_json{"attrs"}{"email"}        = 'example.name@su.se';
+        $to_json{"attrs"}{"pager"}        = "4612345678";
         $to_json{"attrs"}{"enable_notifications"} =
-            bless( do { \( my $o = 1 ) }, 'JSON::XS::Boolean' );
+          bless( do { \( my $o = 1 ) }, 'JSON::XS::Boolean' );
         $to_json{"attrs"}{"groups"} = [ "Example group1", "Example groups2" ];
         $to_json{"attrs"}{"period"} = "24x7";
         $to_json{"attrs"}{"states"} = [ "Critical", "Unknown" ];
 
     }
-    elsif ($page_type eq "hostdependencies") {
+    elsif ( $page_type eq "hostdependencies" ) {
 
     }
-    elsif ($page_type eq "hostescalations") {
+    elsif ( $page_type eq "hostescalations" ) {
 
     }
-    elsif ($page_type eq "hostgroups") {
+    elsif ( $page_type eq "hostgroups" ) {
 
     }
-    elsif ($page_type eq "hosts") {
-        $to_json{"attrs"}{"address"} = "127.0.0.1";
-        $to_json{"attrs"}{"check_command"} = "hostalive";
+    elsif ( $page_type eq "hosts" ) {
+        $to_json{"attrs"}{"address"}        = "127.0.0.1";
+        $to_json{"attrs"}{"check_command"}  = "hostalive";
         $to_json{"attrs"}{"check_interval"} = 60;
-        $to_json{"attrs"}{"check_period"} = "24x7";
-        $to_json{"attrs"}{"display_name"} = "example-prod-srv01.it.su.se";
-        $to_json{"attrs"}{"icon_image"} = "base/linux40.png";
+        $to_json{"attrs"}{"check_period"}   = "24x7";
+        $to_json{"attrs"}{"display_name"}   = "example-prod-srv01.it.su.se";
+        $to_json{"attrs"}{"icon_image"}     = "base/linux40.png";
         $to_json{"attrs"}{"icon_image_alt"} = "Linux";
-        $to_json{"attrs"}{"templates"} = [ "linux-host" ];
-        $to_json{"attrs"}{"vars"} = {
+        $to_json{"attrs"}{"templates"}      = ["linux-host"];
+        $to_json{"attrs"}{"vars"}           = {
             "graphite_prefix" => "server",
             "os"              => "linux",
             "ticket_queue"    => "linfra"
         };
-        $to_json{"attrs"}{"zone"} = "master";
-        $to_json{"attrs"}{"groups"} = [ "hdbe", "surveillance" ];
+        $to_json{"attrs"}{"zone"}           = "master";
+        $to_json{"attrs"}{"groups"}         = [ "hdbe", "surveillance" ];
         $to_json{"attrs"}{"retry_interval"} = 30;
 
     }
-    elsif ($page_type eq "servicedependencies") {
+    elsif ( $page_type eq "servicedependencies" ) {
 
     }
-    elsif ($page_type eq "serviceescalations") {
+    elsif ( $page_type eq "serviceescalations" ) {
 
     }
-    elsif ($page_type eq "servicegroups") {
+    elsif ( $page_type eq "servicegroups" ) {
 
     }
-    elsif ($page_type eq "services") {
-        $to_json{"attrs"}{"check_command"} = "su_example";
+    elsif ( $page_type eq "services" ) {
+        $to_json{"attrs"}{"check_command"}  = "su_example";
         $to_json{"attrs"}{"check_interval"} = 300;
-        $to_json{"attrs"}{"check_period"} = "24x7";
-        $to_json{"attrs"}{"display_name"} = "Example Name";
+        $to_json{"attrs"}{"check_period"}   = "24x7";
+        $to_json{"attrs"}{"display_name"}   = "Example Name";
 
     }
-    elsif ($page_type eq "timeperiods") {
+    elsif ( $page_type eq "timeperiods" ) {
 
     }
-    unless ($to_json{"attrs"}{"vars"}) {
-        $to_json{"attrs"}{"vars"} = { };
+    unless ( $to_json{"attrs"}{"vars"} ) {
+        $to_json{"attrs"}{"vars"} = {};
     }
     my $json = JSON->new;
     $json->pretty->canonical(1);
@@ -1058,12 +1047,14 @@ This function gets the editable json of a configuration object
 =over
 
 =item *
+$c - a context
+=item *
 
-endpoint (e.g. objects/services/<hostname>!<servicename>)
+$endpoint (e.g. objects/services/<hostname>!<servicename>)
 
 =item *
 
-keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
+@keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 =back
 
@@ -1071,7 +1062,7 @@ keys to extract from "attrs" ("vars", "action_url", "check_command" ...)
 
 sub get_json {
     my ( $c, $endpoint, @keys ) = @_;
-    my $result = api_call( $c->stash->{'confdir'}, "GET", $endpoint );
+    my $result = api_call( $c, "GET", $endpoint );
     my %to_json;
     foreach my $key ( sort @keys ) {
         $to_json{"attrs"}{$key} = $result->{"results"}[0]{"attrs"}{$key};
@@ -1105,60 +1096,60 @@ sub get_keys {
     my ( $page_type, $dl ) = @_;
     my @keys;
     my @dl_keys;
-    if ($page_type eq "commands") {
-        @keys = @command_keys;
+    if ( $page_type eq "commands" ) {
+        @keys    = @command_keys;
         @dl_keys = @command_dl_keys;
     }
-    elsif ($page_type eq "contactgroups") {
-        @keys = @contactgroup_keys;
+    elsif ( $page_type eq "contactgroups" ) {
+        @keys    = @contactgroup_keys;
         @dl_keys = @contactgroup_dl_keys;
     }
-    elsif ($page_type eq "contacts") {
-        @keys = @contact_keys;
+    elsif ( $page_type eq "contacts" ) {
+        @keys    = @contact_keys;
         @dl_keys = @contact_dl_keys;
     }
-    elsif ($page_type eq "hostdependencies") {
-        @keys = @hostdependency_keys;
+    elsif ( $page_type eq "hostdependencies" ) {
+        @keys    = @hostdependency_keys;
         @dl_keys = @hostdependency_dl_keys;
     }
-    elsif ($page_type eq "hostescalations") {
-        @keys = @hostescalation_keys;
+    elsif ( $page_type eq "hostescalations" ) {
+        @keys    = @hostescalation_keys;
         @dl_keys = @hostescalation_dl_keys;
 
     }
-    elsif ($page_type eq "hostgroups") {
-        @keys = @hostgroup_keys;
+    elsif ( $page_type eq "hostgroups" ) {
+        @keys    = @hostgroup_keys;
         @dl_keys = @hostgroup_dl_keys;
 
     }
-    elsif ($page_type eq "hosts") {
-        @keys = @host_keys;
+    elsif ( $page_type eq "hosts" ) {
+        @keys    = @host_keys;
         @dl_keys = @host_dl_keys;
 
     }
-    elsif ($page_type eq "servicedependencies") {
+    elsif ( $page_type eq "servicedependencies" ) {
 
-        @keys = @servicedependency_keys;
+        @keys    = @servicedependency_keys;
         @dl_keys = @servicedependency_dl_keys;
     }
-    elsif ($page_type eq "serviceescalations") {
+    elsif ( $page_type eq "serviceescalations" ) {
 
-        @keys = @serviceescalation_keys;
+        @keys    = @serviceescalation_keys;
         @dl_keys = @serviceescalation_dl_keys;
     }
-    elsif ($page_type eq "servicegroups") {
+    elsif ( $page_type eq "servicegroups" ) {
 
-        @keys = @servicegroup_keys;
+        @keys    = @servicegroup_keys;
         @dl_keys = @servicegroup_dl_keys;
     }
-    elsif ($page_type eq "services") {
+    elsif ( $page_type eq "services" ) {
 
-        @keys = @service_keys;
+        @keys    = @service_keys;
         @dl_keys = @service_dl_keys;
     }
 
-    elsif ($page_type eq "timeperiods") {
-        @keys = @timeperiod_keys;
+    elsif ( $page_type eq "timeperiods" ) {
+        @keys    = @timeperiod_keys;
         @dl_keys = @timeperiod_dl_keys;
 
     }
@@ -1178,9 +1169,6 @@ This displays the main scroll list och different type of objects
 
 sub selector {
 
-    # A cgi object to help with some html creation
-    my $q = CGI->new;
-
     # These are the different kinds of objects we can manipulate
     my %pagetypes = (
         'contacts'      => 'Contacts',
@@ -1192,10 +1180,10 @@ sub selector {
     #	'hostdependencies' => 'Host Dependencies',
     #	'hostescalations' => 'Host Escalations',
     #	'hostgroups' => 'Host Groups', # Create and delete is implemented for this
-        #	'servicegroups' => 'Service Groups',
-        #	'servicedependencies' => 'Service Dependencies',
-        #	'serviceescalations' => 'Service Escalations',
-        #	'timeperiods' => 'Timeperiods',
+    #	'servicegroups' => 'Service Groups',
+    #	'servicedependencies' => 'Service Dependencies',
+    #	'serviceescalations' => 'Service Escalations',
+    #	'timeperiods' => 'Timeperiods',
     );
 
     # This is where you land if you are not in a specific page_type allready
@@ -1254,8 +1242,6 @@ sub hosts {
     # $host_page is the html for the hosts
     my $host_page = '<div class="reportSelectTitle" align="center">Hosts</div>';
 
-    # Set up cgi
-    my $q      = CGI->new;
     my $params = $c->req->parameters;
 
     #Extract parameters from the request
@@ -1304,8 +1290,8 @@ sub hosts {
                 $cascade = '?cascade=1';
             }
             foreach my $hst (@hosts) {
-                my @arr = api_call( $c->stash->{'confdir'},
-                    "DELETE", "objects/hosts/$hst$cascade" );
+                my @arr =
+                  api_call( $c, "DELETE", "objects/hosts/$hst$cascade" );
                 $host_page .= display_api_response(@arr);
             }
             $host_page .= display_back_button( $mode, 'hosts' );
@@ -1324,9 +1310,9 @@ sub hosts {
                 -action => "api_conf.cgi"
             );
             $host_page .=
-                display_select( "host", "host-select", "true", @host_arr );
+              display_select( "host", "host-select", "true", @host_arr );
             $host_page .= $q->hidden( 'page_type', "hosts" );
-            $host_page .= $q->hidden( 'mode', "delete" );
+            $host_page .= $q->hidden( 'mode',      "delete" );
             $host_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
@@ -1341,22 +1327,19 @@ sub hosts {
     elsif ( $mode eq "create" ) {
 
         # This case is the  actual creation
-        if ($host and $attributes and $confirm eq "Confirm") {
+        if ( $host and $attributes and $confirm eq "Confirm" ) {
             my $payload = uri_unescape($attributes);
-            my @arr = api_call(
-                $c->stash->{'confdir'}, "PUT",
-                "objects/hosts/$host",  $payload
-            );
+            my @arr = api_call( $c, "PUT", "objects/hosts/$host", $payload );
             $host_page .= display_api_response( @arr, $payload );
             $host_page .= display_back_button( $mode, 'hosts' );
 
         }
 
         # This case is confirm dialog
-        elsif ($host and $attributes) {
+        elsif ( $host and $attributes ) {
             $host_page .=
-                display_generic_confirmation( $c, $mode, $host, "hosts",
-                    $attributes );
+              display_generic_confirmation( $c, $mode, $host, "hosts",
+                $attributes );
 
         }
 
@@ -1372,10 +1355,7 @@ sub hosts {
 
             # Do api magic here
             my $payload = uri_unescape($attributes);
-            my @arr     = api_call(
-                $c->stash->{'confdir'}, "POST",
-                "objects/hosts/$host",  $payload
-            );
+            my @arr = api_call( $c, "POST", "objects/hosts/$host", $payload );
             $host_page .= display_api_response( @arr, $payload );
             $host_page .= display_back_button( $mode, 'hosts' );
 
@@ -1425,8 +1405,6 @@ sub host_groups {
     my $hostgroup_page =
       '<div class="reportSelectTitle" align="center">Host Groups</div>';
 
-    # Set up cgi
-    my $q      = CGI->new;
     my $params = $c->req->parameters;
 
     #Extract parameters from the request
@@ -1486,10 +1464,8 @@ sub host_groups {
                 $payload =~ s/, $/]/;
             }
             $payload .= ' } }';
-            my @arr = api_call(
-                $c->stash->{'confdir'},          "PUT",
-                "objects/hostgroups/$hostgroup", $payload
-            );
+            my @arr =
+              api_call( $c, "PUT", "objects/hostgroups/$hostgroup", $payload );
             $hostgroup_page .= display_api_response( @arr, $payload );
             $hostgroup_page .= display_back_button( $mode, 'hostgroups' );
 
@@ -1546,8 +1522,8 @@ sub host_groups {
             if ( $cascading eq "true" ) {
                 $cascade .= '?cascade=1';
             }
-            my @arr = api_call( $c->stash->{'confdir'},
-                "DELETE", "objects/hostgroups/$hostgroup$cascade" );
+            my @arr =
+              api_call( $c, "DELETE", "objects/hostgroups/$hostgroup$cascade" );
             $hostgroup_page .= display_api_response(@arr);
             $hostgroup_page .= display_back_button( $mode, 'hostgroups' );
 
@@ -1561,7 +1537,7 @@ sub host_groups {
             );
             $hostgroup_page .= $q->p("Enter hostgroupname:");
             $hostgroup_page .= '<select name="hostgroup">';
-            foreach my $hostgroup ( values @{ $c->stash->{hostgroups} }) {
+            foreach my $hostgroup ( values @{ $c->stash->{hostgroups} } ) {
                 $hostgroup_page .=
 "<option value=\"$hostgroup->{name}\">$hostgroup->{alias}</option>";
             }
@@ -1612,10 +1588,10 @@ sub host_dependencies {
 
     # Capture parameters sent to page by user dialogs
     my $attributes = $params->{'attributes'};
-    my $cascading = $params->{'cascading'};
-    my $command = $params->{'command'};
-    my $confirm = $params->{'confirm'};
-    my $mode = $params->{'mode'};
+    my $cascading  = $params->{'cascading'};
+    my $command    = $params->{'command'};
+    my $confirm    = $params->{'confirm'};
+    my $mode       = $params->{'mode'};
     unless ($mode) {
         my $mode = "";
     }
@@ -1629,8 +1605,7 @@ This is where we produce the services page_type
 =cut
 
 sub services {
-    my ($c)    = @_;
-    my $q      = CGI->new;
+    my ($c) = @_;
     my $params = $c->req->parameters;
 
     #Get host and see if this is the delete request or not
@@ -1647,7 +1622,7 @@ sub services {
         push @hosts, $host;
     }
     my $attributes  = $params->{'attributes'};
-    my $cascading = $params->{'cascading'};
+    my $cascading   = $params->{'cascading'};
     my $confirm     = $params->{'confirm'};
     my $mode        = $params->{'mode'};
     my $servicename = $params->{'service'};
@@ -1663,7 +1638,7 @@ sub services {
     # Get services
     my %services = ();
     foreach my $hash ( $c->stash->{services} ) {
-        foreach my $service ( values @{ $hash } ) {
+        foreach my $service ( values @{$hash} ) {
             $services{ $service->{host_name} }{ $service->{description} } =
               $service->{display_name};
         }
@@ -1687,7 +1662,7 @@ sub services {
             and $servicename =~ m/.+/ )
         {
             $service_page .=
-                display_service_confirmation( $mode, $host, $servicename );
+              display_service_confirmation( $mode, $host, $servicename );
 
         }
 
@@ -1697,10 +1672,10 @@ sub services {
             and $servicename =~ m/.+/ )
         {
             my $cascade = '';
-            if ($cascading eq "true") {
+            if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
             }
-            my @arr = api_call( $c->stash->{'confdir'},
+            my @arr = api_call( $c,
                 "DELETE", "objects/services/$host!$servicename$cascade" );
             $service_page .= display_api_response(@arr);
             $service_page .= display_back_button( $mode, 'services' );
@@ -1719,10 +1694,10 @@ sub services {
     elsif ( $mode eq "create" ) {
 
         # This is the actual creation via api_call
-        if ($host and $attributes and $confirm eq "Confirm") {
+        if ( $host and $attributes and $confirm eq "Confirm" ) {
             my $payload = uri_unescape($attributes);
             foreach my $hst (@hosts) {
-                my @arr = api_call( $c->stash->{'confdir'},
+                my @arr = api_call( $c,
                     "PUT", "objects/services/$hst!$servicename", $payload );
                 $service_page .= display_api_response( @arr, $payload );
             }
@@ -1731,16 +1706,16 @@ sub services {
         }
 
         # This is the confirm dialog
-        elsif ($host and $attributes) {
+        elsif ( $host and $attributes ) {
             my $hoststr = csv_from_arr(@hosts);
             $service_page .=
                 '<p>Are you sure you want to add the service '
-                    .$servicename
-                    .' with attributes: '
-                    .$attributes
-                    .' to the host(s): '
-                    .$hoststr
-                    .'?</p><br/>';
+              . $servicename
+              . ' with attributes: '
+              . $attributes
+              . ' to the host(s): '
+              . $hoststr
+              . '?</p><br/>';
             $service_page .= $q->start_form(
                 -method => $METHOD,
                 -action => "api_conf.cgi"
@@ -1749,9 +1724,9 @@ sub services {
                 $service_page .= $q->hidden( 'host', $hst );
             }
             $service_page .= $q->hidden( 'attributes', $attributes );
-            $service_page .= $q->hidden( 'mode', "create" );
-            $service_page .= $q->hidden( 'page_type', "services" );
-            $service_page .= $q->hidden( 'service', $servicename );
+            $service_page .= $q->hidden( 'mode',       "create" );
+            $service_page .= $q->hidden( 'page_type',  "services" );
+            $service_page .= $q->hidden( 'service',    $servicename );
             $service_page .= $q->submit(
                 -name  => 'confirm',
                 -value => 'Confirm'
@@ -1777,10 +1752,10 @@ sub services {
                 -onSubmit => "return validateJSON()"
             );
             $service_page .=
-                '<select name="host" id="host-select" multiple="multiple"">';
+              '<select name="host" id="host-select" multiple="multiple"">';
             for my $ho (@host_arr) {
                 my $selected = '';
-                if ($host eq $ho) {
+                if ( $host eq $ho ) {
                     $selected = 'selected="selected" ';
                 }
                 $service_page .= "<option value=\"$ho\" $selected>$ho</option>";
@@ -1805,7 +1780,7 @@ sub services {
         {
             # Do api magic here
             my $payload = uri_unescape($attributes);
-            my @arr     = api_call( $c->stash->{'confdir'},
+            my @arr     = api_call( $c,
                 "POST", "objects/services/$host!$servicename", $payload );
             $service_page .= display_api_response( @arr, $payload );
             $service_page .= display_back_button( $mode, 'services' );
@@ -1816,7 +1791,7 @@ sub services {
             and $submit eq "Submit" )
         {
             $service_page .=
-                display_service_confirmation( $mode, $host, $servicename,
+              display_service_confirmation( $mode, $host, $servicename,
                 $attributes );
         }
         elsif ( $host and $servicename ) {
@@ -1825,8 +1800,8 @@ sub services {
                 "service" => $servicename
             );
             $service_page .=
-                display_editor( "services", \%hidden, $c,
-                    "objects/services/$host!$servicename" );
+              display_editor( "services", \%hidden, $c,
+                "objects/services/$host!$servicename" );
         }
         elsif ($host) {
             $service_page .= display_service_selection( $c, $mode, $host );
@@ -1859,8 +1834,7 @@ This is where we handle contacts/users
 =cut
 
 sub contacts {
-    my ($c)    = @_;
-    my $q      = CGI->new;
+    my ($c) = @_;
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
@@ -1880,9 +1854,9 @@ sub contacts {
         push @contacts, $contact;
     }
 
-    my $cascading    = $params->{'cascading'};
-    my $mode         = $params->{'mode'};
-    my $submit       = $params->{'submit'};
+    my $cascading = $params->{'cascading'};
+    my $mode      = $params->{'mode'};
+    my $submit    = $params->{'submit'};
 
     unless ($mode) {
         $mode = "";
@@ -1898,13 +1872,11 @@ sub contacts {
       '<div class="reportSelectTitle" align="center">Contacts</div>';
 
     if ( $mode eq "create" ) {
+
         # This is the contact confirmation api call
         if ( $contact and $attributes and $confirm eq "Confirm" ) {
             my $payload = uri_unescape($attributes);
-            my @arr     = api_call(
-                $c->stash->{'confdir'},   "PUT",
-                "objects/users/$contact", $payload
-            );
+            my @arr = api_call( $c, "PUT", "objects/users/$contact", $payload );
             $contacts_page .= display_api_response( @arr, $payload );
             $contacts_page .= display_back_button( $mode, 'contacts' );
 
@@ -1931,8 +1903,8 @@ sub contacts {
                 $cascade = '?cascade=1';
             }
             foreach my $cnt (@contacts) {
-                my @arr = api_call( $c->stash->{'confdir'},
-                    "DELETE", "objects/users/$cnt$cascade" );
+                my @arr =
+                  api_call( $c, "DELETE", "objects/users/$cnt$cascade" );
                 $contacts_page .= display_api_response(@arr);
             }
             $contacts_page .= display_back_button( $mode, 'contacts' );
@@ -1952,10 +1924,10 @@ sub contacts {
                 -action => "api_conf.cgi"
             );
             $contacts_page .=
-                display_select( "contact", "contact-select", "true",
-                    @contact_arr );
+              display_select( "contact", "contact-select", "true",
+                @contact_arr );
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
-            $contacts_page .= $q->hidden( 'mode', "delete" );
+            $contacts_page .= $q->hidden( 'mode',      "delete" );
             $contacts_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
@@ -1969,23 +1941,21 @@ sub contacts {
     elsif ( $mode eq "modify" ) {
 
         # This is api call
-        if ($contact and $attributes and $confirm eq "Confirm") {
+        if ( $contact and $attributes and $confirm eq "Confirm" ) {
 
             # Do api magic here
             my $payload = uri_unescape($attributes);
-            my @arr = api_call(
-                $c->stash->{'confdir'}, "POST",
-                "objects/users/$contact", $payload
-            );
+            my @arr =
+              api_call( $c, "POST", "objects/users/$contact", $payload );
             $contacts_page .= display_api_response( @arr, $payload );
             $contacts_page .= display_back_button( $mode, 'contacts' );
         }
 
         # This is confirmation
-        elsif ($contact and $attributes and $submit eq "Submit") {
+        elsif ( $contact and $attributes and $submit eq "Submit" ) {
             $contacts_page .=
-                display_generic_confirmation( $c, $mode, $contact, "contacts",
-                    $attributes );
+              display_generic_confirmation( $c, $mode, $contact, "contacts",
+                $attributes );
         }
 
         # This is editor
@@ -1993,7 +1963,7 @@ sub contacts {
             my %hidden = ( "contact" => $contact );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
-                display_editor( "contacts", \%hidden, $c, $endpoint );
+              display_editor( "contacts", \%hidden, $c, $endpoint );
         }
 
         # This is selection
@@ -2004,9 +1974,9 @@ sub contacts {
                 -action => "api_conf.cgi"
             );
             $contacts_page .=
-                display_select( "contact", "contact-select", "", @contact_arr );
+              display_select( "contact", "contact-select", "", @contact_arr );
             $contacts_page .= $q->hidden( 'page_type', "contacts" );
-            $contacts_page .= $q->hidden( 'mode', "modify" );
+            $contacts_page .= $q->hidden( 'mode',      "modify" );
             $contacts_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
@@ -2032,25 +2002,23 @@ sub contact_groups {
 
     my ($c) = @_;
 
-    my $q = CGI->new;
-
     my $params = $c->req->parameters;
 
-    my $attributes = $params->{'attributes'};
-    my $cascading = $params->{'cascading'};
-    my $confirm = $params->{'confirm'};
+    my $attributes   = $params->{'attributes'};
+    my $cascading    = $params->{'cascading'};
+    my $confirm      = $params->{'confirm'};
     my $contactgroup = $params->{'contactgroup'};
-    my $mode = $params->{'mode'};
-    my $submit = $params->{'submit'};
+    my $mode         = $params->{'mode'};
+    my $submit       = $params->{'submit'};
 
     unless ($mode) {
         $mode = "";
     }
 
     my @groups = ();
-    my $group = '';
-    if (ref $params->{'groups'} eq 'ARRAY') {
-        foreach my $grp (values @{ $params->{'groups'} }) {
+    my $group  = '';
+    if ( ref $params->{'groups'} eq 'ARRAY' ) {
+        foreach my $grp ( values @{ $params->{'groups'} } ) {
             push @groups, $grp;
         }
         $group = $groups[0];
@@ -2061,32 +2029,32 @@ sub contact_groups {
     }
 
     my @temp_arr;
-    for my $hashref (values @{ $c->{'db'}->get_contactgroups() }) {
+    for my $hashref ( values @{ $c->{'db'}->get_contactgroups() } ) {
         push @temp_arr, $hashref->{'name'};
     }
     my @contactgroups_arr = sort @temp_arr;
 
     my $contactgroups_page =
-        '<div class="reportSelectTitle" align="center">Contact Groups</div>';
+      '<div class="reportSelectTitle" align="center">Contact Groups</div>';
 
-    if ($mode eq "create") {
+    if ( $mode eq "create" ) {
 
         # This is api call
-        if ($contactgroup and $attributes and $confirm eq "Confirm") {
+        if ( $contactgroup and $attributes and $confirm eq "Confirm" ) {
             my $payload = uri_unescape($attributes);
-            my @arr = api_call( $c->stash->{'confdir'},
+            my @arr     = api_call( $c,
                 "PUT", "objects/usergroups/$contactgroup", $payload );
             $contactgroups_page .= display_api_response( @arr, $payload );
             $contactgroups_page .=
-                display_back_button( $mode, 'contactgroups' );
+              display_back_button( $mode, 'contactgroups' );
 
         }
 
         # This is confirmation
-        elsif ($contactgroup and $attributes) {
+        elsif ( $contactgroup and $attributes ) {
             $contactgroups_page .=
-                display_generic_confirmation( $c, $mode, $contactgroup,
-                    "contactgroups", $attributes );
+              display_generic_confirmation( $c, $mode, $contactgroup,
+                "contactgroups", $attributes );
 
         }
 
@@ -2096,27 +2064,27 @@ sub contact_groups {
         }
 
     }
-    elsif ($mode eq "delete") {
+    elsif ( $mode eq "delete" ) {
 
         # This is api call
-        if ($group and $confirm eq "Confirm") {
+        if ( $group and $confirm eq "Confirm" ) {
             my $cascade = '';
-            if ($cascading eq "true") {
+            if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
             }
             foreach my $grp (@groups) {
-                my @arr = api_call( $c->stash->{'confdir'},
-                    "DELETE", "objects/usergroups/$grp$cascade" );
+                my @arr =
+                  api_call( $c, "DELETE", "objects/usergroups/$grp$cascade" );
                 $contactgroups_page .= display_api_response(@arr);
             }
             $contactgroups_page .=
-                display_back_button( $mode, 'contactgroups' );
+              display_back_button( $mode, 'contactgroups' );
         }
 
         # This is confirmation
         elsif ($group) {
             $contactgroups_page .=
-                display_delete_confirmation( 'groups', 'contactgroups', @groups );
+              display_delete_confirmation( 'groups', 'contactgroups', @groups );
         }
 
         # This is selection
@@ -2127,41 +2095,39 @@ sub contact_groups {
                 -action => "api_conf.cgi"
             );
             $contactgroups_page .=
-                display_select( "groups", "group-select", "true",
-                    @contactgroups_arr );
+              display_select( "groups", "group-select", "true",
+                @contactgroups_arr );
             $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
-            $contactgroups_page .= $q->hidden( 'mode', "delete" );
+            $contactgroups_page .= $q->hidden( 'mode',      "delete" );
             $contactgroups_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
             );
             $contactgroups_page .= $q->end_form;
             $contactgroups_page .=
-                display_multi_select( 'group-select', @contactgroups_arr );
+              display_multi_select( 'group-select', @contactgroups_arr );
         }
 
     }
-    elsif ($mode eq "modify") {
+    elsif ( $mode eq "modify" ) {
 
         # This is api call
-        if ($contactgroup and $attributes and $confirm eq "Confirm") {
+        if ( $contactgroup and $attributes and $confirm eq "Confirm" ) {
 
             # Do api magic here
             my $payload = uri_unescape($attributes);
-            my @arr = api_call(
-                $c->stash->{'confdir'}, "POST",
-                "objects/usergroups/$contactgroup", $payload
-            );
+            my @arr     = api_call( $c, "POST",
+                "objects/usergroups/$contactgroup", $payload );
             $contactgroups_page .= display_api_response( @arr, $payload );
             $contactgroups_page .=
-                display_back_button( $mode, 'contactgroups' );
+              display_back_button( $mode, 'contactgroups' );
         }
 
         # This is confirmation
-        elsif ($contactgroup and $attributes and $submit eq "Submit") {
+        elsif ( $contactgroup and $attributes and $submit eq "Submit" ) {
             $contactgroups_page .=
-                display_generic_confirmation( $c, $mode, $contactgroup,
-                    "contactgroups", $attributes );
+              display_generic_confirmation( $c, $mode, $contactgroup,
+                "contactgroups", $attributes );
         }
 
         # This is editor
@@ -2169,7 +2135,7 @@ sub contact_groups {
             my %hidden = ( "contactgroup" => $contactgroup );
             my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
-                display_editor( "contactgroups", \%hidden, $c, $endpoint );
+              display_editor( "contactgroups", \%hidden, $c, $endpoint );
         }
 
         # This is selection
@@ -2180,10 +2146,10 @@ sub contact_groups {
                 -action => "api_conf.cgi"
             );
             $contactgroups_page .=
-                display_select( "contactgroup", "contactgroup-select", "",
-                    @contactgroups_arr );
+              display_select( "contactgroup", "contactgroup-select", "",
+                @contactgroups_arr );
             $contactgroups_page .= $q->hidden( 'page_type', "contactgroups" );
-            $contactgroups_page .= $q->hidden( 'mode', "modify" );
+            $contactgroups_page .= $q->hidden( 'mode',      "modify" );
             $contactgroups_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
@@ -2193,7 +2159,7 @@ sub contact_groups {
     }
     else {
         $contactgroups_page .=
-            display_create_delete_modify_dialog("contactgroups");
+          display_create_delete_modify_dialog("contactgroups");
     }
 
     return $contactgroups_page;
@@ -2211,10 +2177,10 @@ sub timeperiods {
 
     # Capture parameters sent to page by user dialogs
     my $attributes = $params->{'attributes'};
-    my $cascading = $params->{'cascading'};
-    my $command = $params->{'command'};
-    my $confirm = $params->{'confirm'};
-    my $mode = $params->{'mode'};
+    my $cascading  = $params->{'cascading'};
+    my $command    = $params->{'command'};
+    my $confirm    = $params->{'confirm'};
+    my $mode       = $params->{'mode'};
     unless ($mode) {
         $mode = "";
     }
@@ -2234,11 +2200,11 @@ sub commands {
 
     # Capture parameters sent to page by user dialogs
     my $attributes = $params->{'attributes'};
-    my $cascading = $params->{'cascading'};
-    my $command = $params->{'command'};
-    my $confirm = $params->{'confirm'};
-    my $mode = $params->{'mode'};
-    my $submit = $params->{'submit'};
+    my $cascading  = $params->{'cascading'};
+    my $command    = $params->{'command'};
+    my $confirm    = $params->{'confirm'};
+    my $mode       = $params->{'mode'};
+    my $submit     = $params->{'submit'};
 
     unless ($mode) {
         $mode = "";
@@ -2263,7 +2229,7 @@ sub commands {
             if ( $cascading eq "true" ) {
                 $cascade .= '?cascade=1';
             }
-            my @arr = api_call( $c->stash->{'confdir'},
+            my @arr = api_call( $c,
                 "DELETE", "objects/checkcommands/$command$cascade" );
             $command_page .= display_api_response(@arr);
             $command_page .= display_back_button( $mode, 'commands' );
@@ -2281,23 +2247,21 @@ sub commands {
     elsif ( $mode eq "create" ) {
 
         # This is actual creation via api call
-        if ($confirm eq "Confirm" and $attributes and $command) {
+        if ( $confirm eq "Confirm" and $attributes and $command ) {
             my $payload = uri_unescape($attributes);
 
-            my @arr = api_call(
-                $c->stash->{'confdir'},           "PUT",
-                "objects/checkcommands/$command", $payload
-            );
+            my @arr =
+              api_call( $c, "PUT", "objects/checkcommands/$command", $payload );
             $command_page .= display_api_response( @arr, $payload );
             $command_page .= display_back_button( $mode, 'commands' );
 
         }
 
         # This is confirmation dialog for command creation
-        elsif ($submit eq "Submit" and $command and $attributes) {
+        elsif ( $submit eq "Submit" and $command and $attributes ) {
             $command_page .=
-                display_generic_confirmation( $c, $mode, $command, "commands",
-                    $attributes );
+              display_generic_confirmation( $c, $mode, $command, "commands",
+                $attributes );
 
         }
 
@@ -2314,10 +2278,8 @@ sub commands {
             # Do api magic here
             my $payload = uri_unescape($attributes);
 
-            my @arr = api_call(
-                $c->stash->{'confdir'},           "POST",
-                "objects/checkcommands/$command", $payload
-            );
+            my @arr = api_call( $c, "POST",
+                "objects/checkcommands/$command", $payload );
 
             $command_page .= display_api_response( @arr, $payload );
             $command_page .= display_back_button( $mode, 'commands' );
@@ -2339,7 +2301,7 @@ sub commands {
             my $endpoint = "objects/checkcommands/$command";
 
             $command_page =
-                display_editor( "commands", \%hidden, $c, $endpoint );
+              display_editor( "commands", \%hidden, $c, $endpoint );
         }
         else {
             $command_page = display_command_selection( $c, $mode );
@@ -2445,12 +2407,6 @@ sub index {
         filter => [ Thruk::Utils::Auth::get_auth_filter( $c, 'hostgroups' ) ] );
 
     $c->stash->{'commands'} = $c->{'db'}->get_commands();
-
-    my $confdir = '/etc/thruk';
-    if ( $c->stash->{'usercontent_folder'} =~ m/\// ) {
-        $confdir = dirname( $c->stash->{usercontent_folder} );
-    }
-    $c->stash->{'confdir'} = $confdir;
 
     $c->stash->{body} = body $c;
 }
