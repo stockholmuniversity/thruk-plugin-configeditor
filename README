@@ -23,51 +23,45 @@ icinga2_api_path = v1
 
 If you want to get access to plugin actions from the action menu you can add this to thruk_local.conf:
 
-<action_menu_items>
-    hostmenu = {\
-       "icon": "/thruk/themes/{{theme}}/images/dropdown.png",\
-       "title": "Host Menu",\
-       "menu": [\
-            {\
-               "icon": "/thruk/themes/{{theme}}/images/delete.png",\
-               "label": "Delete Host",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=hosts&mode=delete&host=$HOSTNAME$"\
-            },\
-            {\
-               "icon": "/thruk/themes/{{theme}}/images/add.png",\
-               "label": "Add Service to Host",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=create&host=$HOSTNAME$"\
-            },\
-            {\
-               "icon": "/thruk/themes/{{theme}}/images/edit.png",\
-               "label": "Modify Host",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=hosts&mode=modify&host=$HOSTNAME$"\
-            },\
-       ]\
-    }
-    servicemenu = {\
-       "icon": "/thruk/themes/{{theme}}/images/dropdown.png",\
-       "title": "Service Menu",\
-       "menu": [\
-           {\
-               "icon": "/thruk/themes/{{theme}}/images/delete.png",\
-               "label": "Delete Service",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=delete&host=$HOSTNAME$&service=$SERVICEDESC$"\
-           },\
-           {\
-               "icon": "/thruk/themes/{{theme}}/images/edit.png",\
-               "label": "Modify Service",\
-               "action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=modify&host=$HOSTNAME$&service=$SERVICEDESC$"\
-           },\
-       ]\
-    }
-</action_menu_items>
-
-<action_menu_actions>
-</action_menu_actions>
-
 <action_menu_apply>
     hostmenu    = .*;$             # matches all hosts only
     servicemenu = .*;.+$           # matches all services on all hosts
 </action_menu_apply>
 
+You also need two files in /etc/thruk/action_menus: servicemenu.json and hostmenu.json.
+
+This is /etc/thruk/action_menus/servicemenu.json:
+
+{
+	"icon": "/thruk/themes/{{theme}}/images/dropdown.png",
+	"title": "Service Menu",
+	"menu": [{
+		"icon": "/thruk/themes/{{theme}}/images/delete.png",
+		"label": "Delete Service",
+		"action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=delete&host=$HOSTNAME$&service=$SERVICEDESC$"
+	}, {
+		"icon": "/thruk/themes/{{theme}}/images/edit.png",
+		"label": "Modify Service",
+		"action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=modify&host=$HOSTNAME$&service=$SERVICEDESC$"
+	}]
+}
+
+This is /etc/thruk/action_menus/hostmenu.json:
+
+{
+	"icon": "/thruk/themes/{{theme}}/images/dropdown.png",
+	"title": "Host Menu",
+	"menu": [{
+		"icon": "/thruk/themes/{{theme}}/images/delete.png",
+		"label": "Delete Host",
+		"action": "/thruk/cgi-bin/api_conf.cgi?page_type=hosts&mode=delete&host=$HOSTNAME$"
+	}, {
+		"icon": "/thruk/themes/{{theme}}/images/add.png",
+		"label": "Add Service to Host",
+		"action": "/thruk/cgi-bin/api_conf.cgi?page_type=services&mode=create&host=$HOSTNAME$"
+	}, {
+		"icon": "/thruk/themes/{{theme}}/images/edit.png",
+		"label": "Modify Host",
+		"action": "/thruk/cgi-bin/api_conf.cgi?page_type=hosts&mode=modify&host=$HOSTNAME$"
+	}]
+}
