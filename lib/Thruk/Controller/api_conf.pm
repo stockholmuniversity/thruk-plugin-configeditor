@@ -1266,6 +1266,9 @@ sub hosts {
     unless ($mode) {
         $mode = "";
     }
+    unless ($confirm) {
+        $confirm = "";
+    }
 
     # Get hosts
     my @temp_arr;
@@ -1417,6 +1420,9 @@ sub host_groups {
 
     unless ($mode) {
         $mode = "";
+    }
+    unless ($confirm) {
+        $confirm = "";
     }
 
     # Get hosts
@@ -1570,8 +1576,12 @@ sub host_escalations {
 
     # Capture parameters sent to page by user dialogs
     my $mode = $params->{'mode'};
+    my $confirm = $params->{'confirm'};
     unless ($mode) {
         $mode = "";
+    }
+    unless ($confirm) {
+        $confirm = "";
     }
     return "Host Escalations Placeholder";
 }
@@ -1594,6 +1604,9 @@ sub host_dependencies {
     my $mode       = $params->{'mode'};
     unless ($mode) {
         my $mode = "";
+    }
+    unless ($confirm) {
+        $confirm = "";
     }
     return "Host Dependencies Placeholder";
 }
@@ -1630,6 +1643,9 @@ sub services {
 
     unless ($mode) {
         $mode = "";
+    }
+    unless ($confirm) {
+        $confirm = "";
     }
 
     my $service_page =
@@ -1861,6 +1877,9 @@ sub contacts {
     unless ($mode) {
         $mode = "";
     }
+    unless ($confirm) {
+        $confirm = "";
+    }
 
     my @temp_arr;
     for my $hashref ( values @{ $c->{'db'}->get_contacts() } ) {
@@ -2013,6 +2032,9 @@ sub contact_groups {
 
     unless ($mode) {
         $mode = "";
+    }
+    unless ($confirm) {
+        $confirm = "";
     }
 
     my @groups = ();
@@ -2184,6 +2206,9 @@ sub timeperiods {
     unless ($mode) {
         $mode = "";
     }
+    unless ($confirm) {
+        $confirm = "";
+    }
 
     return "Timeperiods Placeholder";
 }
@@ -2208,6 +2233,9 @@ sub commands {
 
     unless ($mode) {
         $mode = "";
+    }
+    unless ($confirm) {
+        $confirm = "";
     }
 
     my $command_page =
