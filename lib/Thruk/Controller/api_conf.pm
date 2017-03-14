@@ -21,7 +21,6 @@ BEGIN {
 }
 ##########################################################
 use CGI;
-use Config::JSON;
 use Data::Dumper;
 use File::Basename qw( dirname basename );
 use HTML::Entities;
@@ -31,7 +30,6 @@ use JSON::XS qw(encode_json decode_json);
 use JSON;
 use LWP::Protocol::https;
 use LWP::UserAgent;
-use Test::JSON;
 use URI::Escape;
 
 # A cgi object to help with some html creation
