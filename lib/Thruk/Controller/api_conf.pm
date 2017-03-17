@@ -36,9 +36,9 @@ use URI::Escape;
 my $q = CGI->new;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-my $METHOD = "GET";
+#my $METHOD = "GET";
 
-#my $METHOD = "POST";
+my $METHOD = "POST";
 
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
