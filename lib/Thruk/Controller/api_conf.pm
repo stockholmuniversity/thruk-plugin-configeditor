@@ -756,8 +756,11 @@ sub display_service_selection {
         -method => $METHOD,
         -action => "api_conf.cgi"
     );
-    $service_form .=
-        '<select name="service" id="service-select" multiple="multiple">';
+    $service_form .= '<select name="service" ';
+    if ($mode eq "delete") {
+        $service_form .= 'id="service-select" multiple="multiple"';
+    }
+    $service_form .= '>';
 
     # Loop all services asscoiated with the host
     my @service_arr = sort keys %{ $services{$host} };
@@ -766,7 +769,9 @@ sub display_service_selection {
           "<option value=\"$service\">$services{$host}{$service}</option>";
     }
     $service_form .= '</select">';
-    $service_form .= display_multi_select( "service-select", @service_arr );
+    if ($mode eq "delete") {
+        $service_form .= display_multi_select( "service-select", @service_arr );
+    }
     $service_form .= $q->hidden( 'page_type', "services" );
     $service_form .= $q->hidden( 'mode', $mode );
     $service_form .= $q->hidden( 'host', $host );
