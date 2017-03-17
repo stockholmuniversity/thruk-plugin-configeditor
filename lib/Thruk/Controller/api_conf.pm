@@ -756,14 +756,17 @@ sub display_service_selection {
         -method => $METHOD,
         -action => "api_conf.cgi"
     );
-    $service_form .= '<select name="service">';
+    $service_form .=
+        '<select name="service" id="service-select" multiple="multiple">';
 
     # Loop all services asscoiated with the host
-    foreach my $service ( sort keys %{ $services{$host} } ) {
+    my @service_arr = sort keys %{ $services{$host} };
+    foreach my $service (@service_arr) {
         $service_form .=
           "<option value=\"$service\">$services{$host}{$service}</option>";
     }
     $service_form .= '</select">';
+    $service_page .= display_multi_select( "service-select", @service_arr );
     $service_form .= $q->hidden( 'page_type', "services" );
     $service_form .= $q->hidden( 'mode', $mode );
     $service_form .= $q->hidden( 'host', $host );
@@ -1632,12 +1635,23 @@ sub services {
         $host = $params->{'host'};
         push @hosts, $host;
     }
-    my $attributes  = $params->{'attributes'};
-    my $cascading   = $params->{'cascading'};
-    my $confirm     = $params->{'confirm'};
-    my $mode        = $params->{'mode'};
-    my $servicename = $params->{'service'};
-    my $submit      = $params->{'submit'};
+    my @services = ();
+    my $servicename = '';
+    if (ref $params->{'service'} eq 'ARRAY') {
+        foreach my $srv (values @{ $params->{'service'} }) {
+            push @services, $srv;
+        }
+        $servicename = services [ 0 ];
+    }
+    else {
+        $servicename = $params->{'service'};
+        push @services, $servicename;
+    }
+    my $attributes = $params->{'attributes'};
+    my $cascading = $params->{'cascading'};
+    my $confirm = $params->{'confirm'};
+    my $mode = $params->{'mode'};
+    my $submit = $params->{'submit'};
 
     unless ($mode) {
         $mode = "";
@@ -1689,8 +1703,11 @@ sub services {
             if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
             }
-            my @arr = api_call( $c,
-                "DELETE", "objects/services/$host!$servicename$cascade" );
+            foreach my $srv (@services) {
+                my @arr = api_call( $c,
+                    "DELETE", "objects/services/$host!$srv$cascade" );
+                $service_page .= display_api_response(@arr);
+            }
             $service_page .= display_api_response(@arr);
             $service_page .= display_back_button( $mode, 'services' );
 
@@ -1766,7 +1783,7 @@ sub services {
                 -onSubmit => "return validateJSON()"
             );
             $service_page .=
-              '<select name="host" id="host-select" multiple="multiple"">';
+                '<select name="host" id="host-select" multiple="multiple">';
             for my $ho (@host_arr) {
                 my $selected = '';
                 if ( $host eq $ho ) {
