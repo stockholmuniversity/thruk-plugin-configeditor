@@ -1676,24 +1676,22 @@ sub services {
     if ( $mode eq "delete" ) {
 
         # This is the service deletion dialog for a specific host
-        if ( $host and $confirm ne "Confirm"  and not $servicename )
-        {
+        if ($host and $confirm ne "Confirm" and not $servicename) {
             $service_page .= display_service_selection( $c, $mode, $host );
 
         }
 
         # This case is confirmation dialog for delete mode
-        elsif ( $host and $confirm ne "Confirm" and $servicename =~ m/.+/ )
-        {
-              my $confirm_dialog = 
+        elsif ($host and $confirm ne "Confirm" and $servicename =~ m/.+/) {
+            my $confirm_dialog =
               display_delete_confirmation( 'service', 'services', @services );
-              $confirm_dialog =~ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name="host" value="$host"/;
-              $service_page .= $confirm_dialog;
+            $confirm_dialog =~
+                s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name="host" value="$host"/;
+            $service_page .= $confirm_dialog;
         }
 
         # This case is actual deletion via api_call
-        elsif ( $host and $confirm eq "Confirm" and $servicename )
-        {
+        elsif ($host and $confirm eq "Confirm" and $servicename) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
