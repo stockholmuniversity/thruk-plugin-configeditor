@@ -1708,7 +1708,6 @@ sub services {
                     "DELETE", "objects/services/$host!$srv$cascade" );
                 $service_page .= display_api_response(@arr);
             }
-            $service_page .= display_api_response(@arr);
             $service_page .= display_back_button( $mode, 'services' );
 
         }
