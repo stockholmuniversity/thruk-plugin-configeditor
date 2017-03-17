@@ -36,9 +36,9 @@ use URI::Escape;
 my $q = CGI->new;
 
 # This is the form method for dialogs, useful to change all for debug purposes
-#my $METHOD = "GET";
+my $METHOD = "GET";
 
-my $METHOD = "POST";
+#my $METHOD = "POST";
 
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
@@ -766,7 +766,7 @@ sub display_service_selection {
           "<option value=\"$service\">$services{$host}{$service}</option>";
     }
     $service_form .= '</select">';
-    $service_page .= display_multi_select( "service-select", @service_arr );
+    $service_form .= display_multi_select( "service-select", @service_arr );
     $service_form .= $q->hidden( 'page_type', "services" );
     $service_form .= $q->hidden( 'mode', $mode );
     $service_form .= $q->hidden( 'host', $host );
@@ -1641,7 +1641,7 @@ sub services {
         foreach my $srv (values @{ $params->{'service'} }) {
             push @services, $srv;
         }
-        $servicename = services [ 0 ];
+        $servicename = $services[0];
     }
     else {
         $servicename = $params->{'service'};
@@ -1676,28 +1676,23 @@ sub services {
     if ( $mode eq "delete" ) {
 
         # This is the service deletion dialog for a specific host
-        if (    $host =~ m/\..*\./
-            and $confirm ne "Confirm"
-            and not $servicename =~ m/.+/ )
+        if ( $host and $confirm ne "Confirm"  and not $servicename )
         {
             $service_page .= display_service_selection( $c, $mode, $host );
 
         }
 
         # This case is confirmation dialog for delete mode
-        elsif ( $host =~ m/\..*\./
-            and $confirm ne "Confirm"
-            and $servicename =~ m/.+/ )
+        elsif ( $host and $confirm ne "Confirm" and $servicename =~ m/.+/ )
         {
-            $service_page .=
-              display_service_confirmation( $mode, $host, $servicename );
-
+              my $confirm_dialog = 
+              display_delete_confirmation( 'service', 'services', @services );
+              $confirm_dialog =~ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name="host" value="$host"/;
+              $service_page .= $confirm_dialog;
         }
 
         # This case is actual deletion via api_call
-        elsif ( $host =~ m/\..*\./
-            and $confirm eq "Confirm"
-            and $servicename =~ m/.+/ )
+        elsif ( $host and $confirm eq "Confirm" and $servicename )
         {
             my $cascade = '';
             if ( $cascading eq "true" ) {
