@@ -1287,13 +1287,13 @@ sub hosts {
     if ( $mode eq "delete" ) {
 
         # This case is first dialog
-        if ( not defined($confirm) and $host =~ m/\..*\./ ) {
+        if ($submit eq "Submit" and $host) {
             $host_page .=
               display_delete_confirmation( 'host', 'hosts', @hosts );
         }
 
         # This case is delete request
-        elsif ( $confirm eq "Confirm" and $host =~ m/\..*\./ ) {
+        elsif ($confirm eq "Confirm" and $host) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
