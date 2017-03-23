@@ -1286,14 +1286,9 @@ sub hosts {
     # Delete mode
     if ( $mode eq "delete" ) {
 
-        # This case is first dialog
-        if ($submit eq "Submit" and $host) {
-            $host_page .=
-              display_delete_confirmation( 'host', 'hosts', @hosts );
-        }
 
-        # This case is delete request
-        elsif ($confirm eq "Confirm" and $host) {
+        # This case is delete request via api
+        if ($confirm eq "Confirm" and $host) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
@@ -1306,6 +1301,11 @@ sub hosts {
             $host_page .= display_back_button( $mode, 'hosts' );
         }
 
+        # This case is confirmation dialog
+        elsif ($host) {
+            $host_page .=
+              display_delete_confirmation( 'host', 'hosts', @hosts );
+        }
         # Main dialog box of the delete mode for hosts page
         else {
             $host_page .= $q->p('Select one or more hosts to delete.');
