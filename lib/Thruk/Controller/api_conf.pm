@@ -40,6 +40,7 @@ my $q = CGI->new;
 
 my $METHOD = "POST";
 
+# These keys are used for modification
 my @command_keys = ( "arguments", "command", "env", "vars", "timeout" );
 
 my @contact_keys = (
@@ -54,33 +55,31 @@ my @host_keys = (
     "icon_image",    "icon_image_alt", "check_interval"
 );
 
-my @hostgroup_keys         = ();
-my @hostescalation_keys    = ();
-my @hostdependency_keys    = ();
-my @servicedependency_keys = ();
-my @serviceescalation_keys = ();
-my @service_keys           = (
+my @hostgroup_keys =
+    ( "action_url", "display_name", "notes", "notes_url", "vars" );
+my @service_keys = (
     "vars",          "action_url",
     "check_command", "check_interval",
     "display_name",  "notes_url",
     "event_command", "max_check_attempts",
     "retry_interval"
 );
-my @servicegroup_keys = ();
-my @timeperiod_keys   = ();
+my @servicegroup_keys =
+    ( "action_url", "display_name", "notes", "notes_url", "vars" );
+my @timeperiod_keys = (
+    "display_name", "excludes", "includes", "prefer_includes",
+    "ranges", "vars"
+);
 
-my @command_dl_keys           = @command_keys;
-my @contact_dl_keys           = @contact_keys;
-my @contactgroup_dl_keys      = @contactgroup_keys;
-my @host_dl_keys              = @host_keys;
-my @hostdependency_dl_keys    = @hostdependency_keys;
-my @hostescalation_dl_keys    = @hostescalation_keys;
-my @hostgroup_dl_keys         = @hostgroup_keys;
-my @service_dl_keys           = @service_keys;
-my @servicedependency_dl_keys = @servicedependency_keys;
-my @serviceescalation_dl_keys = @serviceescalation_keys;
-my @servicegroup_dl_keys      = @servicegroup_keys;
-my @timeperiod_dl_keys        = @timeperiod_keys;
+# These keys are used for creation
+my @command_dl_keys = @command_keys;
+my @contact_dl_keys = @contact_keys;
+my @contactgroup_dl_keys = @contactgroup_keys;
+my @host_dl_keys = @host_keys;
+my @hostgroup_dl_keys = @hostgroup_keys;
+my @service_dl_keys = @service_keys;
+my @servicegroup_dl_keys = @servicegroup_keys;
+my @timeperiod_dl_keys = @timeperiod_keys;
 
 push @command_dl_keys,      ( "templates", "zone" );
 push @contact_dl_keys,      ( "groups",    "templates", "zone" );
@@ -105,6 +104,9 @@ push @service_dl_keys,
     "icon_image_alt",        "notes",
     "templates",             "zone"
   );
+push @hostgroup_dl_keys, ( "groups", "templates", "zone" );
+push @servicegroup_dl_keys, ( "groups", "templates", "zone" );
+push @timeperiod_dl_keys, ( "templates", "zone" );
 
 =head2 api_call
 
@@ -1114,50 +1116,25 @@ sub get_keys {
         @keys    = @contact_keys;
         @dl_keys = @contact_dl_keys;
     }
-    elsif ( $page_type eq "hostdependencies" ) {
-        @keys    = @hostdependency_keys;
-        @dl_keys = @hostdependency_dl_keys;
-    }
-    elsif ( $page_type eq "hostescalations" ) {
-        @keys    = @hostescalation_keys;
-        @dl_keys = @hostescalation_dl_keys;
-
-    }
     elsif ( $page_type eq "hostgroups" ) {
         @keys    = @hostgroup_keys;
         @dl_keys = @hostgroup_dl_keys;
-
     }
     elsif ( $page_type eq "hosts" ) {
         @keys    = @host_keys;
         @dl_keys = @host_dl_keys;
-
-    }
-    elsif ( $page_type eq "servicedependencies" ) {
-
-        @keys    = @servicedependency_keys;
-        @dl_keys = @servicedependency_dl_keys;
-    }
-    elsif ( $page_type eq "serviceescalations" ) {
-
-        @keys    = @serviceescalation_keys;
-        @dl_keys = @serviceescalation_dl_keys;
     }
     elsif ( $page_type eq "servicegroups" ) {
-
         @keys    = @servicegroup_keys;
         @dl_keys = @servicegroup_dl_keys;
     }
     elsif ( $page_type eq "services" ) {
-
         @keys    = @service_keys;
         @dl_keys = @service_dl_keys;
     }
-
     elsif ( $page_type eq "timeperiods" ) {
         @keys    = @timeperiod_keys;
         @dl_keys = @timeperiod_dl_keys;
-
     }
     if ($dl) {
         return @dl_keys;
@@ -1183,12 +1160,8 @@ sub selector {
         'hosts'         => 'Hosts',
         'services'      => 'Services',
 
-    #	'hostdependencies' => 'Host Dependencies',
-    #	'hostescalations' => 'Host Escalations',
     #	'hostgroups' => 'Host Groups', # Create and delete is implemented for this
     #	'servicegroups' => 'Service Groups',
-    #	'servicedependencies' => 'Service Dependencies',
-    #	'serviceescalations' => 'Service Escalations',
     #	'timeperiods' => 'Timeperiods',
     );
 
@@ -1286,7 +1259,6 @@ sub hosts {
     # Delete mode
     if ( $mode eq "delete" ) {
 
-
         # This case is delete request via api
         if ($confirm eq "Confirm" and $host) {
             my $cascade = '';
@@ -1306,6 +1278,7 @@ sub hosts {
             $host_page .=
               display_delete_confirmation( 'host', 'hosts', @hosts );
         }
+
         # Main dialog box of the delete mode for hosts page
         else {
             $host_page .= $q->p('Select one or more hosts to delete.');
@@ -2371,12 +2344,6 @@ sub body {
         $body = hosts $c;
     }
     elsif ( $page_type eq "hostgroups" ) {
-        $body = host_groups $c;
-    }
-    elsif ( $page_type eq "hostescalations" ) {
-        $body = host_groups $c;
-    }
-    elsif ( $page_type eq "hostdependencies" ) {
         $body = host_groups $c;
     }
     elsif ( $page_type eq "services" ) {
