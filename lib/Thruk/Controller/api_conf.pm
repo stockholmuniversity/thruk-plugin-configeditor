@@ -50,19 +50,19 @@ my @contact_keys = (
 
 my @contactgroup_keys = ( "display_name", "vars" );
 my @host_keys = (
-    "address6",      "address",        "check_command", "display_name",
-    "event_command", "action_url",     "notes_url",     "vars",
-    "icon_image",    "icon_image_alt", "check_interval"
+    "address6", "address", "check_command", "display_name",
+    "event_command", "action_url", "notes", "notes_url",
+    "vars", "icon_image", "icon_image_alt", "check_interval"
 );
 
 my @hostgroup_keys =
     ( "action_url", "display_name", "notes", "notes_url", "vars" );
 my @service_keys = (
-    "vars",          "action_url",
+    "vars", "action_url",
     "check_command", "check_interval",
-    "display_name",  "notes_url",
-    "event_command", "max_check_attempts",
-    "retry_interval"
+    "display_name", "notes",
+    "notes_url", "event_command",
+    "max_check_attempts", "retry_interval"
 );
 my @servicegroup_keys =
     ( "action_url", "display_name", "notes", "notes_url", "vars" );
