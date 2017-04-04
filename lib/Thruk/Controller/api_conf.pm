@@ -50,36 +50,36 @@ my @contact_keys = (
 
 my @contactgroup_keys = ( "display_name", "vars" );
 my @host_keys = (
-    "address6", "address", "check_command", "display_name",
-    "event_command", "action_url", "notes", "notes_url",
-    "vars", "icon_image", "icon_image_alt", "check_interval"
+    "address6",      "address",    "check_command",  "display_name",
+    "event_command", "action_url", "notes",          "notes_url",
+    "vars",          "icon_image", "icon_image_alt", "check_interval"
 );
 
 my @hostgroup_keys =
-    ( "action_url", "display_name", "notes", "notes_url", "vars" );
+  ( "action_url", "display_name", "notes", "notes_url", "vars" );
 my @service_keys = (
-    "vars", "action_url",
-    "check_command", "check_interval",
-    "display_name", "notes",
-    "notes_url", "event_command",
+    "vars",               "action_url",
+    "check_command",      "check_interval",
+    "display_name",       "notes",
+    "notes_url",          "event_command",
     "max_check_attempts", "retry_interval"
 );
 my @servicegroup_keys =
-    ( "action_url", "display_name", "notes", "notes_url", "vars" );
+  ( "action_url", "display_name", "notes", "notes_url", "vars" );
 my @timeperiod_keys = (
     "display_name", "excludes", "includes", "prefer_includes",
-    "ranges", "vars"
+    "ranges",       "vars"
 );
 
 # These keys are used for creation
-my @command_dl_keys = @command_keys;
-my @contact_dl_keys = @contact_keys;
+my @command_dl_keys      = @command_keys;
+my @contact_dl_keys      = @contact_keys;
 my @contactgroup_dl_keys = @contactgroup_keys;
-my @host_dl_keys = @host_keys;
-my @hostgroup_dl_keys = @hostgroup_keys;
-my @service_dl_keys = @service_keys;
+my @host_dl_keys         = @host_keys;
+my @hostgroup_dl_keys    = @hostgroup_keys;
+my @service_dl_keys      = @service_keys;
 my @servicegroup_dl_keys = @servicegroup_keys;
-my @timeperiod_dl_keys = @timeperiod_keys;
+my @timeperiod_dl_keys   = @timeperiod_keys;
 
 push @command_dl_keys,      ( "templates", "zone" );
 push @contact_dl_keys,      ( "groups",    "templates", "zone" );
@@ -104,7 +104,7 @@ push @service_dl_keys,
     "icon_image_alt",        "notes",
     "templates",             "zone"
   );
-push @hostgroup_dl_keys, ( "groups", "templates", "zone" );
+push @hostgroup_dl_keys,    ( "groups", "templates", "zone" );
 push @servicegroup_dl_keys, ( "groups", "templates", "zone" );
 push @timeperiod_dl_keys, ( "templates", "zone" );
 
@@ -246,17 +246,26 @@ page_type
 =cut
 
 sub display_back_button {
-    my $mode = shift;
-    my ($page_type) = @_;
+    my ( $mode, $page_type, $c ) = @_;
 
     # A cgi object to help with some html creation
     my $page = $q->p('Go back?');
+
+    # Where are we going?
+    my $action = $c->cache->get("api_conf_referer");
+
+    # If we dont know, lets go to the root of this object type and action
+    unless ($action) {
+        $action = "api_conf.cgi";
+    }
     $page .= $q->start_form(
         -method => $METHOD,
-        -action => "api_conf.cgi"
+        -action => $action
     );
-    $page .= $q->hidden( 'page_type', "$page_type" );
-    $page .= $q->hidden( 'mode',      "$mode" );
+    if ( $action eq "api_conf.cgi" ) {
+        $page .= $q->hidden( 'page_type', "$page_type" );
+        $page .= $q->hidden( 'mode',      "$mode" );
+    }
     $page .= $q->submit(
         -name  => 'return',
         -value => 'Return'
@@ -520,6 +529,7 @@ sub display_editor {
     if ( $mode eq "modify" ) {
         $textbox .= display_download_button( $c, $endpoint, $page_type );
     }
+    $textbox .= display_back_button( $mode, $page_type, $c );
     return decode_entities($textbox);
 }
 
@@ -759,7 +769,7 @@ sub display_service_selection {
         -action => "api_conf.cgi"
     );
     $service_form .= '<select name="service" ';
-    if ($mode eq "delete") {
+    if ( $mode eq "delete" ) {
         $service_form .= 'id="service-select" multiple="multiple"';
     }
     $service_form .= '>';
@@ -771,12 +781,12 @@ sub display_service_selection {
           "<option value=\"$service\">$services{$host}{$service}</option>";
     }
     $service_form .= '</select">';
-    if ($mode eq "delete") {
+    if ( $mode eq "delete" ) {
         $service_form .= display_multi_select( "service-select", @service_arr );
     }
     $service_form .= $q->hidden( 'page_type', "services" );
-    $service_form .= $q->hidden( 'mode', $mode );
-    $service_form .= $q->hidden( 'host', $host );
+    $service_form .= $q->hidden( 'mode',      $mode );
+    $service_form .= $q->hidden( 'host',      $host );
     $service_form .= $q->submit(
         -name  => 'submit',
         -value => 'Submit'
@@ -1260,7 +1270,7 @@ sub hosts {
     if ( $mode eq "delete" ) {
 
         # This case is delete request via api
-        if ($confirm eq "Confirm" and $host) {
+        if ( $confirm eq "Confirm" and $host ) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
@@ -1270,7 +1280,7 @@ sub hosts {
                   api_call( $c, "DELETE", "objects/hosts/$hst$cascade" );
                 $host_page .= display_api_response(@arr);
             }
-            $host_page .= display_back_button( $mode, 'hosts' );
+            $host_page .= display_back_button( $mode, 'hosts', $c );
         }
 
         # This case is confirmation dialog
@@ -1313,7 +1323,7 @@ sub hosts {
             my $payload = uri_unescape($attributes);
             my @arr = api_call( $c, "PUT", "objects/hosts/$host", $payload );
             $host_page .= display_api_response( @arr, $payload );
-            $host_page .= display_back_button( $mode, 'hosts' );
+            $host_page .= display_back_button( $mode, 'hosts', $c );
 
         }
 
@@ -1339,7 +1349,7 @@ sub hosts {
             my $payload = uri_unescape($attributes);
             my @arr = api_call( $c, "POST", "objects/hosts/$host", $payload );
             $host_page .= display_api_response( @arr, $payload );
-            $host_page .= display_back_button( $mode, 'hosts' );
+            $host_page .= display_back_button( $mode, 'hosts', $c );
 
         }
 
@@ -1452,7 +1462,7 @@ sub host_groups {
             my @arr =
               api_call( $c, "PUT", "objects/hostgroups/$hostgroup", $payload );
             $hostgroup_page .= display_api_response( @arr, $payload );
-            $hostgroup_page .= display_back_button( $mode, 'hostgroups' );
+            $hostgroup_page .= display_back_button( $mode, 'hostgroups', $c );
 
         }
 
@@ -1510,7 +1520,7 @@ sub host_groups {
             my @arr =
               api_call( $c, "DELETE", "objects/hostgroups/$hostgroup$cascade" );
             $hostgroup_page .= display_api_response(@arr);
-            $hostgroup_page .= display_back_button( $mode, 'hostgroups' );
+            $hostgroup_page .= display_back_button( $mode, 'hostgroups', $c );
 
         }
 
@@ -1554,7 +1564,7 @@ sub host_escalations {
     my $params = $c->req->parameters;
 
     # Capture parameters sent to page by user dialogs
-    my $mode = $params->{'mode'};
+    my $mode    = $params->{'mode'};
     my $confirm = $params->{'confirm'};
     unless ($mode) {
         $mode = "";
@@ -1613,10 +1623,10 @@ sub services {
         $host = $params->{'host'};
         push @hosts, $host;
     }
-    my @services = ();
+    my @services    = ();
     my $servicename = '';
-    if (ref $params->{'service'} eq 'ARRAY') {
-        foreach my $srv (values @{ $params->{'service'} }) {
+    if ( ref $params->{'service'} eq 'ARRAY' ) {
+        foreach my $srv ( values @{ $params->{'service'} } ) {
             push @services, $srv;
         }
         $servicename = $services[0];
@@ -1626,10 +1636,10 @@ sub services {
         push @services, $servicename;
     }
     my $attributes = $params->{'attributes'};
-    my $cascading = $params->{'cascading'};
-    my $confirm = $params->{'confirm'};
-    my $mode = $params->{'mode'};
-    my $submit = $params->{'submit'};
+    my $cascading  = $params->{'cascading'};
+    my $confirm    = $params->{'confirm'};
+    my $mode       = $params->{'mode'};
+    my $submit     = $params->{'submit'};
 
     unless ($mode) {
         $mode = "";
@@ -1654,22 +1664,22 @@ sub services {
     if ( $mode eq "delete" ) {
 
         # This is the service deletion dialog for a specific host
-        if ($host and $confirm ne "Confirm" and not $servicename) {
+        if ( $host and $confirm ne "Confirm" and not $servicename ) {
             $service_page .= display_service_selection( $c, $mode, $host );
 
         }
 
         # This case is confirmation dialog for delete mode
-        elsif ($host and $confirm ne "Confirm" and $servicename =~ m/.+/) {
+        elsif ( $host and $confirm ne "Confirm" and $servicename =~ m/.+/ ) {
             my $confirm_dialog =
               display_delete_confirmation( 'service', 'services', @services );
             $confirm_dialog =~
-                s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name="host" value="$host"/;
+s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name="host" value="$host"/;
             $service_page .= $confirm_dialog;
         }
 
         # This case is actual deletion via api_call
-        elsif ($host and $confirm eq "Confirm" and $servicename) {
+        elsif ( $host and $confirm eq "Confirm" and $servicename ) {
             my $cascade = '';
             if ( $cascading eq "true" ) {
                 $cascade = '?cascade=1';
@@ -1679,7 +1689,7 @@ sub services {
                     "DELETE", "objects/services/$host!$srv$cascade" );
                 $service_page .= display_api_response(@arr);
             }
-            $service_page .= display_back_button( $mode, 'services' );
+            $service_page .= display_back_button( $mode, 'services', $c );
 
         }
 
@@ -1702,7 +1712,7 @@ sub services {
                     "PUT", "objects/services/$hst!$servicename", $payload );
                 $service_page .= display_api_response( @arr, $payload );
             }
-            $service_page .= display_back_button( $mode, 'services' );
+            $service_page .= display_back_button( $mode, 'services', $c );
 
         }
 
@@ -1753,7 +1763,7 @@ sub services {
                 -onSubmit => "return validateJSON()"
             );
             $service_page .=
-                '<select name="host" id="host-select" multiple="multiple">';
+              '<select name="host" id="host-select" multiple="multiple">';
             for my $ho (@host_arr) {
                 my $selected = '';
                 if ( $host eq $ho ) {
@@ -1784,7 +1794,7 @@ sub services {
             my @arr     = api_call( $c,
                 "POST", "objects/services/$host!$servicename", $payload );
             $service_page .= display_api_response( @arr, $payload );
-            $service_page .= display_back_button( $mode, 'services' );
+            $service_page .= display_back_button( $mode, 'services', $c );
         }
         elsif ( $host
             and $servicename
@@ -1882,7 +1892,7 @@ sub contacts {
             my $payload = uri_unescape($attributes);
             my @arr = api_call( $c, "PUT", "objects/users/$contact", $payload );
             $contacts_page .= display_api_response( @arr, $payload );
-            $contacts_page .= display_back_button( $mode, 'contacts' );
+            $contacts_page .= display_back_button( $mode, 'contacts', $c );
 
             # This is the contact creation confirmation
         }
@@ -1911,7 +1921,7 @@ sub contacts {
                   api_call( $c, "DELETE", "objects/users/$cnt$cascade" );
                 $contacts_page .= display_api_response(@arr);
             }
-            $contacts_page .= display_back_button( $mode, 'contacts' );
+            $contacts_page .= display_back_button( $mode, 'contacts', $c );
         }
 
         # This is confirmation
@@ -1952,7 +1962,7 @@ sub contacts {
             my @arr =
               api_call( $c, "POST", "objects/users/$contact", $payload );
             $contacts_page .= display_api_response( @arr, $payload );
-            $contacts_page .= display_back_button( $mode, 'contacts' );
+            $contacts_page .= display_back_button( $mode, 'contacts', $c );
         }
 
         # This is confirmation
@@ -2053,7 +2063,7 @@ sub contact_groups {
                 "PUT", "objects/usergroups/$contactgroup", $payload );
             $contactgroups_page .= display_api_response( @arr, $payload );
             $contactgroups_page .=
-              display_back_button( $mode, 'contactgroups' );
+              display_back_button( $mode, 'contactgroups', $c );
 
         }
 
@@ -2085,7 +2095,7 @@ sub contact_groups {
                 $contactgroups_page .= display_api_response(@arr);
             }
             $contactgroups_page .=
-              display_back_button( $mode, 'contactgroups' );
+              display_back_button( $mode, 'contactgroups', $c );
         }
 
         # This is confirmation
@@ -2127,7 +2137,7 @@ sub contact_groups {
                 "objects/usergroups/$contactgroup", $payload );
             $contactgroups_page .= display_api_response( @arr, $payload );
             $contactgroups_page .=
-              display_back_button( $mode, 'contactgroups' );
+              display_back_button( $mode, 'contactgroups', $c );
         }
 
         # This is confirmation
@@ -2245,7 +2255,7 @@ sub commands {
             my @arr = api_call( $c,
                 "DELETE", "objects/checkcommands/$command$cascade" );
             $command_page .= display_api_response(@arr);
-            $command_page .= display_back_button( $mode, 'commands' );
+            $command_page .= display_back_button( $mode, 'commands', $c );
 
         }
 
@@ -2266,7 +2276,7 @@ sub commands {
             my @arr =
               api_call( $c, "PUT", "objects/checkcommands/$command", $payload );
             $command_page .= display_api_response( @arr, $payload );
-            $command_page .= display_back_button( $mode, 'commands' );
+            $command_page .= display_back_button( $mode, 'commands', $c );
 
         }
 
@@ -2295,7 +2305,7 @@ sub commands {
                 "objects/checkcommands/$command", $payload );
 
             $command_page .= display_api_response( @arr, $payload );
-            $command_page .= display_back_button( $mode, 'commands' );
+            $command_page .= display_back_button( $mode, 'commands', $c );
 
             # Do edit here
         }
@@ -2402,6 +2412,15 @@ sub index {
     $c->stash->{'template'}       = 'api_conf.tt';
     $c->stash->{'testmode'}       = 1;
     $c->stash->{'title'}          = 'Configuration Editor';
+
+    #my $referer = $q->referer();
+    my $referer = $c->req->header('referer');
+    warn "REFERER: $referer";
+
+   # If the referer does NOT match the plugin, it is interesting and we store it
+    unless ( $referer =~ m/\/thruk\/cgi-bin\/api_conf\.cgi/ ) {
+        $c->cache->set( "api_conf_referer", $referer );
+    }
 
     # This is data we need to have handy
     $c->stash->{'services'} = $c->{'db'}->get_services(
