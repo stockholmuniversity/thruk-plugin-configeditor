@@ -425,7 +425,7 @@ endpoint (e.g. objects/services/<hostname>!<servicename>)
 =cut
 
 sub display_editor {
-    my ( $page_type, $hidden, $c, $endpoint, ) = @_;
+    my ( $page_type, $c, $hidden, $endpoint, ) = @_;
     my $name = $page_type;
     $name =~ s/s$//;
     my $mode = "create";
@@ -1337,7 +1337,7 @@ sub hosts {
 
         # This is the main host creation dialog
         else {
-            $host_page .= display_editor("hosts");
+            $host_page .= display_editor("hosts", $c);
         }
     }
     elsif ( $mode eq "modify" ) {
@@ -1365,7 +1365,7 @@ sub hosts {
         elsif ($host) {
             my %hidden = ( "host" => $host );
             my $endpoint = "objects/hosts/$host";
-            $host_page .= display_editor( "hosts", \%hidden, $c, $endpoint );
+            $host_page .= display_editor( "hosts", $c, \%hidden, $endpoint );
 
         }
 
@@ -1773,7 +1773,7 @@ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name=
             }
             $service_page .= '</select><br>';
             $service_page .= display_multi_select( "host-select", @host_arr );
-            $service_page .= display_editor("services");
+            $service_page .= display_editor("services", $c);
             $service_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
@@ -1811,7 +1811,7 @@ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name=
                 "service" => $servicename
             );
             $service_page .=
-              display_editor( "services", \%hidden, $c,
+                display_editor( "services", $c, \%hidden,
                 "objects/services/$host!$servicename" );
         }
         elsif ($host) {
@@ -1904,7 +1904,7 @@ sub contacts {
               # This is the contact creation dialog
         }
         else {
-            $contacts_page .= display_editor("contacts");
+            $contacts_page .= display_editor("contacts", $c);
         }
 
     }
@@ -1977,7 +1977,7 @@ sub contacts {
             my %hidden = ( "contact" => $contact );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
-              display_editor( "contacts", \%hidden, $c, $endpoint );
+                display_editor( "contacts", $c, \%hidden, $endpoint );
         }
 
         # This is selection
@@ -2077,7 +2077,7 @@ sub contact_groups {
 
         # This is creation dialog
         else {
-            $contactgroups_page .= display_editor("contactgroups");
+            $contactgroups_page .= display_editor("contactgroups", $c);
         }
 
     }
@@ -2152,7 +2152,7 @@ sub contact_groups {
             my %hidden = ( "contactgroup" => $contactgroup );
             my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
-              display_editor( "contactgroups", \%hidden, $c, $endpoint );
+                display_editor( "contactgroups", $c, \%hidden, $endpoint );
         }
 
         # This is selection
@@ -2290,7 +2290,7 @@ sub commands {
 
         # This is main command creation dialog
         else {
-            $command_page .= display_editor("commands");
+            $command_page .= display_editor("commands", $c);
         }
 
     }
@@ -2324,7 +2324,7 @@ sub commands {
             my $endpoint = "objects/checkcommands/$command";
 
             $command_page =
-              display_editor( "commands", \%hidden, $c, $endpoint );
+                display_editor( "commands", $c, \%hidden, $endpoint );
         }
         else {
             $command_page = display_command_selection( $c, $mode );
