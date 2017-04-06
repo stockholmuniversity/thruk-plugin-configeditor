@@ -429,7 +429,7 @@ sub display_editor {
     my $name = $page_type;
     $name =~ s/s$//;
     my $mode = "create";
-    if ($c) {
+    if ($endpoint) {
         $mode = "modify";
     }
     my $json_text = '';
