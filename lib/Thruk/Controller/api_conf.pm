@@ -2415,7 +2415,6 @@ sub index {
 
     #my $referer = $q->referer();
     my $referer = $c->req->header('referer');
-    warn "REFERER: $referer";
 
    # If the referer does NOT match the plugin, it is interesting and we store it
     unless ( $referer =~ m/\/thruk\/cgi-bin\/api_conf\.cgi/ ) {
