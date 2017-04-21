@@ -52,7 +52,9 @@ my @contactgroup_keys = ( "display_name", "vars" );
 my @host_keys = (
     "address6",      "address",    "check_command",  "display_name",
     "event_command", "action_url", "notes",          "notes_url",
-    "vars",          "icon_image", "icon_image_alt", "check_interval"
+    "vars", "icon_image", "icon_image_alt", "check_interval",
+    "max_check_attempts", "retry_interval"
+
 );
 
 my @hostgroup_keys =
@@ -1337,7 +1339,7 @@ sub hosts {
 
         # This is the main host creation dialog
         else {
-            $host_page .= display_editor("hosts", $c);
+            $host_page .= display_editor( "hosts", $c );
         }
     }
     elsif ( $mode eq "modify" ) {
@@ -1773,7 +1775,7 @@ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name=
             }
             $service_page .= '</select><br>';
             $service_page .= display_multi_select( "host-select", @host_arr );
-            $service_page .= display_editor("services", $c);
+            $service_page .= display_editor( "services", $c );
             $service_page .= $q->submit(
                 -name  => 'submit',
                 -value => 'Submit'
@@ -1904,7 +1906,7 @@ sub contacts {
               # This is the contact creation dialog
         }
         else {
-            $contacts_page .= display_editor("contacts", $c);
+            $contacts_page .= display_editor( "contacts", $c );
         }
 
     }
@@ -2077,7 +2079,7 @@ sub contact_groups {
 
         # This is creation dialog
         else {
-            $contactgroups_page .= display_editor("contactgroups", $c);
+            $contactgroups_page .= display_editor( "contactgroups", $c );
         }
 
     }
@@ -2290,7 +2292,7 @@ sub commands {
 
         # This is main command creation dialog
         else {
-            $command_page .= display_editor("commands", $c);
+            $command_page .= display_editor( "commands", $c );
         }
 
     }
