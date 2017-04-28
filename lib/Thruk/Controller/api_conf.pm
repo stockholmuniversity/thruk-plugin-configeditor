@@ -50,9 +50,9 @@ my @contact_keys = (
 
 my @contactgroup_keys = ( "display_name", "vars" );
 my @host_keys = (
-    "address6",      "address",    "check_command",  "display_name",
-    "event_command", "action_url", "notes",          "notes_url",
-    "vars", "icon_image", "icon_image_alt", "check_interval",
+    "address6",           "address",    "check_command",  "display_name",
+    "event_command",      "action_url", "notes",          "notes_url",
+    "vars",               "icon_image", "icon_image_alt", "check_interval",
     "max_check_attempts", "retry_interval"
 
 );
@@ -521,13 +521,11 @@ sub display_editor {
         -id      => "JSONText"
     );
     $textbox .= "<br/>";
-    unless ( $page_type eq "services" and $mode eq "create" ) {
-        $textbox .= $q->submit(
-            -name  => "submit",
-            -value => 'Submit'
-        );
-        $textbox .= $q->end_form;
-    }
+    $textbox .= $q->submit(
+        -name  => "submit",
+        -value => 'Submit'
+    );
+    $textbox .= $q->end_form;
     if ( $mode eq "modify" ) {
         $textbox .= display_download_button( $c, $endpoint, $page_type );
     }
@@ -1776,11 +1774,6 @@ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name=
             $service_page .= '</select><br>';
             $service_page .= display_multi_select( "host-select", @host_arr );
             $service_page .= display_editor( "services", $c );
-            $service_page .= $q->submit(
-                -name  => 'submit',
-                -value => 'Submit'
-            );
-            $service_page .= $q->end_form;
         }
 
     }
@@ -1813,7 +1806,7 @@ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name=
                 "service" => $servicename
             );
             $service_page .=
-                display_editor( "services", $c, \%hidden,
+              display_editor( "services", $c, \%hidden,
                 "objects/services/$host!$servicename" );
         }
         elsif ($host) {
@@ -1979,7 +1972,7 @@ sub contacts {
             my %hidden = ( "contact" => $contact );
             my $endpoint = "objects/users/$contact";
             $contacts_page .=
-                display_editor( "contacts", $c, \%hidden, $endpoint );
+              display_editor( "contacts", $c, \%hidden, $endpoint );
         }
 
         # This is selection
@@ -2154,7 +2147,7 @@ sub contact_groups {
             my %hidden = ( "contactgroup" => $contactgroup );
             my $endpoint = "objects/usergroups/$contactgroup";
             $contactgroups_page .=
-                display_editor( "contactgroups", $c, \%hidden, $endpoint );
+              display_editor( "contactgroups", $c, \%hidden, $endpoint );
         }
 
         # This is selection
@@ -2326,7 +2319,7 @@ sub commands {
             my $endpoint = "objects/checkcommands/$command";
 
             $command_page =
-                display_editor( "commands", $c, \%hidden, $endpoint );
+              display_editor( "commands", $c, \%hidden, $endpoint );
         }
         else {
             $command_page = display_command_selection( $c, $mode );
