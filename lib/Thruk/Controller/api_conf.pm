@@ -996,6 +996,7 @@ sub get_defaults {
         $to_json{"attrs"}{"groups"} = [ "Example group1", "Example groups2" ];
         $to_json{"attrs"}{"period"} = "24x7";
         $to_json{"attrs"}{"states"} = [ "Critical", "Unknown" ];
+        $to_json{"attrs"}{"max_check_attempts"} = 11;
 
     }
     elsif ( $page_type eq "hostdependencies" ) {
@@ -1024,6 +1025,7 @@ sub get_defaults {
         $to_json{"attrs"}{"zone"}           = "master";
         $to_json{"attrs"}{"groups"}         = [ "hdbe", "surveillance" ];
         $to_json{"attrs"}{"retry_interval"} = 30;
+        $to_json{"attrs"}{"max_check_attempts"} = 10;
 
     }
     elsif ( $page_type eq "servicedependencies" ) {
