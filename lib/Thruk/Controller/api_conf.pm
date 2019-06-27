@@ -491,6 +491,15 @@ sub display_editor {
 	     return false;
 	  }
 	}
+        function validateName () {
+          var str = document.getElementById("itemname").value;
+          if( /^[\w-.]+$/.test(str)) {
+              return true;
+          } else {
+	     popitup("Invalid name! Please use only a-Z, 0-9 and _-. in the name field.");
+	     return false;
+          }
+        }
 </script>';
     $textbox .= $q->p($head);
     unless ( $page_type eq "services" and $mode eq "create" ) {
@@ -498,12 +507,13 @@ sub display_editor {
             -method   => $METHOD,
             -action   => "api_conf.cgi",
             -id       => "JSONForm",
-            -onSubmit => "return validateJSON()"
+            -onSubmit => "return validateJSON() && validateName()"
         );
     }
     if ( $mode eq "create" ) {
         $textbox .= $q->p("Enter $name name:");
-        $textbox .= $q->textfield( $name, '', 50, 80 );
+        $textbox .= $q->textfield( -name => $name, -id => 'itemname', -size => 50, -maxlength => 80 );
+        #$textbox .= $q->textfield( $name, '', 50, 80 );
         $textbox .= $q->p("Editor:");
     }
     if ($hidden) {
