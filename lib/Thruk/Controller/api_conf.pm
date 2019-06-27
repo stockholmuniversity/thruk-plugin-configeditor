@@ -493,10 +493,10 @@ sub display_editor {
 	}
         function validateName () {
           var str = document.getElementById("itemname").value;
-          if( /^[\w-.]+$/.test(str)) {
+          if( /^[\w-.\@]+$/.test(str)) {
               return true;
           } else {
-	     popitup("Invalid name! Please use only a-Z, 0-9 and _-. in the name field.");
+	     popitup("Invalid name! Please use only a-Z, 0-9 and _-.@ in the name field.");
 	     return false;
           }
         }
