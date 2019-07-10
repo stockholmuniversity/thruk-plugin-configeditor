@@ -1772,7 +1772,7 @@ s/(input type="hidden" name="mode" value="delete")/$1><input type="hidden" name=
                 -method   => $METHOD,
                 -action   => "api_conf.cgi",
                 -id       => "JSONForm",
-                -onSubmit => "return validateJSON()"
+                -onSubmit => "return validateJSON() && validateName()"
             );
             $service_page .=
               '<select name="host" id="host-select" multiple="multiple">';
