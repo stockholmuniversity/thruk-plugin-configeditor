@@ -2395,7 +2395,7 @@ This is the entry point
 
 sub index {
     my $context = new IO::Socket::SSL::SSL_Context(
-        SSL_version     => 'tlsv1',
+        SSL_version     => 'TLSv1_2',
         SSL_verify_mode => Net::SSLeay::VERIFY_NONE(),
     );
     IO::Socket::SSL::set_default_context($context);
